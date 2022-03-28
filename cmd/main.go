@@ -11,8 +11,6 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 )
 
-const SignalBufferLen = 2
-
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -27,14 +25,17 @@ func run() error {
 	}
 
 	server := http.NewServer(cfg.APIServer)
+
+	done := make(chan os.Signal)
+	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
+
 	server.Start()
 
-	c := make(chan os.Signal, SignalBufferLen)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	signalRcv := <-c
+	<-done
 
-	log.Printf("stop signal received: %s, starting shutdown", signalRcv)
-	server.Stop()
+	if err := server.Stop(); err != nil {
+		log.Fatalf("Server Shutdown Failed:%+v", err)
+	}
 
 	return nil
 }

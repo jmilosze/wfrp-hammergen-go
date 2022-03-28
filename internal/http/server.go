@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 )
 
 type Server struct {
-	server *http.Server
-	router *http.ServeMux
+	server          *http.Server
+	router          *http.ServeMux
+	shutdownTimeout time.Duration
 }
 
 func NewServer(cfg *config.ServerConfig) *Server {
@@ -20,27 +22,23 @@ func NewServer(cfg *config.ServerConfig) *Server {
 		Addr: fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 	}
 	return &Server{
-		server: server,
-		router: http.NewServeMux(),
+		server:          server,
+		router:          http.NewServeMux(),
+		shutdownTimeout: cfg.ShutdownTimeout,
 	}
 }
 
 func (s *Server) Start() {
-	startedChannel := make(chan struct{})
-
 	go func() {
 		log.Printf("server starting on %s", s.server.Addr)
-		startedChannel <- struct{}{}
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 	}()
-
-	<-startedChannel
 }
 
 func (s *Server) Stop() error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
 	defer cancel()
 
 	return s.server.Shutdown(ctx)

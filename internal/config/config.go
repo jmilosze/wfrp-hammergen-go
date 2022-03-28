@@ -1,8 +1,11 @@
 package config
 
+import "time"
+
 type ServerConfig struct {
-	Host string
-	Port int
+	Host            string
+	Port            int
+	ShutdownTimeout time.Duration
 }
 
 type Config struct {
@@ -11,6 +14,6 @@ type Config struct {
 
 func NewDefault() (*Config, error) {
 	return &Config{
-		APIServer: &ServerConfig{Host: "localhost", Port: 8080},
+		APIServer: &ServerConfig{Host: "localhost", Port: 8080, ShutdownTimeout: 2 * time.Second},
 	}, nil
 }
