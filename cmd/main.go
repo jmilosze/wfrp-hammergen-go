@@ -1,98 +1,40 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"net/http"
+	"log"
 	"os"
 	"os/signal"
+	"syscall"
+
+	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 )
+
+const SignalBufferLen = 2
 
 func main() {
-	// Setup signal handlers.
-	ctx, cancel := context.WithCancel(context.Background())
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() { <-c; cancel() }()
-
-	// Instantiate a new type to represent our application.
-	// This type lets us shared setup code with our end-to-end tests.
-	m := NewMain()
-
-	// Execute program.
-	if err := m.Run(ctx); err != nil {
-		m.Close()
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	// Wait for CTRL-C.
-	<-ctx.Done()
-
-	// Clean up program.
-	if err := m.Close(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if err := run(); err != nil {
+		log.Fatal(err)
 	}
 }
 
-// Main represents the program.
-type Main struct {
-	// Configuration path and parsed config data.
-	Config     Config
-	ConfigPath string
+func run() error {
 
-	// HTTP server for handling HTTP communication.
-	HTTPServer *http.Server
-}
-
-// NewMain returns a new instance of Main.
-func NewMain() *Main {
-	return &Main{
-		Config:     DefaultConfig(),
-		ConfigPath: DefaultConfigPath,
+	cfg, err := config.NewDefault()
+	if err != nil {
+		return fmt.Errorf("getting service config from environment: %w", err)
 	}
-}
 
-// Close gracefully stops the program.
-func (m *Main) Close() error {
-	if m.HTTPServer != nil {
-		if err := m.HTTPServer.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+	server := http.NewServer(cfg.APIServer)
+	server.Start()
 
-// Run executes the program. The configuration should already be set up before
-// calling this function.
-func (m *Main) Run(ctx context.Context) (err error) {
-	// Start the HTTP server.
-	if err := m.HTTPServer.ListenAndServe(); err != nil {
-		return err
-	}
+	c := make(chan os.Signal, SignalBufferLen)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signalRcv := <-c
+
+	log.Printf("stop signal received: %s, starting shutdown", signalRcv)
+	server.Stop()
 
 	return nil
 }
-
-// Config represents the CLI configuration file.
-type Config struct {
-	DB struct {
-		URI string `toml:"uri"`
-	} `toml:"db"`
-}
-
-// DefaultConfig returns a new instance of Config with defaults set.
-func DefaultConfig() Config {
-	var config Config
-	config.DB.URI = DefaultURI
-	return config
-}
-
-const (
-	// DefaultConfigPath is the default path to the application configuration.
-	DefaultConfigPath = "hammergen.conf"
-
-	// DefaultURI is the default datasource name.
-	DefaultURI = "zxc"
-)
