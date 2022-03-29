@@ -13,17 +13,17 @@ import (
 
 type Server struct {
 	server          *http.Server
-	router          *http.ServeMux
 	shutdownTimeout time.Duration
 }
 
-func NewServer(cfg *config.ServerConfig) *Server {
+func NewServer(cfg *config.ServerConfig, router http.Handler) *Server {
 	server := &http.Server{
-		Addr: fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Handler: router,
 	}
+
 	return &Server{
 		server:          server,
-		router:          http.NewServeMux(),
 		shutdownTimeout: cfg.ShutdownTimeout,
 	}
 }

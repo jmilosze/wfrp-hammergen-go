@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 )
@@ -24,7 +25,10 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
-	server := http.NewServer(cfg.APIServer)
+	router := gin.New()
+	http.RegisterUserRoutes(router)
+
+	server := http.NewServer(cfg.APIServer, router)
 
 	done := make(chan os.Signal)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
