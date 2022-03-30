@@ -26,8 +26,10 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
+	userService := mongodb.NewUserService()
+
 	router := gin.NewRouter()
-	gin.RegisterUserRoutes(router, mongodb.NewUserService())
+	gin.RegisterUserRoutes(router, userService)
 
 	server := http.NewServer(cfg.APIServer, router)
 

@@ -7,8 +7,14 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService) {
-	router.GET("/user/:name", func(c *gin.Context) {
-		user, _ := userService.FindUserById("0")
-		c.String(http.StatusOK, "Hello %s", user.Username)
+	router.GET("api/user/:id", func(c *gin.Context) {
+		userId := c.Param("id")
+		user, err := userService.FindUserById(userId)
+
+		if err != nil {
+			c.String(http.StatusNotFound, "User not found.")
+		} else {
+			c.String(http.StatusOK, "Hello %s", user.Username)
+		}
 	})
 }
