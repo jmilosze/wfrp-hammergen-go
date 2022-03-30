@@ -14,6 +14,6 @@ type Config struct {
 
 func NewDefault() (*Config, error) {
 	return &Config{
-		APIServer: &ServerConfig{Host: "localhost", Port: 8080, ShutdownTimeout: 2 * time.Second},
+		APIServer: &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
 	}, nil
 }

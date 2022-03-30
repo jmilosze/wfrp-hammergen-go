@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"context"
 	"errors"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 )
@@ -17,7 +16,7 @@ func NewUserService() *UserService {
 	return &UserService{user1: user1, user2: user2}
 }
 
-func (s *UserService) FindUserById(ctx context.Context, id string) (*domain.User, error) {
+func (s *UserService) FindUserById(id string) (*domain.User, error) {
 	if id == s.user1.Id {
 		return &s.user1, nil
 	} else if id == s.user2.Id {

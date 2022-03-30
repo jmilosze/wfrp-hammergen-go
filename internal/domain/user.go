@@ -1,7 +1,5 @@
 package domain
 
-import "context"
-
 type User struct {
 	Id           string `json:"id"`
 	Username     string `json:"username"`
@@ -9,5 +7,5 @@ type User struct {
 }
 
 type UserService interface {
-	FindUserById(ctx context.Context, id string) (User, error)
+	FindUserById(id string) (*User, error)
 }

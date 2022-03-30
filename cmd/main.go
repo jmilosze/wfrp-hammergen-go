@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/mongodb"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 )
 
@@ -25,8 +26,8 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
-	router := gin.New()
-	http.RegisterUserRoutes(router)
+	router := gin.NewRouter()
+	gin.RegisterUserRoutes(router, mongodb.NewUserService())
 
 	server := http.NewServer(cfg.APIServer, router)
 
