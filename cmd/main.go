@@ -30,6 +30,7 @@ func run() error {
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService)
+	gin.RegisterAuthRoutes(router)
 
 	server := http.NewServer(cfg.APIServer, router)
 
