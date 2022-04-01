@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/mongodb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/gin"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mongodb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 )
 
@@ -25,6 +26,13 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
+
+	jwtService := golangjwt.NewHmacService("some secret")
+	//token, _ := jwtService.GenerateToken(&domain.Claims{UserId: "zxc"})
+	_, erx := jwtService.ParseToken("zxcsdas")
+
+	//fmt.Printf("token: %s\n", token)
+	fmt.Printf("user id: %s\n", erx)
 
 	userService := mongodb.NewUserService()
 
