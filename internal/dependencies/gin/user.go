@@ -7,10 +7,10 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
-	router.GET("api/user/:userId", RequireJwt(jwtService), userHandler(userService))
+	router.GET("api/user/:userId", RequireJwt(jwtService), getUserHandler(userService))
 }
 
-func userHandler(userService domain.UserService) func(*gin.Context) {
+func getUserHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		authUserId := c.GetString("authUserId")
