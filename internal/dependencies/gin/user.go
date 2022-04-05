@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func RegisterUserRoutes(router *gin.Engine, userService domain.UserService) {
-	router.GET("api/user/:id", func(c *gin.Context) {
+func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
+	router.GET("api/user/:id", RequireJwt(jwtService), func(c *gin.Context) {
 		userId := c.Param("id")
 		user, err := userService.FindUserById(userId)
 

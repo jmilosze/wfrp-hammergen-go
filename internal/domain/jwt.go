@@ -8,7 +8,7 @@ type Claims struct {
 
 type JwtService interface {
 	GenerateToken(claims *Claims) (string, error)
-	ParseToken(tokenString string) (*Claims, error)
+	ParseToken(token string) (*Claims, error)
 }
 
 type InvalidTokenError struct {

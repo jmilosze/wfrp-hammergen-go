@@ -25,3 +25,13 @@ func (s *UserService) FindUserById(id string) (*domain.User, error) {
 		return nil, errors.New("user not found")
 	}
 }
+
+func (s *UserService) FindUserByName(username string) (*domain.User, error) {
+	if username == s.user1.Username {
+		return &s.user1, nil
+	} else if username == s.user2.Username {
+		return &s.user2, nil
+	} else {
+		return nil, errors.New("user not found")
+	}
+}

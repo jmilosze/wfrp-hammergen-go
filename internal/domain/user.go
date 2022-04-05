@@ -8,4 +8,5 @@ type User struct {
 
 type UserService interface {
 	FindUserById(id string) (*User, error)
+	FindUserByName(username string) (*User, error)
 }

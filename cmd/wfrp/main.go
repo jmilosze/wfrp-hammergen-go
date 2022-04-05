@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mongodb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mongodb"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
+	"time"
 )
 
 func main() {
@@ -27,18 +27,12 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
-	jwtService := golangjwt.NewHmacService("some secret")
-	//token, _ := jwtService.GenerateToken(&domain.Claims{UserId: "zxc"})
-	_, erx := jwtService.ParseToken("zxcsdas")
-
-	//fmt.Printf("token: %s\n", token)
-	fmt.Printf("user id: %s\n", erx)
-
+	jwtService := golangjwt.NewHmacService("some secret", 60*time.Minute)
 	userService := mongodb.NewUserService()
 
 	router := gin.NewRouter()
-	gin.RegisterUserRoutes(router, userService)
-	gin.RegisterAuthRoutes(router)
+	gin.RegisterUserRoutes(router, userService, jwtService)
+	gin.RegisterAuthRoutes(router, userService, jwtService)
 
 	server := http.NewServer(cfg.APIServer, router)
 
