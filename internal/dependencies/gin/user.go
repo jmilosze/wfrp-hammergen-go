@@ -16,7 +16,7 @@ func getUserHandler(userService domain.UserService) func(*gin.Context) {
 		authUserId := c.GetString("authUserId")
 
 		if userId != authUserId {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "Unauthorized"})
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
 
