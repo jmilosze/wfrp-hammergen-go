@@ -7,14 +7,26 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
-	router.GET("api/user/:id", RequireJwt(jwtService), func(c *gin.Context) {
-		userId := c.Param("id")
+	router.GET("api/user/:userId", RequireJwt(jwtService), userHandler(userService))
+}
+
+func userHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		userId := c.Param("userId")
+		authUserId := c.GetString("authUserId")
+
+		if userId != authUserId {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "Unauthorized"})
+			return
+		}
+
 		user, err := userService.FindUserById(userId)
 
 		if err != nil {
-			c.String(http.StatusNotFound, "User not found.")
-		} else {
-			c.String(http.StatusOK, "Hello %s", user.Username)
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
+			return
 		}
-	})
+
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+	}
 }

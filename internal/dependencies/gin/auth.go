@@ -20,12 +20,12 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 		user, err := userService.FindUserByName(username)
 
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "User not found."})
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
 			return
 		}
 
 		if password != user.PasswordHash {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "Invalid password."})
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "invalid password"})
 			return
 		}
 
@@ -33,7 +33,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 
 		if err != nil {
 			c.String(http.StatusInternalServerError, "Error generating token.")
-			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "Error generating token."})
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "error generating token"})
 			return
 		}
 
@@ -57,13 +57,13 @@ func RequireJwt(jwtService domain.JwtService) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims.UserId)
+		c.Set("authUserId", claims.UserId)
 	}
 }
 
 func unauthorized(c *gin.Context) {
 	c.Abort()
-	c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "Unauthorized"})
+	c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 }
 
 func parseAuthHeader(authHeader string) (string, error) {
