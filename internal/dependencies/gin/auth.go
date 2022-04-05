@@ -23,8 +23,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
 			return
 		}
-
-		if password != user.PasswordHash {
+		if !userService.Authenticate(*user, password) {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "invalid password"})
 			return
 		}

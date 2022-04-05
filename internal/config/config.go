@@ -1,6 +1,8 @@
 package config
 
-import "time"
+import (
+	"time"
+)
 
 type ServerConfig struct {
 	Host            string
@@ -8,12 +10,18 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration
 }
 
+type MockdbUserService struct {
+	BcryptCost int
+}
+
 type Config struct {
-	APIServer *ServerConfig
+	ServerConfig      *ServerConfig
+	MockdbUserService *MockdbUserService
 }
 
 func NewDefault() (*Config, error) {
 	return &Config{
-		APIServer: &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
+		ServerConfig:      &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
+		MockdbUserService: &MockdbUserService{BcryptCost: 12},
 	}, nil
 }
