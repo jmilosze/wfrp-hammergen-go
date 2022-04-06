@@ -5,7 +5,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mockdb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 	"log"
 	"os"
@@ -28,7 +28,7 @@ func run() error {
 	}
 
 	jwtService := golangjwt.NewHmacService("some secret", 60*time.Minute)
-	userService := mockdb.NewUserService(cfg.MockdbUserService)
+	userService := memdb.NewUserService(cfg.MockdbUserService)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)
