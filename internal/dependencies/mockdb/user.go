@@ -5,7 +5,6 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"golang.org/x/crypto/bcrypt"
-	"sync"
 )
 
 type userStore map[string]domain.User
@@ -28,11 +27,7 @@ func NewUserService(cfg *config.MockdbUserService) *UserService {
 }
 
 func (s *UserService) FindUserById(id string) (*domain.User, error) {
-	var m sync.RWMutex
-
-	m.Lock()
 	user, ok := s.users[id]
-	m.Unlock()
 
 	if ok {
 		return &user, nil
@@ -42,10 +37,8 @@ func (s *UserService) FindUserById(id string) (*domain.User, error) {
 }
 
 func (s *UserService) FindUserByName(username string) (*domain.User, error) {
-	var m sync.RWMutex
 	var userFound *domain.User = nil
 
-	m.Lock()
 	for _, user := range s.users {
 		if user.Username == username {
 			userCopy := user
@@ -55,7 +48,6 @@ func (s *UserService) FindUserByName(username string) (*domain.User, error) {
 			break
 		}
 	}
-	m.Unlock()
 
 	if userFound != nil {
 		return userFound, nil
