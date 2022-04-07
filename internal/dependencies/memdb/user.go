@@ -81,14 +81,9 @@ func findUserBy(fieldName string, fieldValue string, s *UserService) (*domain.Us
 	if userRaw == nil {
 		return nil, errors.New("user not found")
 	}
-
 	user := userRaw.(*domain.User)
 
-	userCopy := *user
-	userCopy.PasswordHash = make([]byte, len(user.PasswordHash))
-	copy(userCopy.PasswordHash, user.PasswordHash)
-
-	return &userCopy, nil
+	return user.Copy(), nil
 }
 
 func (s *UserService) Authenticate(user domain.User, password string) bool {

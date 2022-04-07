@@ -6,6 +6,13 @@ type User struct {
 	PasswordHash []byte `json:"password_hash"`
 }
 
+func (source *User) Copy() *User {
+	userCopy := *source
+	userCopy.PasswordHash = make([]byte, len(source.PasswordHash))
+	copy(userCopy.PasswordHash, source.PasswordHash)
+	return &userCopy
+}
+
 type UserService interface {
 	FindUserById(id string) (*User, error)
 	FindUserByName(username string) (*User, error)
