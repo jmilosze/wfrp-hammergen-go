@@ -7,12 +7,12 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
-	router.GET("api/user/:userId", RequireJwt(jwtService), getUserHandler(userService))
-	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteUserHandler(userService))
-	router.POST("api/user", createUserHandler(userService))
+	router.GET("api/user/:userId", RequireJwt(jwtService), getHandler(userService))
+	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
+	router.POST("api/user", createHandler(userService))
 }
 
-func getUserHandler(userService domain.UserService) func(*gin.Context) {
+func getHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		authUserId := c.GetString("authUserId")
@@ -38,7 +38,7 @@ func getUserHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func deleteUserHandler(userService domain.UserService) func(*gin.Context) {
+func deleteHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 
@@ -50,7 +50,7 @@ func deleteUserHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func createUserHandler(userService domain.UserService) func(*gin.Context) {
+func createHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 
 		var userData struct {
