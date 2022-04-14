@@ -2,9 +2,11 @@ package memdb
 
 import (
 	"errors"
+	"fmt"
 	"github.com/hashicorp/go-memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
+	"github.com/rs/xid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,6 +35,7 @@ func NewUserService(cfg *config.MockdbUserService) *UserService {
 			panic(err)
 		}
 	}
+
 	txn.Commit()
 
 	return &UserService{Db: db, BcryptCost: cfg.BcryptCost}
@@ -71,7 +74,6 @@ func (s *UserService) FindUserByName(username string) (*domain.User, error) {
 
 func findUserBy(fieldName string, fieldValue string, s *UserService) (*domain.User, error) {
 	txn := s.Db.Txn(false)
-	defer txn.Abort()
 
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
@@ -91,4 +93,23 @@ func (s *UserService) Authenticate(user domain.User, password string) bool {
 		return true
 	}
 	return false
+}
+
+func (s *UserService) CreateUser(username string, password string) (*domain.User, error) {
+	if _, err := findUserBy("username", username, s); err == nil {
+		return nil, errors.New("user already exists")
+	}
+
+	id := xid.New().String()
+	passwordHash, _ := bcrypt.GenerateFromPassword([]byte(password), s.BcryptCost)
+	user := domain.User{Id: id, Username: username, PasswordHash: passwordHash}
+
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if err := txn.Insert("user", &user); err != nil {
+		return nil, fmt.Errorf("error inserting userrname: %s, id: %s", username, id)
+	}
+	txn.Commit()
+
+	return user.Copy(), nil
 }

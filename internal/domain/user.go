@@ -17,4 +17,5 @@ type UserService interface {
 	FindUserById(id string) (*User, error)
 	FindUserByName(username string) (*User, error)
 	Authenticate(user User, password string) bool
+	CreateUser(username string, password string) (*User, error)
 }
