@@ -1,11 +1,16 @@
 package domain
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 const (
 	UserNotFoundError = iota
 	UserAlreadyExistsError
 	UserInternalError
+	UserIdCannotBeUpdatedError
 )
 
 type User struct {
@@ -14,11 +19,29 @@ type User struct {
 	PasswordHash []byte `json:"password_hash"`
 }
 
-func (source *User) Copy() *User {
-	userCopy := *source
-	userCopy.PasswordHash = make([]byte, len(source.PasswordHash))
-	copy(userCopy.PasswordHash, source.PasswordHash)
+func (u *User) Copy() *User {
+	userCopy := *u
+	userCopy.Username = strings.Clone(u.Username)
+	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
+	copy(userCopy.PasswordHash, u.PasswordHash)
 	return &userCopy
+}
+
+func (u *User) Update(newVal *User) *UserError {
+	if newVal.Id != newVal.Id {
+		return &UserError{Type: UserIdCannotBeUpdatedError, Err: errors.New("user id cannot be changed")}
+	}
+
+	if newVal.Username != "" {
+		u.Username = strings.Clone(newVal.Username)
+	}
+
+	if len(newVal.PasswordHash) != 0 {
+		u.PasswordHash = make([]byte, len(newVal.PasswordHash))
+		copy(u.PasswordHash, newVal.PasswordHash)
+	}
+
+	return nil
 }
 
 type UserService interface {
@@ -26,6 +49,7 @@ type UserService interface {
 	GetByName(username string) (*User, *UserError)
 	Authenticate(user User, password string) bool
 	Create(username string, password string) (*User, *UserError)
+	Update(id string, username string, password string) (*User, *UserError)
 	Delete(id string) *UserError
 }
 

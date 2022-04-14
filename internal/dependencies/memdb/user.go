@@ -113,6 +113,31 @@ func (s *UserService) Create(username string, password string) (*domain.User, *d
 	return user.Copy(), nil
 }
 
+func (s *UserService) Update(id string, newUserData *domain.User) (*domain.User, *domain.UserError) {
+
+	u, err := s.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := u.Update(newUserData); err != nil {
+		return nil, err
+	}
+
+	id := xid.New().String()
+	passwordHash, _ := bcrypt.GenerateFromPassword([]byte(password), s.BcryptCost)
+	user := domain.User{Id: id, Username: username, PasswordHash: passwordHash}
+
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if err := txn.Insert("user", &user); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+	txn.Commit()
+
+	return user.Copy(), nil
+}
+
 func (s *UserService) Delete(id string) *domain.UserError {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
