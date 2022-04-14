@@ -52,17 +52,13 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 
 func createHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-
-		var userData struct {
-			Username string `json:"username" binding:"required"`
-			Password string `json:"password" binding:"required"`
-		}
+		var userData domain.User
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
 			return
 		}
 
-		user, err := userService.Create(userData.Username, userData.Password)
+		user, err := userService.Create(&userData)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
