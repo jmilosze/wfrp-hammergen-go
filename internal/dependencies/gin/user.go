@@ -8,6 +8,7 @@ import (
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
 	router.GET("api/user/:userId", RequireJwt(jwtService), getUserHandler(userService))
+	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteUserHandler(userService))
 	router.POST("api/user", createUserHandler(userService))
 }
 
@@ -21,14 +22,31 @@ func getUserHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.FindUserById(userId)
+		user, err := userService.GetById(userId)
 
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
+			if err.Type == domain.UserNotFoundError {
+				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
+				return
+			}
+
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+	}
+}
+
+func deleteUserHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		userId := c.Param("userId")
+
+		if err := userService.Delete(userId); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+		}
+
+		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
 	}
 }
 
@@ -44,12 +62,12 @@ func createUserHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.CreateUser(userData.Username, userData.Password)
+		user, err := userService.Create(userData.Username, userData.Password)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusInternalServerError, "message": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": gin.H{"id": user.Id, "username": user.Username}})
 	}
 }

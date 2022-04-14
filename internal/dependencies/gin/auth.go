@@ -17,21 +17,25 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		user, err := userService.FindUserByName(username)
+		user, userErr := userService.GetByName(username)
 
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
+		if userErr != nil {
+			if userErr.Type == domain.UserNotFoundError {
+				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
+
 		if !userService.Authenticate(*user, password) {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "invalid password"})
 			return
 		}
 
-		token, err := jwtService.GenerateToken(&domain.Claims{UserId: user.Id})
+		token, tokenErr := jwtService.GenerateToken(&domain.Claims{UserId: user.Id})
 
-		if err != nil {
-			c.String(http.StatusInternalServerError, "Error generating token.")
+		if tokenErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "error generating token"})
 			return
 		}

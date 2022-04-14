@@ -2,7 +2,6 @@ package memdb
 
 import (
 	"errors"
-	"fmt"
 	"github.com/hashicorp/go-memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
@@ -64,24 +63,24 @@ func createNewMemdb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *UserService) FindUserById(id string) (*domain.User, error) {
-	return findUserBy("id", id, s)
+func (s *UserService) GetById(id string) (*domain.User, *domain.UserError) {
+	return getUserBy("id", id, s)
 }
 
-func (s *UserService) FindUserByName(username string) (*domain.User, error) {
-	return findUserBy("username", username, s)
+func (s *UserService) GetByName(username string) (*domain.User, *domain.UserError) {
+	return getUserBy("username", username, s)
 }
 
-func findUserBy(fieldName string, fieldValue string, s *UserService) (*domain.User, error) {
+func getUserBy(fieldName string, fieldValue string, s *UserService) (*domain.User, *domain.UserError) {
 	txn := s.Db.Txn(false)
 
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
-		panic(err)
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	if userRaw == nil {
-		return nil, errors.New("user not found")
+		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 	user := userRaw.(*domain.User)
 
@@ -95,9 +94,9 @@ func (s *UserService) Authenticate(user domain.User, password string) bool {
 	return false
 }
 
-func (s *UserService) CreateUser(username string, password string) (*domain.User, error) {
-	if _, err := findUserBy("username", username, s); err == nil {
-		return nil, errors.New("user already exists")
+func (s *UserService) Create(username string, password string) (*domain.User, *domain.UserError) {
+	if _, err := getUserBy("username", username, s); err == nil {
+		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err}
 	}
 
 	id := xid.New().String()
@@ -107,9 +106,20 @@ func (s *UserService) CreateUser(username string, password string) (*domain.User
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if err := txn.Insert("user", &user); err != nil {
-		return nil, fmt.Errorf("error inserting userrname: %s, id: %s", username, id)
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
 
 	return user.Copy(), nil
+}
+
+func (s *UserService) Delete(id string) *domain.UserError {
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if _, err := txn.DeleteAll("user", "id", id); err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+	txn.Commit()
+
+	return nil
 }

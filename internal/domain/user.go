@@ -1,5 +1,13 @@
 package domain
 
+import "fmt"
+
+const (
+	UserNotFoundError = iota
+	UserAlreadyExistsError
+	UserInternalError
+)
+
 type User struct {
 	Id           string `json:"id"`
 	Username     string `json:"username"`
@@ -14,8 +22,22 @@ func (source *User) Copy() *User {
 }
 
 type UserService interface {
-	FindUserById(id string) (*User, error)
-	FindUserByName(username string) (*User, error)
+	GetById(id string) (*User, *UserError)
+	GetByName(username string) (*User, *UserError)
 	Authenticate(user User, password string) bool
-	CreateUser(username string, password string) (*User, error)
+	Create(username string, password string) (*User, *UserError)
+	Delete(id string) *UserError
+}
+
+type UserError struct {
+	Type int
+	Err  error
+}
+
+func (e *UserError) Unwrap() error {
+	return e.Err
+}
+
+func (e *UserError) Error() string {
+	return fmt.Sprintf("user error, %s", e.Err)
 }
