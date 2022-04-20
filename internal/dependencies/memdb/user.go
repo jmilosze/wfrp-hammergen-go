@@ -106,7 +106,7 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", &newUser); err != nil {
+	if err := txn.Insert("user", &userDb); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
@@ -125,7 +125,7 @@ func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", &userDb); err != nil {
+	if err := txn.Insert("user", userDb); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
