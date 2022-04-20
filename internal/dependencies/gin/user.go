@@ -16,9 +16,8 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 func getHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
-		authUserId := c.GetString("authUserId")
 
-		if userId != authUserId {
+		if !authorizeGet(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -39,12 +38,16 @@ func getHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
+func authorizeGet(c *gin.Context, userId string) bool {
+	authUserId := c.GetString("authUserId")
+	return userId == authUserId
+}
+
 func deleteHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
-		authUserId := c.GetString("authUserId")
 
-		if userId != authUserId {
+		if !authorizeDelete(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -55,6 +58,11 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 
 		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
 	}
+}
+
+func authorizeDelete(c *gin.Context, userId string) bool {
+	authUserId := c.GetString("authUserId")
+	return userId == authUserId
 }
 
 func createHandler(userService domain.UserService) func(*gin.Context) {
@@ -78,9 +86,8 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 func updateHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
-		authUserId := c.GetString("authUserId")
 
-		if userId != authUserId {
+		if !authorizePut(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -98,4 +105,9 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
 	}
+}
+
+func authorizePut(c *gin.Context, userId string) bool {
+	authUserId := c.GetString("authUserId")
+	return userId == authUserId
 }
