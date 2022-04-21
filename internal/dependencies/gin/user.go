@@ -111,3 +111,29 @@ func authorizePut(c *gin.Context, userId string) bool {
 	authUserId := c.GetString("authUserId")
 	return userId == authUserId
 }
+
+func listHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		allUsers, err := userService.List()
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+		}
+
+		visibleUsers := authorizeList(c, allUsers)
+
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+	}
+}
+
+func authorizeList(c *gin.Context, userList []*domain.UserDb) []*domain.UserDb {
+	authUserId := c.GetString("authUserId")
+
+	var visibleUsers []*domain.UserDb
+	for _, u := range userList {
+		if authUserId == u.Id {
+			visibleUsers = append(visibleUsers, u)
+		}
+	}
+
+	return visibleUsers
+}

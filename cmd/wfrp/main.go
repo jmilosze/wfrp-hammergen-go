@@ -6,6 +6,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/memdb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 	"log"
 	"os"
@@ -27,8 +28,13 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
+	users := []*domain.User{
+		{Username: "User1", Password: "123"},
+		{Username: "User2", Password: "456"},
+	}
+
+	userService := memdb.NewUserService(cfg.MockdbUserService, users)
 	jwtService := golangjwt.NewHmacService("some secret", 60*time.Minute)
-	userService := memdb.NewUserService(cfg.MockdbUserService)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)

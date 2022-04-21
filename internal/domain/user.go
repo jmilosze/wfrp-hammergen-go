@@ -37,6 +37,7 @@ type UserService interface {
 	Create(new *User) (*UserDb, *UserError)
 	Update(id string, new *User) (*UserDb, *UserError)
 	Delete(id string) *UserError
+	List() ([]*UserDb, *UserError)
 }
 
 type UserError struct {

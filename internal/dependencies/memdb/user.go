@@ -15,23 +15,18 @@ type UserService struct {
 	BcryptCost int
 }
 
-func NewUserService(cfg *config.MockdbUserService) *UserService {
+func NewUserService(cfg *config.MockdbUserService, users []*domain.User) *UserService {
 	db, err := createNewMemdb()
 	if err != nil {
 		panic(err)
 	}
 
-	user1password, _ := bcrypt.GenerateFromPassword([]byte("123"), cfg.BcryptCost)
-	user2password, _ := bcrypt.GenerateFromPassword([]byte("456"), cfg.BcryptCost)
-
-	users := []*domain.UserDb{
-		{Id: "0", Username: "User1", PasswordHash: user1password},
-		{Id: "1", Username: "User2", PasswordHash: user2password},
-	}
-
 	txn := db.Txn(true)
 	for _, u := range users {
-		if err := txn.Insert("user", u); err != nil {
+		id := xid.New().String()
+		pwd, _ := bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
+		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd}
+		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
 	}
@@ -154,4 +149,21 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *dom
 	}
 
 	return nil
+}
+
+func List(s *UserService) ([]*domain.UserDb, *domain.UserError) {
+	txn := s.Db.Txn(false)
+
+	it, err := txn.Get("user", "id")
+	if err != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	var users []*domain.UserDb
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		u := obj.(*domain.UserDb)
+		users = append(users, u.Copy())
+	}
+
+	return users, nil
 }
