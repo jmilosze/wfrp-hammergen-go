@@ -7,6 +7,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 	"strings"
 )
 
@@ -22,8 +23,8 @@ func NewUserService(cfg *config.MockdbUserService, users []*domain.User) *UserSe
 	}
 
 	txn := db.Txn(true)
-	for _, u := range users {
-		id := xid.New().String()
+	for i, u := range users {
+		id := strconv.Itoa(i)
 		pwd, _ := bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
 		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd}
 		if err := txn.Insert("user", userDb); err != nil {
@@ -151,7 +152,7 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *dom
 	return nil
 }
 
-func List(s *UserService) ([]*domain.UserDb, *domain.UserError) {
+func (s *UserService) List() ([]*domain.UserDb, *domain.UserError) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")

@@ -8,6 +8,7 @@ import (
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
 	router.GET("api/user/:userId", RequireJwt(jwtService), getHandler(userService))
+	router.GET("api/user", RequireJwt(jwtService), listHandler(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
 	router.POST("api/user", createHandler(userService))
@@ -121,7 +122,7 @@ func listHandler(userService domain.UserService) func(*gin.Context) {
 
 		visibleUsers := authorizeList(c, allUsers)
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": visibleUsers})
 	}
 }
 
