@@ -12,14 +12,17 @@ const (
 )
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username       string   `json:"username"`
+	Password       string   `json:"password"`
+	SharedAccounts []string `json:"shared_accounts"`
 }
 
 type UserDb struct {
-	Id           string
-	Username     string
-	PasswordHash []byte
+	Id             string
+	Username       string
+	PasswordHash   []byte
+	Admin          bool
+	SharedAccounts []string
 }
 
 func (u *UserDb) Copy() *UserDb {
@@ -27,6 +30,11 @@ func (u *UserDb) Copy() *UserDb {
 	userCopy.Username = strings.Clone(u.Username)
 	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
 	copy(userCopy.PasswordHash, u.PasswordHash)
+	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
+	for i, s := range userCopy.SharedAccounts {
+		u.SharedAccounts[i] = strings.Clone(s)
+	}
+
 	return &userCopy
 }
 

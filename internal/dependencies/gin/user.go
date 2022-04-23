@@ -35,8 +35,12 @@ func getHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
 	}
+}
+
+func userToMap(user *domain.UserDb) map[string]interface{} {
+	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts}
 }
 
 func authorizeGet(c *gin.Context, userId string) bool {
@@ -80,7 +84,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": gin.H{"id": user.Id, "username": user.Username}})
+		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": userToMap(user)})
 	}
 }
 
@@ -99,12 +103,16 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
+		if len(userData.Password) != 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "cannot update password"})
+		}
+
 		user, err := userService.Update(userId, &userData)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 		}
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"id": user.Id, "username": user.Username}})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
 	}
 }
 

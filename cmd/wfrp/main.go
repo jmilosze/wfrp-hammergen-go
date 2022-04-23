@@ -34,7 +34,7 @@ func run() error {
 	}
 
 	userService := memdb.NewUserService(cfg.MockdbUserService, users)
-	jwtService := golangjwt.NewHmacService("some secret", 60*time.Minute)
+	jwtService := golangjwt.NewHmacService("some secret", 120*time.Minute)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)
