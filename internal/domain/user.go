@@ -31,8 +31,8 @@ func (u *UserDb) Copy() *UserDb {
 	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
 	copy(userCopy.PasswordHash, u.PasswordHash)
 	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
-	for i, s := range userCopy.SharedAccounts {
-		u.SharedAccounts[i] = strings.Clone(s)
+	for i, s := range u.SharedAccounts {
+		userCopy.SharedAccounts[i] = strings.Clone(s)
 	}
 
 	return &userCopy

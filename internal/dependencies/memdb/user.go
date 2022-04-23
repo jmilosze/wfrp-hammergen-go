@@ -26,7 +26,7 @@ func NewUserService(cfg *config.MockdbUserService, users []*domain.User) *UserSe
 	for i, u := range users {
 		id := strconv.Itoa(i)
 		pwd, _ := bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
-		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd}
+		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd, SharedAccounts: u.SharedAccounts}
 		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
@@ -129,6 +129,20 @@ func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *
 	return userDb.Copy(), nil
 }
 
+func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *domain.UserError {
+	userDb.Username = strings.Clone(user.Username)
+	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
+	for i, s := range user.SharedAccounts {
+		userDb.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	if user.Password != "" {
+		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
+	}
+
+	return nil
+}
+
 func (s *UserService) Delete(id string) *domain.UserError {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
@@ -136,18 +150,6 @@ func (s *UserService) Delete(id string) *domain.UserError {
 		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
-
-	return nil
-}
-
-func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *domain.UserError {
-	if user.Username != "" {
-		userDb.Username = strings.Clone(user.Username)
-	}
-
-	if user.Password != "" {
-		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
-	}
 
 	return nil
 }

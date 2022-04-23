@@ -59,6 +59,7 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 
 		if err := userService.Delete(userId); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			return
 		}
 
 		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
@@ -105,11 +106,18 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 
 		if len(userData.Password) != 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "cannot update password"})
+			return
+		}
+
+		if len(userData.Username) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "username cannot be empty"})
+			return
 		}
 
 		user, err := userService.Update(userId, &userData)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
@@ -126,6 +134,7 @@ func listHandler(userService domain.UserService) func(*gin.Context) {
 		allUsers, err := userService.List()
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			return
 		}
 
 		visibleUsers := authorizeList(c, allUsers)
