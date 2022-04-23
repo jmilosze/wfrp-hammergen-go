@@ -17,11 +17,13 @@ type MockdbUserService struct {
 type Config struct {
 	ServerConfig      *ServerConfig
 	MockdbUserService *MockdbUserService
+	JwtExpiryTime     time.Duration
 }
 
 func NewDefault() (*Config, error) {
 	return &Config{
 		ServerConfig:      &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
 		MockdbUserService: &MockdbUserService{BcryptCost: 12},
+		JwtExpiryTime:     120 * time.Minute,
 	}, nil
 }

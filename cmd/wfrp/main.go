@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -34,7 +33,7 @@ func run() error {
 	}
 
 	userService := memdb.NewUserService(cfg.MockdbUserService, users)
-	jwtService := golangjwt.NewHmacService("some secret", 120*time.Minute)
+	jwtService := golangjwt.NewHmacService("some secret", cfg.JwtExpiryTime)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)
