@@ -109,11 +109,6 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		if len(userData.Username) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "username cannot be empty"})
-			return
-		}
-
 		user, err := userService.Update(userId, &userData)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
