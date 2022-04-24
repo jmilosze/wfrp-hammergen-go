@@ -7,7 +7,6 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/bcrypt"
-	"strconv"
 	"strings"
 )
 
@@ -16,17 +15,16 @@ type UserService struct {
 	BcryptCost int
 }
 
-func NewUserService(cfg *config.MockdbUserService, users []*domain.User) *UserService {
+func NewUserService(cfg *config.MockDbUserService, users map[string]*domain.User) *UserService {
 	db, err := createNewMemdb()
 	if err != nil {
 		panic(err)
 	}
 
 	txn := db.Txn(true)
-	for i, u := range users {
-		id := strconv.Itoa(i)
-		pwd, _ := bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
-		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd, SharedAccounts: u.SharedAccounts, Admin: u.Admin}
+	for id, u := range users {
+		var userDb = &domain.UserDb{Id: id}
+		_ = updateDbUser(userDb, u, cfg.BcryptCost, true)
 		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
