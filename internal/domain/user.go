@@ -9,7 +9,6 @@ const (
 	UserNotFoundError = iota
 	UserAlreadyExistsError
 	UserInternalError
-	UserInvalidOperationError
 )
 
 type User struct {
