@@ -81,14 +81,11 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 
 		user, err := userService.Create(&userData)
 		if err != nil {
-			switch err.Type {
-			case domain.UserAlreadyExistsError:
+			if err.Type == domain.UserAlreadyExistsError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
-			case domain.UserInvalidOperationError:
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
-			default:
-				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+				return
 			}
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
 
@@ -113,8 +110,8 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 
 		user, err := userService.SimpleUpdate(userId, &userData)
 		if err != nil {
-			if err.Type == domain.UserInvalidOperationError {
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			if err.Type == domain.UserNotFoundError {
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
 				return
 			}
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
