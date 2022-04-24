@@ -100,7 +100,7 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 
 	newId := xid.New().String()
 	var userDb = &domain.UserDb{Id: newId}
-	_ = updateDbUser(userDb, newUser, s.BcryptCost)
+	_ = updateDbUser(userDb, newUser, s.BcryptCost, true)
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
@@ -119,11 +119,10 @@ func (s *UserService) SimpleUpdate(id string, newUser *domain.User) (*domain.Use
 		return nil, err
 	}
 
-	newUser.Password = ""
 	newUser.Username = strings.Clone(userDb.Username)
 	newUser.Admin = userDb.Admin
 
-	_ = updateDbUser(userDb, newUser, s.BcryptCost)
+	_ = updateDbUser(userDb, newUser, s.BcryptCost, false)
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
@@ -135,7 +134,7 @@ func (s *UserService) SimpleUpdate(id string, newUser *domain.User) (*domain.Use
 	return userDb.Copy(), nil
 }
 
-func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *domain.UserError {
+func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, updatePassword bool) *domain.UserError {
 	userDb.Username = strings.Clone(user.Username)
 
 	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
@@ -143,7 +142,7 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *dom
 		userDb.SharedAccounts[i] = strings.Clone(s)
 	}
 
-	if user.Password != "" {
+	if updatePassword {
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
 	}
 
