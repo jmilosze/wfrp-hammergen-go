@@ -26,7 +26,7 @@ func NewUserService(cfg *config.MockdbUserService, users []*domain.User) *UserSe
 	for i, u := range users {
 		id := strconv.Itoa(i)
 		pwd, _ := bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
-		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd, SharedAccounts: u.SharedAccounts}
+		userDb := &domain.UserDb{Id: id, Username: u.Username, PasswordHash: pwd, SharedAccounts: u.SharedAccounts, Admin: u.Admin}
 		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
@@ -93,16 +93,20 @@ func (s *UserService) Authenticate(user domain.UserDb, password string) bool {
 
 func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.UserError) {
 	if _, err := getUserBy("username", newUser.Username, s); err == nil {
-		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err}
+		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	id := xid.New().String()
-	passwordHash, _ := bcrypt.GenerateFromPassword([]byte(newUser.Password), s.BcryptCost)
-	userDb := domain.UserDb{Id: id, Username: newUser.Username, PasswordHash: passwordHash}
+	if newUser.Admin {
+		return nil, &domain.UserError{Type: domain.UserInvalidOperationError, Err: errors.New("cannot create admin user")}
+	}
+
+	newId := xid.New().String()
+	var userDb = &domain.UserDb{Id: newId}
+	_ = updateDbUser(userDb, newUser, s.BcryptCost)
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", &userDb); err != nil {
+	if err := txn.Insert("user", userDb); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
@@ -110,11 +114,21 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 	return userDb.Copy(), nil
 }
 
-func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) SimpleUpdate(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
 
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(newUser.Password) != 0 {
+		err := errors.New("cannot update password")
+		return nil, &domain.UserError{Type: domain.UserInvalidOperationError, Err: err}
+	}
+
+	if len(newUser.Username) != 0 {
+		err := errors.New("cannot update username")
+		return nil, &domain.UserError{Type: domain.UserInvalidOperationError, Err: err}
 	}
 
 	_ = updateDbUser(userDb, newUser, s.BcryptCost)
@@ -130,7 +144,6 @@ func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *
 }
 
 func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *domain.UserError {
-	userDb.Username = strings.Clone(user.Username)
 	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
 	for i, s := range user.SharedAccounts {
 		userDb.SharedAccounts[i] = strings.Clone(s)
@@ -138,6 +151,10 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int) *dom
 
 	if user.Password != "" {
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
+	}
+
+	if user.Username != "" {
+		userDb.Username = strings.Clone(user.Username)
 	}
 
 	return nil

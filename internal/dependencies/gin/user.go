@@ -40,7 +40,7 @@ func getHandler(userService domain.UserService) func(*gin.Context) {
 }
 
 func userToMap(user *domain.UserDb) map[string]interface{} {
-	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts}
+	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
 func authorizeGet(c *gin.Context, userId string) bool {
@@ -81,7 +81,14 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 
 		user, err := userService.Create(&userData)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			switch err.Type {
+			case domain.UserAlreadyExistsError:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
+			case domain.UserInvalidOperationError:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			}
 			return
 		}
 
@@ -104,13 +111,12 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		if len(userData.Password) != 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "cannot update password"})
-			return
-		}
-
-		user, err := userService.Update(userId, &userData)
+		user, err := userService.SimpleUpdate(userId, &userData)
 		if err != nil {
+			if err.Type == domain.UserInvalidOperationError {
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+				return
+			}
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}

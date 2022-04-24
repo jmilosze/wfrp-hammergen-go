@@ -9,12 +9,14 @@ const (
 	UserNotFoundError = iota
 	UserAlreadyExistsError
 	UserInternalError
+	UserInvalidOperationError
 )
 
 type User struct {
 	Username       string   `json:"username"`
 	Password       string   `json:"password"`
 	SharedAccounts []string `json:"shared_accounts"`
+	Admin          bool     `json:"admin"`
 }
 
 type UserDb struct {
@@ -43,7 +45,7 @@ type UserService interface {
 	GetByName(username string) (*UserDb, *UserError)
 	Authenticate(user UserDb, password string) bool
 	Create(new *User) (*UserDb, *UserError)
-	Update(id string, new *User) (*UserDb, *UserError)
+	SimpleUpdate(id string, new *User) (*UserDb, *UserError)
 	Delete(id string) *UserError
 	List() ([]*UserDb, *UserError)
 }

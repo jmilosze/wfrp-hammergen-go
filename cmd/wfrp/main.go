@@ -28,7 +28,7 @@ func run() error {
 	}
 
 	users := []*domain.User{
-		{Username: "User1", Password: "123", SharedAccounts: []string{"1"}},
+		{Username: "User1", Password: "123", SharedAccounts: []string{"1"}, Admin: true},
 		{Username: "User2", Password: "456"},
 	}
 
