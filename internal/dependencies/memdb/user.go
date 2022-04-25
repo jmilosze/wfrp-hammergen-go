@@ -153,7 +153,7 @@ func (s *UserService) UpdateCredentials(id string, passwd string, newPasswd stri
 	}
 
 	if len(newPasswd) != 0 {
-		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newUsername), s.BcryptCost)
+		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newPasswd), s.BcryptCost)
 	}
 
 	return insertUser(s, userDb)
