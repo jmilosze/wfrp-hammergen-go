@@ -9,6 +9,7 @@ const (
 	UserNotFoundError = iota
 	UserAlreadyExistsError
 	UserInternalError
+	UserIncorrectPassword
 )
 
 type User struct {
@@ -42,10 +43,10 @@ func (u *UserDb) Copy() *UserDb {
 type UserService interface {
 	GetById(id string) (*UserDb, *UserError)
 	GetByName(username string) (*UserDb, *UserError)
-	Authenticate(user UserDb, password string) bool
+	Authenticate(user *UserDb, password string) bool
 	Create(new *User) (*UserDb, *UserError)
 	Update(id string, new *User) (*UserDb, *UserError)
-	UpdateCredentials(id string, newPasswd string, newUsername string) (*UserDb, *UserError)
+	UpdateCredentials(id string, passwd string, newPasswd string, newUsername string) (*UserDb, *UserError)
 	Delete(id string) *UserError
 	List() ([]*UserDb, *UserError)
 }

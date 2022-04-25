@@ -28,7 +28,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			return
 		}
 
-		if !userService.Authenticate(*user, password) {
+		if !userService.Authenticate(user, password) {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "invalid password"})
 			return
 		}

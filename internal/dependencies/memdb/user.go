@@ -81,7 +81,7 @@ func getUserBy(fieldName string, fieldValue string, s *UserService) (*domain.Use
 	return user.Copy(), nil
 }
 
-func (s *UserService) Authenticate(user domain.UserDb, password string) bool {
+func (s *UserService) Authenticate(user *domain.UserDb, password string) bool {
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) == nil {
 		return true
 	}
@@ -138,14 +138,18 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, upda
 	return nil
 }
 
-func (s *UserService) UpdateCredentials(id string, newPasswd string, newUsername string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, passwd string, newPasswd string, newUsername string) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
 	}
 
+	if !s.Authenticate(userDb, passwd) {
+		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
+	}
+
 	if len(newUsername) != 0 {
-		userDb.Username = strings.Clone(newPasswd)
+		userDb.Username = strings.Clone(newUsername)
 	}
 
 	if len(newPasswd) != 0 {
