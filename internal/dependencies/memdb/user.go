@@ -24,7 +24,7 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*domain.User
 	txn := db.Txn(true)
 	for id, u := range users {
 		var userDb = &domain.UserDb{Id: id}
-		_ = updateDbUser(userDb, u, cfg.BcryptCost, true)
+		_ = updateDbUser(userDb, u, cfg.BcryptCost, true, true)
 		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
@@ -93,12 +93,10 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	newUser.Admin = false
-
 	newId := xid.New().String()
-	var userDb = &domain.UserDb{Id: newId}
-	_ = updateDbUser(userDb, newUser, s.BcryptCost, true)
+	var userDb = &domain.UserDb{Id: newId, Admin: false}
 
+	_ = updateDbUser(userDb, newUser, s.BcryptCost, true, false)
 	return insertUser(s, userDb)
 }
 
@@ -113,33 +111,48 @@ func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserE
 }
 
 func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
-
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
 	}
 
-	newUser.Username = strings.Clone(userDb.Username)
-	newUser.Admin = userDb.Admin
-
-	_ = updateDbUser(userDb, newUser, s.BcryptCost, false)
-
+	_ = updateDbUser(userDb, newUser, s.BcryptCost, false, false)
 	return insertUser(s, userDb)
 }
 
-func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, updatePassword bool) *domain.UserError {
-	userDb.Username = strings.Clone(user.Username)
-
+func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, updateCredentials bool, updateAdmin bool) *domain.UserError {
 	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
 	for i, s := range user.SharedAccounts {
 		userDb.SharedAccounts[i] = strings.Clone(s)
 	}
 
-	if updatePassword {
+	if updateCredentials {
+		userDb.Username = strings.Clone(user.Username)
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
 	}
 
+	if updateAdmin {
+		userDb.Admin = user.Admin
+	}
+
 	return nil
+}
+
+func (s *UserService) UpdateCredentials(id string, newPasswd string, newUsername string) (*domain.UserDb, *domain.UserError) {
+	userDb, err := s.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(newUsername) != 0 {
+		userDb.Username = strings.Clone(newPasswd)
+	}
+
+	if len(newPasswd) != 0 {
+		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newUsername), s.BcryptCost)
+	}
+
+	return insertUser(s, userDb)
 }
 
 func (s *UserService) Delete(id string) *domain.UserError {

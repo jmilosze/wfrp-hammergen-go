@@ -45,6 +45,7 @@ type UserService interface {
 	Authenticate(user UserDb, password string) bool
 	Create(new *User) (*UserDb, *UserError)
 	Update(id string, new *User) (*UserDb, *UserError)
+	UpdateCredentials(id string, newPasswd string, newUsername string) (*UserDb, *UserError)
 	Delete(id string) *UserError
 	List() ([]*UserDb, *UserError)
 }
