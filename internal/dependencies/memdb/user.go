@@ -110,7 +110,7 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 	return userDb.Copy(), nil
 }
 
-func (s *UserService) SimpleUpdate(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
 
 	userDb, err := s.GetById(id)
 	if err != nil {

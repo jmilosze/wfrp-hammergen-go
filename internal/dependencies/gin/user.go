@@ -108,7 +108,7 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.SimpleUpdate(userId, &userData)
+		user, err := userService.Update(userId, &userData)
 		if err != nil {
 			if err.Type == domain.UserNotFoundError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
