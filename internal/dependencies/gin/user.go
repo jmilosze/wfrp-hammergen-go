@@ -11,7 +11,8 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.GET("api/user", RequireJwt(jwtService), listHandler(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
-	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
+	router.PUT("api/user/username/:userId", RequireJwt(jwtService), updateUsernameHandler(userService))
+	router.PUT("api/user/password/:userId", RequireJwt(jwtService), updatePasswordHandler(userService))
 	router.POST("api/user", createHandler(userService))
 }
 
@@ -128,15 +129,14 @@ func authorizeUpdate(c *gin.Context, userId string) bool {
 	return userId == authUserId
 }
 
-type UpdateCredentials struct {
+type UpdateUsername struct {
 	NewUsername string `json:"new_username"`
-	NewPassword string `json:"new_password"`
 	Password    string `json:"password"`
 }
 
-func updateCredentialsHandler(userService domain.UserService) func(*gin.Context) {
+func updateUsernameHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var d UpdateCredentials
+		var d UpdateUsername
 		if err := c.ShouldBindJSON(&d); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
 			return
@@ -144,12 +144,12 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 
 		userId := c.Param("userId")
 
-		if !authorizeUpdateCredentials(c, userId) {
+		if !authorizeUpdate(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
 
-		user, err := userService.UpdateCredentials(userId, d.Password, d.NewPassword, d.NewUsername)
+		user, err := userService.UpdateUsername(userId, d.Password, d.NewUsername)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:
@@ -166,9 +166,41 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 	}
 }
 
-func authorizeUpdateCredentials(c *gin.Context, userId string) bool {
-	authUserId := c.GetString("authUserId")
-	return userId == authUserId
+type UpdateCredentials struct {
+	NewPassword string `json:"new_password"`
+	Password    string `json:"password"`
+}
+
+func updatePasswordHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var d UpdateCredentials
+		if err := c.ShouldBindJSON(&d); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+			return
+		}
+
+		userId := c.Param("userId")
+
+		if !authorizeUpdate(c, userId) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+			return
+		}
+
+		user, err := userService.UpdatePassword(userId, d.Password, d.NewPassword)
+		if err != nil {
+			switch err.Type {
+			case domain.UserNotFoundError:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
+			case domain.UserIncorrectPassword:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "incorrect password"})
+			default:
+				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			}
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
+	}
 }
 
 func listHandler(userService domain.UserService) func(*gin.Context) {
