@@ -68,7 +68,6 @@ func (s *UserService) GetByName(username string) (*domain.UserDb, *domain.UserEr
 
 func getUserBy(fieldName string, fieldValue string, s *UserService) (*domain.UserDb, *domain.UserError) {
 	txn := s.Db.Txn(false)
-
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -100,14 +99,17 @@ func (s *UserService) Create(newUser *domain.User) (*domain.UserDb, *domain.User
 	var userDb = &domain.UserDb{Id: newId}
 	_ = updateDbUser(userDb, newUser, s.BcryptCost, true)
 
+	return insertUser(s, userDb)
+}
+
+func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserError) {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", userDb); err != nil {
+	if err := txn.Insert("user", u); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
-
-	return userDb.Copy(), nil
+	return u.Copy(), nil
 }
 
 func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *domain.UserError) {
@@ -122,14 +124,7 @@ func (s *UserService) Update(id string, newUser *domain.User) (*domain.UserDb, *
 
 	_ = updateDbUser(userDb, newUser, s.BcryptCost, false)
 
-	txn := s.Db.Txn(true)
-	defer txn.Abort()
-	if err := txn.Insert("user", userDb); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-	txn.Commit()
-
-	return userDb.Copy(), nil
+	return insertUser(s, userDb)
 }
 
 func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, updatePassword bool) *domain.UserError {
