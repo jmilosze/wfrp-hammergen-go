@@ -23,9 +23,11 @@ func (jwtService *HmacService) GenerateToken(claims *domain.Claims) (string, err
 	currentTime := time.Now()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":      claims.UserId,
+		"sub":      claims.Id,
 		"exp":      currentTime.Add(jwtService.ExpiryTime).Unix(),
 		"orig_iat": currentTime.Unix(),
+		"adm":      claims.Admin,
+		"shrd_acc": claims.SharedAccounts,
 	})
 	return token.SignedString(jwtService.HmacSecret)
 }
@@ -55,8 +57,15 @@ func (jwtService *HmacService) ParseToken(tokenString string) (*domain.Claims, e
 		return nil, &domain.InvalidTokenError{Err: fmt.Errorf("invalid token")}
 	}
 
-	var claims = domain.Claims{UserId: ""}
-	claims.UserId = jwtClaims["sub"].(string)
+	var claims domain.Claims
+	claims.Id, _ = jwtClaims["sub"].(string)
+	claims.Admin, _ = jwtClaims["adm"].(bool)
+
+	sharedAccounts, _ := jwtClaims["shrd_acc"].([]interface{})
+	claims.SharedAccounts = make([]string, len(sharedAccounts))
+	for i, acc := range sharedAccounts {
+		claims.SharedAccounts[i], _ = acc.(string)
+	}
 
 	return &claims, nil
 }

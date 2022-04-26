@@ -3,7 +3,9 @@ package domain
 import "fmt"
 
 type Claims struct {
-	UserId string
+	Id             string
+	Admin          bool
+	SharedAccounts []string
 }
 
 type JwtService interface {

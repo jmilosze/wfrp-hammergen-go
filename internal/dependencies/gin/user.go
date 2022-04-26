@@ -40,20 +40,32 @@ func getHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func userToMap(user *domain.UserDb) map[string]interface{} {
-	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
+func authorizeGet(c *gin.Context, userId string) bool {
+	claims := getUserClaims(c)
+	return userId == claims.Id || claims.Admin
 }
 
-func authorizeGet(c *gin.Context, userId string) bool {
-	authUserId := c.GetString("authUserId")
-	return userId == authUserId
+func getUserClaims(c *gin.Context) *domain.Claims {
+	var claims domain.Claims
+
+	claims.Id = c.GetString("ClaimsId")
+	claims.Admin = c.GetBool("ClaimsAdmin")
+
+	sharedAccountsRaw, _ := c.Get("ClaimsSharedAccounts")
+	claims.SharedAccounts, _ = sharedAccountsRaw.([]string)
+
+	return &claims
+}
+
+func userToMap(user *domain.UserDb) map[string]interface{} {
+	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
 func deleteHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 
-		if !authorizeDelete(c, userId) {
+		if !authorizeModify(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -67,9 +79,9 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func authorizeDelete(c *gin.Context, userId string) bool {
-	authUserId := c.GetString("authUserId")
-	return userId == authUserId
+func authorizeModify(c *gin.Context, userId string) bool {
+	claims := getUserClaims(c)
+	return userId == claims.Id
 }
 
 func createHandler(userService domain.UserService) func(*gin.Context) {
@@ -98,7 +110,7 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 
-		if !authorizeUpdate(c, userId) {
+		if !authorizeModify(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -123,11 +135,6 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func authorizeUpdate(c *gin.Context, userId string) bool {
-	authUserId := c.GetString("authUserId")
-	return userId == authUserId
-}
-
 type UpdateCredentials struct {
 	Username        string `json:"username"`
 	Password        string `json:"password"`
@@ -137,7 +144,7 @@ type UpdateCredentials struct {
 func updateCredentialsHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
-		if !authorizeUpdate(c, userId) {
+		if !authorizeModify(c, userId) {
 			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
@@ -180,12 +187,17 @@ func listHandler(userService domain.UserService) func(*gin.Context) {
 }
 
 func authorizeList(c *gin.Context, userList []*domain.UserDb) []*domain.UserDb {
-	authUserId := c.GetString("authUserId")
+	claims := getUserClaims(c)
 
 	var visibleUsers []*domain.UserDb
-	for _, u := range userList {
-		if authUserId == u.Id {
-			visibleUsers = append(visibleUsers, u)
+	if claims.Admin {
+		visibleUsers = userList
+	} else {
+		for _, u := range userList {
+			if claims.Id == u.Id {
+				visibleUsers = append(visibleUsers, u)
+				break
+			}
 		}
 	}
 

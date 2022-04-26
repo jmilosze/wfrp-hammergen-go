@@ -33,7 +33,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			return
 		}
 
-		token, tokenErr := jwtService.GenerateToken(&domain.Claims{UserId: user.Id})
+		token, tokenErr := jwtService.GenerateToken(&domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts})
 
 		if tokenErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "error generating token"})
@@ -60,7 +60,9 @@ func RequireJwt(jwtService domain.JwtService) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("authUserId", claims.UserId)
+		c.Set("ClaimsId", claims.Id)
+		c.Set("ClaimsAdmin", claims.Admin)
+		c.Set("ClaimsSharedAccounts", claims.SharedAccounts)
 	}
 }
 
