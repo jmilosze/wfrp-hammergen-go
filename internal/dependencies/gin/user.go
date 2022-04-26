@@ -11,8 +11,7 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.GET("api/user", RequireJwt(jwtService), listHandler(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
-	router.PUT("api/user/username/:userId", RequireJwt(jwtService), updateUsernameHandler(userService))
-	router.PUT("api/user/password/:userId", RequireJwt(jwtService), updatePasswordHandler(userService))
+	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
 	router.POST("api/user", createHandler(userService))
 }
 
@@ -129,48 +128,13 @@ func authorizeUpdate(c *gin.Context, userId string) bool {
 	return userId == authUserId
 }
 
-type UpdateUsername struct {
-	NewUsername string `json:"new_username"`
-	Password    string `json:"password"`
-}
-
-func updateUsernameHandler(userService domain.UserService) func(*gin.Context) {
-	return func(c *gin.Context) {
-		userId := c.Param("userId")
-		if !authorizeUpdate(c, userId) {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
-			return
-		}
-
-		var d UpdateUsername
-		if err := c.ShouldBindJSON(&d); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
-			return
-		}
-
-		user, err := userService.UpdateUsername(userId, d.Password, d.NewUsername)
-		if err != nil {
-			switch err.Type {
-			case domain.UserNotFoundError:
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-			case domain.UserIncorrectPassword:
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "incorrect password"})
-			default:
-				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
-			}
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
-	}
-}
-
 type UpdateCredentials struct {
-	NewPassword string `json:"new_password"`
-	Password    string `json:"password"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	CurrentPassword string `json:"current_password"`
 }
 
-func updatePasswordHandler(userService domain.UserService) func(*gin.Context) {
+func updateCredentialsHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		if !authorizeUpdate(c, userId) {
@@ -184,7 +148,7 @@ func updatePasswordHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.UpdatePassword(userId, d.Password, d.NewPassword)
+		user, err := userService.UpdateCredentials(userId, d.CurrentPassword, d.Username, d.Password)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:

@@ -138,7 +138,7 @@ func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, upda
 	return nil
 }
 
-func (s *UserService) UpdateUsername(id string, passwd string, newUsername string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, passwd string, newUsername string, newPasswd string) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
@@ -149,21 +149,17 @@ func (s *UserService) UpdateUsername(id string, passwd string, newUsername strin
 	}
 
 	userDb.Username = strings.Clone(newUsername)
+	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newPasswd), s.BcryptCost)
 
 	return insertUser(s, userDb)
 }
 
-func (s *UserService) UpdatePassword(id string, passwd string, newPasswd string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateAdmin(id string, admin bool) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
 	}
-
-	if !s.Authenticate(userDb, passwd) {
-		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
-	}
-
-	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newPasswd), s.BcryptCost)
+	userDb.Admin = admin
 
 	return insertUser(s, userDb)
 }
