@@ -106,7 +106,7 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 
 		var userData domain.User
 		if err := c.ShouldBindJSON(&userData); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
@@ -136,16 +136,15 @@ type UpdateUsername struct {
 
 func updateUsernameHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var d UpdateUsername
-		if err := c.ShouldBindJSON(&d); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+		userId := c.Param("userId")
+		if !authorizeUpdate(c, userId) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
 
-		userId := c.Param("userId")
-
-		if !authorizeUpdate(c, userId) {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+		var d UpdateUsername
+		if err := c.ShouldBindJSON(&d); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
@@ -173,16 +172,15 @@ type UpdateCredentials struct {
 
 func updatePasswordHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var d UpdateCredentials
-		if err := c.ShouldBindJSON(&d); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+		userId := c.Param("userId")
+		if !authorizeUpdate(c, userId) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			return
 		}
 
-		userId := c.Param("userId")
-
-		if !authorizeUpdate(c, userId) {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+		var d UpdateCredentials
+		if err := c.ShouldBindJSON(&d); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
