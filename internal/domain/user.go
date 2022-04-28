@@ -32,7 +32,7 @@ type UserRead struct {
 }
 
 type UserService interface {
-	GetId(id string) (*UserRead, *UserError)
+	Get(id string) (*UserRead, *UserError)
 	Create(cred *UserWriteCredentials, user *UserWrite) (*UserRead, *UserError)
 	Update(id string, user *UserWrite) (*UserRead, *UserError)
 	UpdateCredentials(id string, passwd string, cred *UserWriteCredentials) (*UserRead, *UserError)

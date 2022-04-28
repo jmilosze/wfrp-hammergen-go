@@ -24,7 +24,7 @@ func getHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.GetById(userId)
+		user, err := userService.Get(userId)
 
 		if err != nil {
 			if err.Type == domain.UserNotFoundError {
