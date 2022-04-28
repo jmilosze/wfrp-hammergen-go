@@ -24,7 +24,7 @@ type UserClaims struct {
 	Admin bool
 }
 
-type UserOut struct {
+type UserRead struct {
 	Id             string
 	Username       string
 	Admin          bool
@@ -32,15 +32,15 @@ type UserOut struct {
 }
 
 type UserService interface {
-	GetById(id string) (*UserOut, *UserError)
-	GetByName(username string) (*UserOut, *UserError)
-	Authenticate(user *UserOut, password string) bool
-	Create(cred *UserCredentials, user *User) (*UserOut, *UserError)
-	Update(id string, user *User) (*UserOut, *UserError)
-	UpdateCredentials(id string, passwd string, cred *UserCredentials) (*UserOut, *UserError)
-	UpdateClaims(id string, claims *UserClaims) (*UserOut, *UserError)
+	GetById(id string) (*UserRead, *UserError)
+	GetByName(username string) (*UserRead, *UserError)
+	Authenticate(user *UserRead, password string) bool
+	Create(cred *UserCredentials, user *User) (*UserRead, *UserError)
+	Update(id string, user *User) (*UserRead, *UserError)
+	UpdateCredentials(id string, passwd string, cred *UserCredentials) (*UserRead, *UserError)
+	UpdateClaims(id string, claims *UserClaims) (*UserRead, *UserError)
 	Delete(id string) *UserError
-	List() ([]*UserOut, *UserError)
+	List() ([]*UserRead, *UserError)
 }
 
 type UserError struct {
