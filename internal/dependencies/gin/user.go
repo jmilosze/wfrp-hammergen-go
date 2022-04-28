@@ -57,7 +57,7 @@ func getUserClaims(c *gin.Context) *domain.Claims {
 	return &claims
 }
 
-func userToMap(user *UserDb) map[string]interface{} {
+func userToMap(user *domain.UserRead) map[string]interface{} {
 	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
@@ -98,18 +98,25 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.Create((*domain.UserWriteCredentials)(&userData))
+		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
+		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
+
+		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
 		if err != nil {
 			if err.Type == domain.UserAlreadyExistsError {
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "userWrite already exists"})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": userToMap(user)})
+		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": userToMap(userRead)})
 	}
+}
+
+type UserUpdate struct {
+	SharedAccounts []string `json:"shared_accounts"`
 }
 
 func updateHandler(userService domain.UserService) func(*gin.Context) {
@@ -121,13 +128,14 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		var userData domain.UserWrite
+		var userData UserUpdate
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
-		user, err := userService.Update(userId, &userData)
+		userWrite := (domain.UserWrite)(userData)
+		userRead, err := userService.Update(userId, &userWrite)
 		if err != nil {
 			if err.Type == domain.UserNotFoundError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
@@ -137,11 +145,11 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(userRead)})
 	}
 }
 
-type UpdateCredentials struct {
+type UserCredentials struct {
 	Username        string `json:"username"`
 	Password        string `json:"password"`
 	CurrentPassword string `json:"current_password"`
@@ -155,13 +163,15 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 			return
 		}
 
-		var d UpdateCredentials
-		if err := c.ShouldBindJSON(&d); err != nil {
+		var uc UserCredentials
+		if err := c.ShouldBindJSON(&uc); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
-		user, err := userService.UpdateCredentials(userId, d.CurrentPassword, d.Username, d.Password)
+		userWriteCredentials := domain.UserWriteCredentials{Username: uc.Username, Password: uc.Password}
+
+		userRead, err := userService.UpdateCredentials(userId, uc.CurrentPassword, &userWriteCredentials)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:
@@ -174,7 +184,7 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(userRead)})
 	}
 }
 
@@ -192,10 +202,10 @@ func listHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func authorizeList(c *gin.Context, userList []*domain.UserDb) []*domain.UserDb {
+func authorizeList(c *gin.Context, userList []*domain.UserRead) []*domain.UserRead {
 	claims := getUserClaims(c)
 
-	var visibleUsers []*domain.UserDb
+	var visibleUsers []*domain.UserRead
 	if claims.Admin {
 		visibleUsers = userList
 	} else {

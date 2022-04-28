@@ -32,15 +32,14 @@ type UserRead struct {
 }
 
 type UserService interface {
-	GetById(id string) (*UserRead, *UserError)
-	GetByName(username string) (*UserRead, *UserError)
-	Authenticate(user *UserRead, password string) bool
+	GetId(id string) (*UserRead, *UserError)
 	Create(cred *UserWriteCredentials, user *UserWrite) (*UserRead, *UserError)
 	Update(id string, user *UserWrite) (*UserRead, *UserError)
 	UpdateCredentials(id string, passwd string, cred *UserWriteCredentials) (*UserRead, *UserError)
 	UpdateClaims(id string, claims *UserWriteClaims) (*UserRead, *UserError)
 	Delete(id string) *UserError
 	List() ([]*UserRead, *UserError)
+	GetAndAuth(username string, passwd string) (*UserRead, *UserError)
 }
 
 type UserError struct {
