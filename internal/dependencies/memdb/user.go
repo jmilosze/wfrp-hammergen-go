@@ -88,16 +88,18 @@ func (s *UserService) Authenticate(user *domain.UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) Create(new *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Create(new *domain.UserCreate) (*domain.UserDb, *domain.UserError) {
 	if _, err := getUserBy("username", new.Username, s); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
 	newId := xid.New().String()
-	var userDb = &domain.UserDb{Id: newId, Admin: false}
+	userDb := domain.UserDb{Id: newId}
 
-	_ = updateDbUser(userDb, new, s.BcryptCost, true, false)
-	return insertUser(s, userDb)
+	user := domain.User{Username: new.Username, Password: new.Password, SharedAccounts: new.SharedAccounts, Admin: false}
+
+	_ = updateDbUser(&userDb, &user, s.BcryptCost, true, false)
+	return insertUser(s, &userDb)
 }
 
 func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserError) {

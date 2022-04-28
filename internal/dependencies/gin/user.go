@@ -84,15 +84,21 @@ func authorizeModify(c *gin.Context, userId string) bool {
 	return userId == claims.Id
 }
 
+type UserCreate struct {
+	Username       string   `json:"username"`
+	Password       string   `json:"password"`
+	SharedAccounts []string `json:"shared_accounts"`
+}
+
 func createHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var userData domain.User
+		var userData UserCreate
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
 			return
 		}
 
-		user, err := userService.Create(&userData)
+		user, err := userService.Create((*domain.UserCreate)(&userData))
 		if err != nil {
 			if err.Type == domain.UserAlreadyExistsError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})

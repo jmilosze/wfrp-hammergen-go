@@ -13,10 +13,10 @@ const (
 )
 
 type User struct {
-	Username       string   `json:"username"`
-	Password       string   `json:"password"`
-	SharedAccounts []string `json:"shared_accounts"`
-	Admin          bool     `json:"admin"`
+	Username       string
+	Password       string
+	SharedAccounts []string
+	Admin          bool
 }
 
 type UserDb struct {
@@ -24,6 +24,12 @@ type UserDb struct {
 	Username       string
 	PasswordHash   []byte
 	Admin          bool
+	SharedAccounts []string
+}
+
+type UserCreate struct {
+	Username       string
+	Password       string
 	SharedAccounts []string
 }
 
@@ -44,7 +50,7 @@ type UserService interface {
 	GetById(id string) (*UserDb, *UserError)
 	GetByName(username string) (*UserDb, *UserError)
 	Authenticate(user *UserDb, password string) bool
-	Create(new *User) (*UserDb, *UserError)
+	Create(new *UserCreate) (*UserDb, *UserError)
 	Update(id string, new *User) (*UserDb, *UserError)
 	UpdateCredentials(id string, passwd string, newUsername string, newPasswd string) (*UserDb, *UserError)
 	UpdateAdmin(id string, admin bool) (*UserDb, *UserError)
