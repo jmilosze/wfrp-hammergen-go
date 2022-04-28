@@ -13,10 +13,16 @@ const (
 )
 
 type User struct {
-	Username       string
-	Password       string
 	SharedAccounts []string
-	Admin          bool
+}
+
+type UserCredentials struct {
+	Username string
+	Password string
+}
+
+type UserClaims struct {
+	Admin bool
 }
 
 type UserDb struct {
@@ -24,12 +30,6 @@ type UserDb struct {
 	Username       string
 	PasswordHash   []byte
 	Admin          bool
-	SharedAccounts []string
-}
-
-type UserCreate struct {
-	Username       string
-	Password       string
 	SharedAccounts []string
 }
 
@@ -50,10 +50,10 @@ type UserService interface {
 	GetById(id string) (*UserDb, *UserError)
 	GetByName(username string) (*UserDb, *UserError)
 	Authenticate(user *UserDb, password string) bool
-	Create(new *UserCreate) (*UserDb, *UserError)
-	Update(id string, new *User) (*UserDb, *UserError)
-	UpdateCredentials(id string, passwd string, newUsername string, newPasswd string) (*UserDb, *UserError)
-	UpdateAdmin(id string, admin bool) (*UserDb, *UserError)
+	Create(cred *UserCredentials, user *User) (*UserDb, *UserError)
+	Update(id string, user *User) (*UserDb, *UserError)
+	UpdateCredentials(id string, passwd string, cred *UserCredentials) (*UserDb, *UserError)
+	UpdateClaims(id string, claims *UserClaims) (*UserDb, *UserError)
 	Delete(id string) *UserError
 	List() ([]*UserDb, *UserError)
 }

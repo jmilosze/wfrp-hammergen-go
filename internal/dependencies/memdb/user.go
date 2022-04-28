@@ -88,7 +88,7 @@ func (s *UserService) Authenticate(user *domain.UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) Create(new *domain.UserCreate) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Create(new *domain.UserCredentials) (*domain.UserDb, *domain.UserError) {
 	if _, err := getUserBy("username", new.Username, s); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}

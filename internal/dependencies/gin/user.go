@@ -98,7 +98,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.Create((*domain.UserCreate)(&userData))
+		user, err := userService.Create((*domain.UserCredentials)(&userData))
 		if err != nil {
 			if err.Type == domain.UserAlreadyExistsError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
