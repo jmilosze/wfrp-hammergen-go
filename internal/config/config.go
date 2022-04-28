@@ -13,7 +13,7 @@ type ServerConfig struct {
 
 type MockDbUserService struct {
 	BcryptCost int
-	SeedUsers  map[string]*domain.User
+	SeedUsers  map[string]*UserSeed
 }
 
 type JwtConfig struct {
@@ -27,10 +27,24 @@ type Config struct {
 	JwtConfig        *JwtConfig
 }
 
+type UserSeed struct {
+	User        *domain.User
+	Credentials *domain.UserCredentials
+	Claims      *domain.UserClaims
+}
+
 func NewDefault() (*Config, error) {
-	users := map[string]*domain.User{
-		"0": {Username: "User1", Password: "123", SharedAccounts: []string{"1"}, Admin: true},
-		"1": {Username: "User2", Password: "456"},
+	users := map[string]*UserSeed{
+		"0": {
+			User:        &domain.User{SharedAccounts: []string{"1"}},
+			Credentials: &domain.UserCredentials{Username: "User1", Password: "123"},
+			Claims:      &domain.UserClaims{Admin: true},
+		},
+		"1": {
+			User:        &domain.User{SharedAccounts: []string{}},
+			Credentials: &domain.UserCredentials{Username: "User2", Password: "456"},
+			Claims:      &domain.UserClaims{Admin: false},
+		},
 	}
 
 	return &Config{

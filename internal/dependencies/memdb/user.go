@@ -15,7 +15,7 @@ type UserService struct {
 	BcryptCost int
 }
 
-func NewUserService(cfg *config.MockDbUserService, users map[string]*domain.User) *UserService {
+func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed) *UserService {
 	db, err := createNewMemdb()
 	if err != nil {
 		panic(err)
@@ -23,8 +23,10 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*domain.User
 
 	txn := db.Txn(true)
 	for id, u := range users {
-		var userDb = &domain.UserDb{Id: id}
-		_ = updateDbUser(userDb, u, cfg.BcryptCost, true, true)
+		var userDb = domain.UserDb{Id: id}
+		_ = updateUserDbCredentials(&userDb, u.Credentials, cfg.BcryptCost)
+		_ = updateUserDb(&userDb, u.User)
+		_ = updateUserDbClaims(&userDb, u.Claims)
 		if err := txn.Insert("user", userDb); err != nil {
 			panic(err)
 		}
