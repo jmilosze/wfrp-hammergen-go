@@ -88,18 +88,36 @@ func (s *UserService) Authenticate(user *domain.UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) Create(new *domain.UserCredentials) (*domain.UserDb, *domain.UserError) {
-	if _, err := getUserBy("username", new.Username, s); err == nil {
+func (s *UserService) Create(cred *domain.UserCredentials, user *domain.User) (*domain.UserDb, *domain.UserError) {
+	if _, err := getUserBy("username", cred.Username, s); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
 	newId := xid.New().String()
 	userDb := domain.UserDb{Id: newId}
 
-	user := domain.User{Username: new.Username, Password: new.Password, SharedAccounts: new.SharedAccounts, Admin: false}
-
-	_ = updateDbUser(&userDb, &user, s.BcryptCost, true, false)
+	_ = updateUserDbCredentials(&userDb, cred, s.BcryptCost)
+	_ = updateUserDb(&userDb, user)
 	return insertUser(s, &userDb)
+}
+
+func updateUserDbCredentials(userDb *domain.UserDb, cred *domain.UserCredentials, bcryptCost int) *domain.UserError {
+	userDb.Username = strings.Clone(cred.Username)
+	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), bcryptCost)
+	return nil
+}
+
+func updateUserDb(userDb *domain.UserDb, user *domain.User) *domain.UserError {
+	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
+	for i, s := range user.SharedAccounts {
+		userDb.SharedAccounts[i] = strings.Clone(s)
+	}
+	return nil
+}
+
+func updateUserDbClaims(userDb *domain.UserDb, claims *domain.UserClaims) *domain.UserError {
+	userDb.Admin = claims.Admin
+	return nil
 }
 
 func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserError) {
@@ -112,35 +130,17 @@ func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserE
 	return u.Copy(), nil
 }
 
-func (s *UserService) Update(id string, new *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Update(id string, user *domain.User) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = updateDbUser(userDb, new, s.BcryptCost, false, false)
+	_ = updateUserDb(userDb, user)
 	return insertUser(s, userDb)
 }
 
-func updateDbUser(userDb *domain.UserDb, user *domain.User, bcryptCost int, updateCredentials bool, updateAdmin bool) *domain.UserError {
-	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
-	for i, s := range user.SharedAccounts {
-		userDb.SharedAccounts[i] = strings.Clone(s)
-	}
-
-	if updateCredentials {
-		userDb.Username = strings.Clone(user.Username)
-		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(user.Password), bcryptCost)
-	}
-
-	if updateAdmin {
-		userDb.Admin = user.Admin
-	}
-
-	return nil
-}
-
-func (s *UserService) UpdateCredentials(id string, passwd string, newUsername string, newPasswd string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserCredentials) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
@@ -150,18 +150,17 @@ func (s *UserService) UpdateCredentials(id string, passwd string, newUsername st
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	userDb.Username = strings.Clone(newUsername)
-	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(newPasswd), s.BcryptCost)
-
+	_ = updateUserDbCredentials(userDb, cred, s.BcryptCost)
 	return insertUser(s, userDb)
 }
 
-func (s *UserService) UpdateAdmin(id string, admin bool) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateClaims(id string, claims *domain.UserClaims) (*domain.UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
 	}
-	userDb.Admin = admin
+
+	_ = updateUserDbClaims(userDb, claims)
 
 	return insertUser(s, userDb)
 }
