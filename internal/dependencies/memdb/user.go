@@ -15,6 +15,27 @@ type UserService struct {
 	BcryptCost int
 }
 
+type UserDb struct {
+	Id             string
+	Username       string
+	PasswordHash   []byte
+	Admin          bool
+	SharedAccounts []string
+}
+
+func (u *UserDb) Copy() *UserDb {
+	userCopy := *u
+	userCopy.Username = strings.Clone(u.Username)
+	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
+	copy(userCopy.PasswordHash, u.PasswordHash)
+	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
+	for i, s := range u.SharedAccounts {
+		userCopy.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	return &userCopy
+}
+
 func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed) *UserService {
 	db, err := createNewMemdb()
 	if err != nil {
@@ -23,7 +44,7 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*config.User
 
 	txn := db.Txn(true)
 	for id, u := range users {
-		var userDb = domain.UserDb{Id: id}
+		var userDb = UserDb{Id: id}
 		_ = updateUserDbCredentials(&userDb, u.Credentials, cfg.BcryptCost)
 		_ = updateUserDb(&userDb, u.User)
 		_ = updateUserDbClaims(&userDb, u.Claims)
@@ -60,15 +81,15 @@ func createNewMemdb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *UserService) GetById(id string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) GetById(id string) (*UserDb, *domain.UserError) {
 	return getUserBy("id", id, s)
 }
 
-func (s *UserService) GetByName(username string) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) GetByName(username string) (*UserDb, *domain.UserError) {
 	return getUserBy("username", username, s)
 }
 
-func getUserBy(fieldName string, fieldValue string, s *UserService) (*domain.UserDb, *domain.UserError) {
+func getUserBy(fieldName string, fieldValue string, s *UserService) (*UserDb, *domain.UserError) {
 	txn := s.Db.Txn(false)
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
@@ -78,38 +99,38 @@ func getUserBy(fieldName string, fieldValue string, s *UserService) (*domain.Use
 	if userRaw == nil {
 		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
-	user := userRaw.(*domain.UserDb)
+	user := userRaw.(*UserDb)
 
 	return user.Copy(), nil
 }
 
-func (s *UserService) Authenticate(user *domain.UserDb, password string) bool {
+func (s *UserService) Authenticate(user *UserDb, password string) bool {
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) == nil {
 		return true
 	}
 	return false
 }
 
-func (s *UserService) Create(cred *domain.UserCredentials, user *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*UserDb, *domain.UserError) {
 	if _, err := getUserBy("username", cred.Username, s); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
 	newId := xid.New().String()
-	userDb := domain.UserDb{Id: newId}
+	userDb := UserDb{Id: newId}
 
 	_ = updateUserDbCredentials(&userDb, cred, s.BcryptCost)
 	_ = updateUserDb(&userDb, user)
 	return insertUser(s, &userDb)
 }
 
-func updateUserDbCredentials(userDb *domain.UserDb, cred *domain.UserCredentials, bcryptCost int) *domain.UserError {
+func updateUserDbCredentials(userDb *UserDb, cred *domain.UserWriteCredentials, bcryptCost int) *domain.UserError {
 	userDb.Username = strings.Clone(cred.Username)
 	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), bcryptCost)
 	return nil
 }
 
-func updateUserDb(userDb *domain.UserDb, user *domain.User) *domain.UserError {
+func updateUserDb(userDb *UserDb, user *domain.UserWrite) *domain.UserError {
 	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
 	for i, s := range user.SharedAccounts {
 		userDb.SharedAccounts[i] = strings.Clone(s)
@@ -117,12 +138,12 @@ func updateUserDb(userDb *domain.UserDb, user *domain.User) *domain.UserError {
 	return nil
 }
 
-func updateUserDbClaims(userDb *domain.UserDb, claims *domain.UserClaims) *domain.UserError {
+func updateUserDbClaims(userDb *UserDb, claims *domain.UserWriteClaims) *domain.UserError {
 	userDb.Admin = claims.Admin
 	return nil
 }
 
-func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserError) {
+func insertUser(s *UserService, u *UserDb) (*UserDb, *domain.UserError) {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if err := txn.Insert("user", u); err != nil {
@@ -132,7 +153,7 @@ func insertUser(s *UserService, u *domain.UserDb) (*domain.UserDb, *domain.UserE
 	return u.Copy(), nil
 }
 
-func (s *UserService) Update(id string, user *domain.User) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) Update(id string, user *domain.UserWrite) (*UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
@@ -142,7 +163,7 @@ func (s *UserService) Update(id string, user *domain.User) (*domain.UserDb, *dom
 	return insertUser(s, userDb)
 }
 
-func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserCredentials) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserWriteCredentials) (*UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
@@ -156,7 +177,7 @@ func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.U
 	return insertUser(s, userDb)
 }
 
-func (s *UserService) UpdateClaims(id string, claims *domain.UserClaims) (*domain.UserDb, *domain.UserError) {
+func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*UserDb, *domain.UserError) {
 	userDb, err := s.GetById(id)
 	if err != nil {
 		return nil, err
@@ -178,7 +199,7 @@ func (s *UserService) Delete(id string) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) List() ([]*domain.UserDb, *domain.UserError) {
+func (s *UserService) List() ([]*UserDb, *domain.UserError) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")
@@ -186,9 +207,9 @@ func (s *UserService) List() ([]*domain.UserDb, *domain.UserError) {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	var users []*domain.UserDb
+	var users []*UserDb
 	for obj := it.Next(); obj != nil; obj = it.Next() {
-		u := obj.(*domain.UserDb)
+		u := obj.(*UserDb)
 		users = append(users, u.Copy())
 	}
 

@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"net/http"
-	"strings"
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
@@ -14,27 +13,6 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
 	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
 	router.POST("api/user", createHandler(userService))
-}
-
-type UserDb struct {
-	Id             string
-	Username       string
-	PasswordHash   []byte
-	Admin          bool
-	SharedAccounts []string
-}
-
-func (u *UserDb) Copy() *UserDb {
-	userCopy := *u
-	userCopy.Username = strings.Clone(u.Username)
-	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
-	copy(userCopy.PasswordHash, u.PasswordHash)
-	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
-	for i, s := range u.SharedAccounts {
-		userCopy.SharedAccounts[i] = strings.Clone(s)
-	}
-
-	return &userCopy
 }
 
 func getHandler(userService domain.UserService) func(*gin.Context) {
@@ -120,7 +98,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := userService.Create((*domain.UserCredentials)(&userData))
+		user, err := userService.Create((*domain.UserWriteCredentials)(&userData))
 		if err != nil {
 			if err.Type == domain.UserAlreadyExistsError {
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
@@ -143,7 +121,7 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		var userData domain.User
+		var userData domain.UserWrite
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
