@@ -2,7 +2,6 @@ package domain
 
 import (
 	"fmt"
-	"strings"
 )
 
 const (
@@ -25,37 +24,23 @@ type UserClaims struct {
 	Admin bool
 }
 
-type UserDb struct {
+type UserOut struct {
 	Id             string
 	Username       string
-	PasswordHash   []byte
 	Admin          bool
 	SharedAccounts []string
 }
 
-func (u *UserDb) Copy() *UserDb {
-	userCopy := *u
-	userCopy.Username = strings.Clone(u.Username)
-	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
-	copy(userCopy.PasswordHash, u.PasswordHash)
-	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
-	for i, s := range u.SharedAccounts {
-		userCopy.SharedAccounts[i] = strings.Clone(s)
-	}
-
-	return &userCopy
-}
-
 type UserService interface {
-	GetById(id string) (*UserDb, *UserError)
-	GetByName(username string) (*UserDb, *UserError)
-	Authenticate(user *UserDb, password string) bool
-	Create(cred *UserCredentials, user *User) (*UserDb, *UserError)
-	Update(id string, user *User) (*UserDb, *UserError)
-	UpdateCredentials(id string, passwd string, cred *UserCredentials) (*UserDb, *UserError)
-	UpdateClaims(id string, claims *UserClaims) (*UserDb, *UserError)
+	GetById(id string) (*UserOut, *UserError)
+	GetByName(username string) (*UserOut, *UserError)
+	Authenticate(user *UserOut, password string) bool
+	Create(cred *UserCredentials, user *User) (*UserOut, *UserError)
+	Update(id string, user *User) (*UserOut, *UserError)
+	UpdateCredentials(id string, passwd string, cred *UserCredentials) (*UserOut, *UserError)
+	UpdateClaims(id string, claims *UserClaims) (*UserOut, *UserError)
 	Delete(id string) *UserError
-	List() ([]*UserDb, *UserError)
+	List() ([]*UserOut, *UserError)
 }
 
 type UserError struct {

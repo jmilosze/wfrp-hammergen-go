@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"net/http"
+	"strings"
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
@@ -13,6 +14,27 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
 	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
 	router.POST("api/user", createHandler(userService))
+}
+
+type UserDb struct {
+	Id             string
+	Username       string
+	PasswordHash   []byte
+	Admin          bool
+	SharedAccounts []string
+}
+
+func (u *UserDb) Copy() *UserDb {
+	userCopy := *u
+	userCopy.Username = strings.Clone(u.Username)
+	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
+	copy(userCopy.PasswordHash, u.PasswordHash)
+	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
+	for i, s := range u.SharedAccounts {
+		userCopy.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	return &userCopy
 }
 
 func getHandler(userService domain.UserService) func(*gin.Context) {
@@ -57,7 +79,7 @@ func getUserClaims(c *gin.Context) *domain.Claims {
 	return &claims
 }
 
-func userToMap(user *domain.UserDb) map[string]interface{} {
+func userToMap(user *UserDb) map[string]interface{} {
 	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
