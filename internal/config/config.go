@@ -37,12 +37,12 @@ func NewDefault() (*Config, error) {
 	users := map[string]*UserSeed{
 		"0": {
 			User:        &domain.UserWrite{SharedAccounts: []string{"1"}},
-			Credentials: &domain.UserWriteCredentials{Username: "User1", Password: "123"},
+			Credentials: &domain.UserWriteCredentials{Username: "user1", Password: "123"},
 			Claims:      &domain.UserWriteClaims{Admin: true},
 		},
 		"1": {
 			User:        &domain.UserWrite{SharedAccounts: []string{}},
-			Credentials: &domain.UserWriteCredentials{Username: "User2", Password: "456"},
+			Credentials: &domain.UserWriteCredentials{Username: "user2", Password: "456"},
 			Claims:      &domain.UserWriteClaims{Admin: false},
 		},
 	}

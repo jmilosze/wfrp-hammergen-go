@@ -59,7 +59,7 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*config.User
 		_ = updateUserDbCredentials(&userDb, u.Credentials, cfg.BcryptCost)
 		_ = updateUserDb(&userDb, u.User)
 		_ = updateUserDbClaims(&userDb, u.Claims)
-		if err := txn.Insert("user", userDb); err != nil {
+		if err := txn.Insert("user", &userDb); err != nil {
 			panic(err)
 		}
 	}
