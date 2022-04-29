@@ -1,11 +1,26 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Claims struct {
 	Id             string
 	Admin          bool
 	SharedAccounts []string
+}
+
+func (c *Claims) Set(u *UserRead) *Claims {
+	c.Id = strings.Clone(u.Username)
+	c.Admin = u.Admin
+
+	c.SharedAccounts = make([]string, len(u.SharedAccounts))
+	for i, s := range u.SharedAccounts {
+		c.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	return c
 }
 
 type JwtService interface {

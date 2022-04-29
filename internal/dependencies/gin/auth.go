@@ -31,7 +31,8 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			return
 		}
 
-		token, tokenErr := jwtService.GenerateToken(&domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts})
+		var claims *domain.Claims
+		token, tokenErr := jwtService.GenerateToken(claims.Set(user))
 
 		if tokenErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "error generating token"})
