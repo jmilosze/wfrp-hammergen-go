@@ -7,12 +7,48 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
+	router.POST("api/user", createHandler(userService))
 	router.GET("api/user/:userId", RequireJwt(jwtService), getHandler(userService))
 	router.GET("api/user", RequireJwt(jwtService), listHandler(userService))
-	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
 	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
-	router.POST("api/user", createHandler(userService))
+	router.PUT("api/user/claims/:userId", RequireJwt(jwtService), updateClaims(userService))
+	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
+}
+
+type UserCreate struct {
+	Username       string   `json:"username"`
+	Password       string   `json:"password"`
+	SharedAccounts []string `json:"shared_accounts"`
+}
+
+func createHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var userData UserCreate
+		if err := c.ShouldBindJSON(&userData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+			return
+		}
+
+		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
+		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
+
+		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
+		if err != nil {
+			if err.Type == domain.UserAlreadyExistsError {
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": userToMap(userRead)})
+	}
+}
+
+func userToMap(user *domain.UserRead) map[string]interface{} {
+	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
 func getHandler(userService domain.UserService) func(*gin.Context) {
@@ -57,62 +93,36 @@ func getUserClaims(c *gin.Context) *domain.Claims {
 	return &claims
 }
 
-func userToMap(user *domain.UserRead) map[string]interface{} {
-	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
-}
-
-func deleteHandler(userService domain.UserService) func(*gin.Context) {
+func listHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		userId := c.Param("userId")
-
-		if !authorizeModify(c, userId) {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
-			return
-		}
-
-		if err := userService.Delete(userId); err != nil {
+		allUsers, err := userService.List()
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}
 
-		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
+		visibleUsers := authorizeList(c, allUsers)
+
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": visibleUsers})
 	}
 }
 
-func authorizeModify(c *gin.Context, userId string) bool {
+func authorizeList(c *gin.Context, userList []*domain.UserRead) []*domain.UserRead {
 	claims := getUserClaims(c)
-	return userId == claims.Id
-}
 
-type UserCreate struct {
-	Username       string   `json:"username"`
-	Password       string   `json:"password"`
-	SharedAccounts []string `json:"shared_accounts"`
-}
-
-func createHandler(userService domain.UserService) func(*gin.Context) {
-	return func(c *gin.Context) {
-		var userData UserCreate
-		if err := c.ShouldBindJSON(&userData); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
-			return
-		}
-
-		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
-		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
-
-		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
-		if err != nil {
-			if err.Type == domain.UserAlreadyExistsError {
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "userWrite already exists"})
-				return
+	var visibleUsers []*domain.UserRead
+	if claims.Admin {
+		visibleUsers = userList
+	} else {
+		for _, u := range userList {
+			if claims.Id == u.Id {
+				visibleUsers = append(visibleUsers, u)
+				break
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
-			return
 		}
-
-		c.JSON(http.StatusCreated, gin.H{"code": http.StatusCreated, "data": userToMap(userRead)})
 	}
+
+	return visibleUsers
 }
 
 type UserUpdate struct {
@@ -147,6 +157,11 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(userRead)})
 	}
+}
+
+func authorizeModify(c *gin.Context, userId string) bool {
+	claims := getUserClaims(c)
+	return userId == claims.Id
 }
 
 type UserCredentials struct {
@@ -188,34 +203,59 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 	}
 }
 
-func listHandler(userService domain.UserService) func(*gin.Context) {
+type UserClaims struct {
+	Admin bool `json:"admin"`
+}
+
+func updateClaims(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		allUsers, err := userService.List()
+		userId := c.Param("userId")
+
+		if !authorizeModifyClaims(c) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+			return
+		}
+
+		var userData UserClaims
+		if err := c.ShouldBindJSON(&userData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			return
+		}
+
+		userWriteClaims := (domain.UserWriteClaims)(userData)
+		userRead, err := userService.UpdateClaims(userId, &userWriteClaims)
 		if err != nil {
+			if err.Type == domain.UserNotFoundError {
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
+				return
+			}
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}
 
-		visibleUsers := authorizeList(c, allUsers)
-
-		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": visibleUsers})
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(userRead)})
 	}
 }
 
-func authorizeList(c *gin.Context, userList []*domain.UserRead) []*domain.UserRead {
+func authorizeModifyClaims(c *gin.Context) bool {
 	claims := getUserClaims(c)
+	return claims.Admin
+}
 
-	var visibleUsers []*domain.UserRead
-	if claims.Admin {
-		visibleUsers = userList
-	} else {
-		for _, u := range userList {
-			if claims.Id == u.Id {
-				visibleUsers = append(visibleUsers, u)
-				break
-			}
+func deleteHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		userId := c.Param("userId")
+
+		if !authorizeModify(c, userId) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+			return
 		}
-	}
 
-	return visibleUsers
+		if err := userService.Delete(userId); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			return
+		}
+
+		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
+	}
 }

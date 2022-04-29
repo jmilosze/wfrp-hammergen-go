@@ -12,7 +12,7 @@ type Claims struct {
 }
 
 func (c *Claims) Set(u *UserRead) *Claims {
-	c.Id = strings.Clone(u.Username)
+	c.Id = strings.Clone(u.Id)
 	c.Admin = u.Admin
 
 	c.SharedAccounts = make([]string, len(u.SharedAccounts))
