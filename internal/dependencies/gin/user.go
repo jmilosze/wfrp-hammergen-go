@@ -17,15 +17,15 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 }
 
 type UserCreate struct {
-	Username       string   `json:"username"`
-	Password       string   `json:"password"`
-	SharedAccounts []string `json:"shared_accounts"`
+	Username       string   `json:"username" binding:"required"`
+	Password       string   `json:"password" binding:"required"`
+	SharedAccounts []string `json:"shared_accounts" binding:"required"`
 }
 
 func createHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var userData UserCreate
-		if err := c.ShouldBindJSON(&userData); err != nil {
+		if err := c.BindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
 			return
 		}
@@ -126,7 +126,7 @@ func authorizeList(c *gin.Context, userList []*domain.UserRead) []*domain.UserRe
 }
 
 type UserUpdate struct {
-	SharedAccounts []string `json:"shared_accounts"`
+	SharedAccounts []string `json:"shared_accounts" binding:"required"`
 }
 
 func updateHandler(userService domain.UserService) func(*gin.Context) {
@@ -165,9 +165,9 @@ func authorizeModify(c *gin.Context, userId string) bool {
 }
 
 type UserCredentials struct {
-	Username        string `json:"username"`
-	Password        string `json:"password"`
-	CurrentPassword string `json:"current_password"`
+	Username        string `json:"username" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+	CurrentPassword string `json:"current_password" binding:"required"`
 }
 
 func updateCredentialsHandler(userService domain.UserService) func(*gin.Context) {
@@ -204,7 +204,7 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 }
 
 type UserClaims struct {
-	Admin bool `json:"admin"`
+	Admin bool `json:"admin" binding:"required"`
 }
 
 func updateClaims(userService domain.UserService) func(*gin.Context) {
