@@ -17,8 +17,9 @@ type MockDbUserService struct {
 }
 
 type JwtConfig struct {
-	ExpiryTime time.Duration
-	HmacSecret string
+	AccessExpiryTime time.Duration
+	ResetExpiryTime  time.Duration
+	HmacSecret       string
 }
 
 type Config struct {
@@ -50,6 +51,6 @@ func NewDefault() (*Config, error) {
 	return &Config{
 		ServerConfig:     &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
 		MemDbUserService: &MockDbUserService{BcryptCost: 12, SeedUsers: users},
-		JwtConfig:        &JwtConfig{ExpiryTime: 24 * time.Hour, HmacSecret: "some_secret"},
+		JwtConfig:        &JwtConfig{AccessExpiryTime: 24 * time.Hour, ResetExpiryTime: 48 * time.Hour, HmacSecret: "some_secret"},
 	}, nil
 }

@@ -8,28 +8,38 @@ import (
 )
 
 type HmacService struct {
-	HmacSecret []byte
-	ExpiryTime time.Duration
+	HmacSecret            []byte
+	AccessTokenExpiryTime time.Duration
+	ResetTokenExpiryTime  time.Duration
 }
 
-func NewHmacService(hmacSecret string, expiryTime time.Duration) *HmacService {
+func NewHmacService(hmacSecret string, accessTokenExpiryTime time.Duration, resetTokenExpiryTime time.Duration) *HmacService {
 	return &HmacService{
-		HmacSecret: []byte(hmacSecret),
-		ExpiryTime: expiryTime,
+		HmacSecret:            []byte(hmacSecret),
+		AccessTokenExpiryTime: accessTokenExpiryTime,
+		ResetTokenExpiryTime:  resetTokenExpiryTime,
 	}
 }
 
-func (jwtService *HmacService) GenerateToken(claims *domain.Claims) (string, error) {
+func (jwtService *HmacService) GenerateAccessToken(claims *domain.Claims) (string, error) {
+	return generateToken(claims, jwtService.AccessTokenExpiryTime, jwtService.HmacSecret)
+}
+
+func generateToken(claims *domain.Claims, expiryTime time.Duration, hmacSecret []byte) (string, error) {
 	currentTime := time.Now()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":      claims.Id,
-		"exp":      currentTime.Add(jwtService.ExpiryTime).Unix(),
+		"exp":      currentTime.Add(expiryTime).Unix(),
 		"orig_iat": currentTime.Unix(),
 		"adm":      claims.Admin,
 		"shrd_acc": claims.SharedAccounts,
 	})
-	return token.SignedString(jwtService.HmacSecret)
+	return token.SignedString(hmacSecret)
+}
+
+func (jwtService *HmacService) GenerateResetPasswordToken(claims *domain.Claims) (string, error) {
+	return generateToken(claims, jwtService.ResetTokenExpiryTime, jwtService.HmacSecret)
 }
 
 func (jwtService *HmacService) ParseToken(tokenString string) (*domain.Claims, error) {
@@ -60,6 +70,7 @@ func (jwtService *HmacService) ParseToken(tokenString string) (*domain.Claims, e
 	var claims domain.Claims
 	claims.Id, _ = jwtClaims["sub"].(string)
 	claims.Admin, _ = jwtClaims["adm"].(bool)
+	claims.ResetPassword, _ = jwtClaims["pwd"].(bool)
 
 	sharedAccounts, _ := jwtClaims["shrd_acc"].([]interface{})
 	claims.SharedAccounts = make([]string, len(sharedAccounts))

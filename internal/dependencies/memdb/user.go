@@ -11,8 +11,10 @@ import (
 )
 
 type UserService struct {
-	Db         *memdb.MemDB
-	BcryptCost int
+	Db           *memdb.MemDB
+	BcryptCost   int
+	EmailService domain.EmailService
+	JwtService   domain.JwtService
 }
 
 type UserDb struct {
@@ -47,7 +49,7 @@ func (u *UserDb) Copy() *UserDb {
 	return &userCopy
 }
 
-func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed) *UserService {
+func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed, email domain.EmailService, jwt domain.JwtService) *UserService {
 	db, err := createNewMemDb()
 	if err != nil {
 		panic(err)
@@ -66,7 +68,7 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*config.User
 
 	txn.Commit()
 
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost}
+	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {

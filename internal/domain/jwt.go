@@ -9,6 +9,7 @@ type Claims struct {
 	Id             string
 	Admin          bool
 	SharedAccounts []string
+	ResetPassword  bool
 }
 
 func (c *Claims) Set(u *UserRead) *Claims {
@@ -24,7 +25,8 @@ func (c *Claims) Set(u *UserRead) *Claims {
 }
 
 type JwtService interface {
-	GenerateToken(claims *Claims) (string, error)
+	GenerateAccessToken(claims *Claims) (string, error)
+	GenerateResetPasswordToken(claims *Claims) (string, error)
 	ParseToken(token string) (*Claims, error)
 }
 
