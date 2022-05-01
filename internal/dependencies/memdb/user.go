@@ -25,12 +25,12 @@ type UserDb struct {
 	SharedAccounts []string
 }
 
-func (u *UserDb) toUserRead() *domain.UserRead {
+func (u *UserDb) toUserRead() *domain.User {
 	if u == nil {
 		return nil
 	}
 
-	return &domain.UserRead{Id: u.Id, Admin: u.Admin, Username: u.Username, SharedAccounts: u.SharedAccounts}
+	return &domain.User{Id: u.Id, Admin: u.Admin, Username: u.Username, SharedAccounts: u.SharedAccounts}
 }
 
 func (u *UserDb) Copy() *UserDb {
@@ -94,7 +94,7 @@ func createNewMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *UserService) Get(id string) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 	user, err := getFromDb("id", id, s.Db)
 	return user.toUserRead(), err
 }
@@ -114,7 +114,7 @@ func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *
 	return user.Copy(), nil
 }
 
-func (s *UserService) GetAndAuth(username string, passwd string) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("username", username, s.Db)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.UserRe
 	return userDb.toUserRead(), nil
 }
 
-func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
 	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
@@ -175,7 +175,7 @@ func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.UserRea
 	return userDb.toUserRead(), nil
 }
 
-func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserWriteCredentials) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func authenticate(user *UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.UserRead, *domain.UserError) {
+func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (s *UserService) Delete(id string) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) List() ([]*domain.UserRead, *domain.UserError) {
+func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")
@@ -250,7 +250,7 @@ func (s *UserService) List() ([]*domain.UserRead, *domain.UserError) {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	var users []*domain.UserRead
+	var users []*domain.User
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		u := obj.(*UserDb)
 		users = append(users, u.Copy().toUserRead())

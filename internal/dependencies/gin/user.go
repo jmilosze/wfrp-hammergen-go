@@ -47,7 +47,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func userToMap(user *domain.UserRead) map[string]interface{} {
+func userToMap(user *domain.User) map[string]interface{} {
 	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
 }
 
@@ -107,10 +107,10 @@ func listHandler(userService domain.UserService) func(*gin.Context) {
 	}
 }
 
-func authorizeList(c *gin.Context, userList []*domain.UserRead) []*domain.UserRead {
+func authorizeList(c *gin.Context, userList []*domain.User) []*domain.User {
 	claims := getUserClaims(c)
 
-	var visibleUsers []*domain.UserRead
+	var visibleUsers []*domain.User
 	if claims.Admin {
 		visibleUsers = userList
 	} else {

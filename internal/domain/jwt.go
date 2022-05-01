@@ -12,7 +12,7 @@ type Claims struct {
 	ResetPassword  bool
 }
 
-func (c *Claims) Set(u *UserRead) *Claims {
+func (c *Claims) Set(u *User) *Claims {
 	c.Id = strings.Clone(u.Id)
 	c.Admin = u.Admin
 
