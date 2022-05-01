@@ -170,15 +170,15 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 	return userDb.ToUser(), nil
 }
 
-func (s *UserService) Create(sharedAccounts []string, username string, password string) (*domain.User, *domain.UserError) {
-	if _, err := getFromDb("username", username, s.Db); err == nil {
+func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
 	newId := xid.New().String()
 	userDb := UserDb{Id: newId, Admin: false}
-	userDb.Update(sharedAccounts)
-	userDb.UpdateCredentials(username, password, s.BcryptCost)
+	userDb.Update(user.SharedAccounts)
+	userDb.UpdateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if err := insertInDb(&userDb, s.Db); err != nil {
 		return nil, err
@@ -198,13 +198,13 @@ func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) Update(id string, sharedAccounts []string) (*domain.User, *domain.UserError) {
+func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
 	}
 
-	userDb.Update(sharedAccounts)
+	userDb.Update(user.SharedAccounts)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (s *UserService) Update(id string, sharedAccounts []string) (*domain.User, 
 	return userDb.ToUser(), nil
 }
 
-func (s *UserService) UpdateCredentials(id string, currentPasswd string, username string, password string) (*domain.User, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, usernam
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	userDb.UpdateCredentials(username, password, s.BcryptCost)
+	userDb.UpdateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
@@ -239,13 +239,13 @@ func authenticate(user *UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) UpdateClaims(id string, admin *bool) (*domain.User, *domain.UserError) {
+func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
 	}
 
-	userDb.UpdateClaims(admin)
+	userDb.UpdateClaims(claims.Admin)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
