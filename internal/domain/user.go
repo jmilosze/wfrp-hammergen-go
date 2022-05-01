@@ -11,19 +11,6 @@ const (
 	UserIncorrectPassword
 )
 
-type UserWrite struct {
-	SharedAccounts []string
-}
-
-type UserWriteCredentials struct {
-	Username string
-	Password string
-}
-
-type UserWriteClaims struct {
-	Admin bool
-}
-
 type User struct {
 	Id             string
 	Username       string
@@ -33,10 +20,10 @@ type User struct {
 
 type UserService interface {
 	Get(id string) (*User, *UserError)
-	Create(cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
-	Update(id string, user *UserWrite) (*User, *UserError)
-	UpdateCredentials(id string, passwd string, cred *UserWriteCredentials) (*User, *UserError)
-	UpdateClaims(id string, claims *UserWriteClaims) (*User, *UserError)
+	Create(sharedAccounts []string, username string, password string) (*User, *UserError)
+	Update(id string, sharedAccounts []string) (*User, *UserError)
+	UpdateCredentials(id string, currentPasswd string, username string, password string) (*User, *UserError)
+	UpdateClaims(id string, admin *bool) (*User, *UserError)
 	Delete(id string) *UserError
 	List() ([]*User, *UserError)
 	GetAndAuth(username string, passwd string) (*User, *UserError)

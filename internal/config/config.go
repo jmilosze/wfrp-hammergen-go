@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"time"
 )
 
@@ -29,22 +28,25 @@ type Config struct {
 }
 
 type UserSeed struct {
-	User        *domain.UserWrite
-	Credentials *domain.UserWriteCredentials
-	Claims      *domain.UserWriteClaims
+	Username       string
+	Password       string
+	Admin          bool
+	SharedAccounts []string
 }
 
 func NewDefault() (*Config, error) {
 	users := map[string]*UserSeed{
 		"0": {
-			User:        &domain.UserWrite{SharedAccounts: []string{"1"}},
-			Credentials: &domain.UserWriteCredentials{Username: "user1", Password: "123"},
-			Claims:      &domain.UserWriteClaims{Admin: true},
+			Username:       "user1",
+			Password:       "123",
+			Admin:          true,
+			SharedAccounts: []string{"1"},
 		},
 		"1": {
-			User:        &domain.UserWrite{SharedAccounts: []string{}},
-			Credentials: &domain.UserWriteCredentials{Username: "user2", Password: "456"},
-			Claims:      &domain.UserWriteClaims{Admin: false},
+			Username:       "user2",
+			Password:       "456",
+			Admin:          false,
+			SharedAccounts: []string{},
 		},
 	}
 

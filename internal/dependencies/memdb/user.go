@@ -25,7 +25,7 @@ type UserDb struct {
 	SharedAccounts []string
 }
 
-func (u *UserDb) toUserRead() *domain.User {
+func (u *UserDb) ToUser() *domain.User {
 	if u == nil {
 		return nil
 	}
@@ -49,6 +49,49 @@ func (u *UserDb) Copy() *UserDb {
 	return &userCopy
 }
 
+func (u *UserDb) UpdateCredentials(username string, password string, bcryptCost int) *UserDb {
+	if u == nil {
+		return nil
+	}
+
+	if len(username) != 0 {
+		u.Username = strings.Clone(username)
+	}
+
+	if len(password) != 0 {
+		u.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	}
+
+	return u
+}
+
+func (u *UserDb) UpdateClaims(admin *bool) *UserDb {
+	if u == nil {
+		return nil
+	}
+
+	if admin != nil {
+		u.Admin = *admin
+	}
+
+	return u
+}
+
+func (u *UserDb) Update(sharedAccounts []string) *UserDb {
+	if u == nil {
+		return nil
+	}
+
+	if sharedAccounts != nil {
+		u.SharedAccounts = make([]string, len(sharedAccounts))
+		for i, s := range sharedAccounts {
+			u.SharedAccounts[i] = strings.Clone(s)
+		}
+	}
+
+	return u
+}
+
 func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed, email domain.EmailService, jwt domain.JwtService) *UserService {
 	db, err := createNewMemDb()
 	if err != nil {
@@ -58,9 +101,9 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*config.User
 	txn := db.Txn(true)
 	for id, u := range users {
 		var userDb = UserDb{Id: id}
-		_ = updateUserDbCredentials(&userDb, u.Credentials, cfg.BcryptCost)
-		_ = updateUserDb(&userDb, u.User)
-		_ = updateUserDbClaims(&userDb, u.Claims)
+		userDb.UpdateCredentials(u.Username, u.Password, cfg.BcryptCost)
+		userDb.UpdateClaims(&u.Admin)
+		userDb.Update(u.SharedAccounts)
 		if err := txn.Insert("user", &userDb); err != nil {
 			panic(err)
 		}
@@ -96,7 +139,7 @@ func createNewMemDb() (*memdb.MemDB, error) {
 
 func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 	user, err := getFromDb("id", id, s.Db)
-	return user.toUserRead(), err
+	return user.ToUser(), err
 }
 
 func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *domain.UserError) {
@@ -124,44 +167,24 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	return userDb.toUserRead(), nil
+	return userDb.ToUser(), nil
 }
 
-func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
+func (s *UserService) Create(sharedAccounts []string, username string, password string) (*domain.User, *domain.UserError) {
+	if _, err := getFromDb("username", username, s.Db); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
 	newId := xid.New().String()
-	userDb := UserDb{Id: newId}
-
-	_ = updateUserDbCredentials(&userDb, cred, s.BcryptCost)
-	_ = updateUserDb(&userDb, user)
+	userDb := UserDb{Id: newId, Admin: false}
+	userDb.Update(sharedAccounts)
+	userDb.UpdateCredentials(username, password, s.BcryptCost)
 
 	if err := insertInDb(&userDb, s.Db); err != nil {
 		return nil, err
 	}
 
-	return (&userDb).toUserRead(), nil
-}
-
-func updateUserDbCredentials(userDb *UserDb, cred *domain.UserWriteCredentials, bcryptCost int) *domain.UserError {
-	userDb.Username = strings.Clone(cred.Username)
-	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), bcryptCost)
-	return nil
-}
-
-func updateUserDb(userDb *UserDb, user *domain.UserWrite) *domain.UserError {
-	userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
-	for i, s := range user.SharedAccounts {
-		userDb.SharedAccounts[i] = strings.Clone(s)
-	}
-	return nil
-}
-
-func updateUserDbClaims(userDb *UserDb, claims *domain.UserWriteClaims) *domain.UserError {
-	userDb.Admin = claims.Admin
-	return nil
+	return (&userDb).ToUser(), nil
 }
 
 func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
@@ -175,38 +198,38 @@ func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
+func (s *UserService) Update(id string, sharedAccounts []string) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = updateUserDb(userDb, user)
+	userDb.Update(sharedAccounts)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.toUserRead(), nil
+	return userDb.ToUser(), nil
 }
 
-func (s *UserService) UpdateCredentials(id string, passwd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
+func (s *UserService) UpdateCredentials(id string, currentPasswd string, username string, password string) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
 	}
 
-	if !authenticate(userDb, passwd) {
+	if !authenticate(userDb, currentPasswd) {
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	_ = updateUserDbCredentials(userDb, cred, s.BcryptCost)
+	userDb.UpdateCredentials(username, password, s.BcryptCost)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.toUserRead(), nil
+	return userDb.ToUser(), nil
 }
 
 func authenticate(user *UserDb, password string) bool {
@@ -216,19 +239,19 @@ func authenticate(user *UserDb, password string) bool {
 	return false
 }
 
-func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
+func (s *UserService) UpdateClaims(id string, admin *bool) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = updateUserDbClaims(userDb, claims)
+	userDb.UpdateClaims(admin)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.toUserRead(), nil
+	return userDb.ToUser(), nil
 }
 
 func (s *UserService) Delete(id string) *domain.UserError {
@@ -253,7 +276,7 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 	var users []*domain.User
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		u := obj.(*UserDb)
-		users = append(users, u.Copy().toUserRead())
+		users = append(users, u.Copy().ToUser())
 	}
 
 	return users, nil
