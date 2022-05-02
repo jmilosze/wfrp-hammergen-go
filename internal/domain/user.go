@@ -32,11 +32,6 @@ type User struct {
 	SharedAccounts []string
 }
 
-//func (c *UserWriteCredentials) Validate() error {
-//	validate := validator.New()
-//	return validate.Struct(c)
-//}
-
 type UserService interface {
 	Get(id string) (*User, *UserError)
 	Create(cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
