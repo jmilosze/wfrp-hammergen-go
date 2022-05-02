@@ -17,8 +17,8 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 }
 
 type UserCreate struct {
-	Username       string   `json:"username" binding:"required"`
-	Password       string   `json:"password" binding:"required"`
+	Username       string   `json:"username"`
+	Password       string   `json:"password"`
 	SharedAccounts []string `json:"shared_accounts"`
 }
 
@@ -35,11 +35,14 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 
 		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
 		if err != nil {
-			if err.Type == domain.UserAlreadyExistsError {
+			switch err.Type {
+			case domain.UserAlreadyExistsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
-				return
+			case domain.UserInvalid:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
 		}
 

@@ -9,19 +9,20 @@ const (
 	UserAlreadyExistsError
 	UserInternalError
 	UserIncorrectPassword
+	UserInvalid
 )
 
 type UserWrite struct {
-	SharedAccounts []string
+	SharedAccounts []string `validate:"omitempty"`
 }
 
 type UserWriteCredentials struct {
-	Username string
-	Password string
+	Username string `validate:"omitempty,email"`
+	Password string `validate:"omitempty,gte=5"`
 }
 
 type UserWriteClaims struct {
-	Admin *bool
+	Admin *bool `validate:"omitempty"`
 }
 
 type User struct {
@@ -30,6 +31,11 @@ type User struct {
 	Admin          bool
 	SharedAccounts []string
 }
+
+//func (c *UserWriteCredentials) Validate() error {
+//	validate := validator.New()
+//	return validate.Struct(c)
+//}
 
 type UserService interface {
 	Get(id string) (*User, *UserError)

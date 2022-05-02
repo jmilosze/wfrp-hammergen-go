@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
@@ -27,9 +28,10 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
+	validate := validator.New()
 	jwtService := golangjwt.NewHmacService(cfg.JwtConfig.HmacSecret, cfg.JwtConfig.AccessExpiryTime, cfg.JwtConfig.ResetExpiryTime)
 	emailService := mockemail.NewEmailService()
-	userService := memdb.NewUserService(cfg.MemDbUserService, cfg.MemDbUserService.SeedUsers, emailService, jwtService)
+	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, validate)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)

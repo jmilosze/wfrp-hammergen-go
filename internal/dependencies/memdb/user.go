@@ -2,6 +2,7 @@ package memdb
 
 import (
 	"errors"
+	"github.com/go-playground/validator/v10"
 	"github.com/hashicorp/go-memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
@@ -15,6 +16,7 @@ type UserService struct {
 	BcryptCost   int
 	EmailService domain.EmailService
 	JwtService   domain.JwtService
+	v            *validator.Validate
 }
 
 type UserDb struct {
@@ -23,6 +25,11 @@ type UserDb struct {
 	PasswordHash   []byte
 	Admin          bool
 	SharedAccounts []string
+}
+
+func NewUserDb() *UserDb {
+	newId := xid.New().String()
+	return &UserDb{Id: newId, Username: "", PasswordHash: []byte{}, Admin: false, SharedAccounts: []string{}}
 }
 
 func (u *UserDb) ToUser() *domain.User {
@@ -47,6 +54,21 @@ func (u *UserDb) Copy() *UserDb {
 	}
 
 	return &userCopy
+}
+
+func (u *UserDb) Update(sharedAccounts []string) *UserDb {
+	if u == nil {
+		return nil
+	}
+
+	if sharedAccounts != nil {
+		u.SharedAccounts = make([]string, len(sharedAccounts))
+		for i, s := range sharedAccounts {
+			u.SharedAccounts[i] = strings.Clone(s)
+		}
+	}
+
+	return u
 }
 
 func (u *UserDb) UpdateCredentials(username string, password string, bcryptCost int) *UserDb {
@@ -77,29 +99,14 @@ func (u *UserDb) UpdateClaims(admin *bool) *UserDb {
 	return u
 }
 
-func (u *UserDb) Update(sharedAccounts []string) *UserDb {
-	if u == nil {
-		return nil
-	}
-
-	if sharedAccounts != nil {
-		u.SharedAccounts = make([]string, len(sharedAccounts))
-		for i, s := range sharedAccounts {
-			u.SharedAccounts[i] = strings.Clone(s)
-		}
-	}
-
-	return u
-}
-
-func NewUserService(cfg *config.MockDbUserService, users map[string]*config.UserSeed, email domain.EmailService, jwt domain.JwtService) *UserService {
+func NewUserService(cfg *config.MemDbUserService, email domain.EmailService, jwt domain.JwtService, v *validator.Validate) *UserService {
 	db, err := createNewMemDb()
 	if err != nil {
 		panic(err)
 	}
 
 	txn := db.Txn(true)
-	for id, u := range users {
+	for id, u := range cfg.SeedUsers {
 		var userDb = UserDb{Id: id}
 		userDb.UpdateCredentials(u.Username, u.Password, cfg.BcryptCost)
 		userDb.UpdateClaims(&u.Admin)
@@ -111,7 +118,7 @@ func NewUserService(cfg *config.MockDbUserService, users map[string]*config.User
 
 	txn.Commit()
 
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt}
+	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, v: v}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {
@@ -171,20 +178,27 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 }
 
 func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if s.v.Var(cred.Username, "required") != nil || s.v.Var(cred.Password, "required") != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: errors.New("missing username or password")}
+	}
+
+	if err := s.v.Struct(cred); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+	}
+
 	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	newId := xid.New().String()
-	userDb := UserDb{Id: newId, Admin: false}
+	userDb := NewUserDb()
 	userDb.Update(user.SharedAccounts)
 	userDb.UpdateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
-	if err := insertInDb(&userDb, s.Db); err != nil {
+	if err := insertInDb(userDb, s.Db); err != nil {
 		return nil, err
 	}
 
-	return (&userDb).ToUser(), nil
+	return userDb.ToUser(), nil
 }
 
 func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {

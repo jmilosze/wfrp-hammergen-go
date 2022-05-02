@@ -10,7 +10,7 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration
 }
 
-type MockDbUserService struct {
+type MemDbUserService struct {
 	BcryptCost int
 	SeedUsers  map[string]*UserSeed
 }
@@ -23,7 +23,7 @@ type JwtConfig struct {
 
 type Config struct {
 	ServerConfig     *ServerConfig
-	MemDbUserService *MockDbUserService
+	MemDbUserService *MemDbUserService
 	JwtConfig        *JwtConfig
 }
 
@@ -37,14 +37,14 @@ type UserSeed struct {
 func NewDefault() (*Config, error) {
 	users := map[string]*UserSeed{
 		"0": {
-			Username:       "user1",
-			Password:       "123",
+			Username:       "user1@test.com",
+			Password:       "123456",
 			Admin:          true,
 			SharedAccounts: []string{"1"},
 		},
 		"1": {
-			Username:       "user2",
-			Password:       "456",
+			Username:       "user2@test.com",
+			Password:       "789123",
 			Admin:          false,
 			SharedAccounts: []string{},
 		},
@@ -52,7 +52,7 @@ func NewDefault() (*Config, error) {
 
 	return &Config{
 		ServerConfig:     &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
-		MemDbUserService: &MockDbUserService{BcryptCost: 12, SeedUsers: users},
+		MemDbUserService: &MemDbUserService{BcryptCost: 12, SeedUsers: users},
 		JwtConfig:        &JwtConfig{AccessExpiryTime: 24 * time.Hour, ResetExpiryTime: 48 * time.Hour, HmacSecret: "some_secret"},
 	}, nil
 }
