@@ -13,16 +13,16 @@ const (
 )
 
 type UserWrite struct {
-	SharedAccounts []string `validate:"omitempty"`
+	SharedAccounts []string `json:"shared_accounts" validate:"omitempty,dive,required"`
 }
 
 type UserWriteCredentials struct {
-	Username string `validate:"omitempty,email"`
-	Password string `validate:"omitempty,gte=5"`
+	Username string `json:"username" validate:"omitempty,email"`
+	Password string `json:"password" validate:"omitempty,gte=5"`
 }
 
 type UserWriteClaims struct {
-	Admin *bool `validate:"omitempty"`
+	Admin *bool `json:"admin" validate:"omitempty"`
 }
 
 type User struct {

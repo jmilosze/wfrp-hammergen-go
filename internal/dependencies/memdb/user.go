@@ -186,6 +186,10 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
 	}
 
+	if err := s.v.Struct(user); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+	}
+
 	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
@@ -213,6 +217,10 @@ func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
 }
 
 func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if err := s.v.Struct(user); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+	}
+
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -228,6 +236,10 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 }
 
 func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
+	if err := s.v.Struct(cred); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+	}
+
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err
@@ -254,6 +266,10 @@ func authenticate(user *UserDb, password string) bool {
 }
 
 func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
+	if err := s.v.Struct(claims); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+	}
+
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, err

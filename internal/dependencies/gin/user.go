@@ -26,7 +26,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var userData UserCreate
 		if err := c.BindJSON(&userData); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusNotFound, "message": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
@@ -128,10 +128,6 @@ func authorizeList(c *gin.Context, userList []*domain.User) []*domain.User {
 	return visibleUsers
 }
 
-type UserUpdate struct {
-	SharedAccounts []string `json:"shared_accounts"`
-}
-
 func updateHandler(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
@@ -141,20 +137,22 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		var userData UserUpdate
+		var userData domain.UserWrite
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
-		userWrite := (domain.UserWrite)(userData)
-		userRead, err := userService.Update(userId, &userWrite)
+		userRead, err := userService.Update(userId, &userData)
 		if err != nil {
-			if err.Type == domain.UserNotFoundError {
+			switch err.Type {
+			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-				return
+			case domain.UserInvalid:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}
 
@@ -170,7 +168,7 @@ func authorizeModify(c *gin.Context, userId string) bool {
 type UserCredentials struct {
 	Username        string `json:"username"`
 	Password        string `json:"password"`
-	CurrentPassword string `json:"current_password" binding:"required"`
+	CurrentPassword string `json:"current_password"`
 }
 
 func updateCredentialsHandler(userService domain.UserService) func(*gin.Context) {
@@ -194,6 +192,8 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 			switch err.Type {
 			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
+			case domain.UserInvalid:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserIncorrectPassword:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "incorrect password"})
 			default:
@@ -206,10 +206,6 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 	}
 }
 
-type UserClaims struct {
-	Admin *bool `json:"admin"`
-}
-
 func updateClaims(userService domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
@@ -219,20 +215,22 @@ func updateClaims(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		var userData UserClaims
+		var userData domain.UserWriteClaims
 		if err := c.ShouldBindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
-		userWriteClaims := (domain.UserWriteClaims)(userData)
-		userRead, err := userService.UpdateClaims(userId, &userWriteClaims)
+		userRead, err := userService.UpdateClaims(userId, &userData)
 		if err != nil {
-			if err.Type == domain.UserNotFoundError {
+			switch err.Type {
+			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-				return
+			case domain.UserInvalid:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}
 
