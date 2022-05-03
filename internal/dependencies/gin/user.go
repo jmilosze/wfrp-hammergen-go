@@ -14,6 +14,7 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
 	router.PUT("api/user/claims/:userId", RequireJwt(jwtService), updateClaims(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
+	router.POST("api/user/send_reset_password", resetSendPasswordHandler(userService))
 }
 
 type UserCreate struct {
@@ -253,6 +254,27 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 		}
 
 		if err := userService.Delete(userId); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+			return
+		}
+
+		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
+	}
+}
+
+type UserSendResetPassword struct {
+	Username string `json:"username"`
+}
+
+func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var userData UserSendResetPassword
+		if err := c.BindJSON(&userData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			return
+		}
+
+		if err := userService.SendResetPassword(userData.Username); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}

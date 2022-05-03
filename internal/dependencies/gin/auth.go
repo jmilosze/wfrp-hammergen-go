@@ -31,8 +31,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			return
 		}
 
-		var claims domain.Claims
-		(&claims).Set(user)
+		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts}
 		token, tokenErr := jwtService.GenerateAccessToken(&claims)
 
 		if tokenErr != nil {

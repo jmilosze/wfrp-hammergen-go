@@ -27,12 +27,12 @@ type UserDb struct {
 	SharedAccounts []string
 }
 
-func NewUserDb() *UserDb {
+func newUserDb() *UserDb {
 	newId := xid.New().String()
 	return &UserDb{Id: newId, Username: "", PasswordHash: []byte{}, Admin: false, SharedAccounts: []string{}}
 }
 
-func (u *UserDb) ToUser() *domain.User {
+func (u *UserDb) toUser() *domain.User {
 	if u == nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (u *UserDb) ToUser() *domain.User {
 	return &domain.User{Id: u.Id, Admin: u.Admin, Username: u.Username, SharedAccounts: u.SharedAccounts}
 }
 
-func (u *UserDb) Copy() *UserDb {
+func (u *UserDb) copy() *UserDb {
 	if u == nil {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (u *UserDb) Copy() *UserDb {
 	return &userCopy
 }
 
-func (u *UserDb) Update(sharedAccounts []string) *UserDb {
+func (u *UserDb) update(sharedAccounts []string) *UserDb {
 	if u == nil {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (u *UserDb) Update(sharedAccounts []string) *UserDb {
 	return u
 }
 
-func (u *UserDb) UpdateCredentials(username string, password string, bcryptCost int) *UserDb {
+func (u *UserDb) updateCredentials(username string, password string, bcryptCost int) *UserDb {
 	if u == nil {
 		return nil
 	}
@@ -87,7 +87,7 @@ func (u *UserDb) UpdateCredentials(username string, password string, bcryptCost 
 	return u
 }
 
-func (u *UserDb) UpdateClaims(admin *bool) *UserDb {
+func (u *UserDb) updateClaims(admin *bool) *UserDb {
 	if u == nil {
 		return nil
 	}
@@ -108,9 +108,9 @@ func NewUserService(cfg *config.MemDbUserService, email domain.EmailService, jwt
 	txn := db.Txn(true)
 	for id, u := range cfg.SeedUsers {
 		var userDb = UserDb{Id: id}
-		userDb.UpdateCredentials(u.Username, u.Password, cfg.BcryptCost)
-		userDb.UpdateClaims(&u.Admin)
-		userDb.Update(u.SharedAccounts)
+		userDb.updateCredentials(u.Username, u.Password, cfg.BcryptCost)
+		userDb.updateClaims(&u.Admin)
+		userDb.update(u.SharedAccounts)
 		if err := txn.Insert("user", &userDb); err != nil {
 			panic(err)
 		}
@@ -146,7 +146,7 @@ func createNewMemDb() (*memdb.MemDB, error) {
 
 func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 	user, err := getFromDb("id", id, s.Db)
-	return user.ToUser(), err
+	return user.toUser(), err
 }
 
 func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *domain.UserError) {
@@ -161,7 +161,7 @@ func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *
 	}
 	user := userRaw.(*UserDb)
 
-	return user.Copy(), nil
+	return user.copy(), nil
 }
 
 func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, *domain.UserError) {
@@ -174,7 +174,7 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	return userDb.ToUser(), nil
+	return userDb.toUser(), nil
 }
 
 func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
@@ -194,22 +194,22 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	userDb := NewUserDb()
-	userDb.Update(user.SharedAccounts)
-	userDb.UpdateCredentials(cred.Username, cred.Password, s.BcryptCost)
+	userDb := newUserDb()
+	userDb.update(user.SharedAccounts)
+	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if err := insertInDb(userDb, s.Db); err != nil {
 		return nil, err
 	}
 
-	return userDb.ToUser(), nil
+	return userDb.toUser(), nil
 }
 
 func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
 
 	txn := db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", u.Copy()); err != nil {
+	if err := txn.Insert("user", u.copy()); err != nil {
 		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	txn.Commit()
@@ -226,13 +226,13 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 		return nil, err
 	}
 
-	userDb.Update(user.SharedAccounts)
+	userDb.update(user.SharedAccounts)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.ToUser(), nil
+	return userDb.toUser(), nil
 }
 
 func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
@@ -249,13 +249,13 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	userDb.UpdateCredentials(cred.Username, cred.Password, s.BcryptCost)
+	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.ToUser(), nil
+	return userDb.toUser(), nil
 }
 
 func authenticate(user *UserDb, password string) bool {
@@ -275,13 +275,13 @@ func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*
 		return nil, err
 	}
 
-	userDb.UpdateClaims(claims.Admin)
+	userDb.updateClaims(claims.Admin)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
 		return nil, err
 	}
 
-	return userDb.ToUser(), nil
+	return userDb.toUser(), nil
 }
 
 func (s *UserService) Delete(id string) *domain.UserError {
@@ -306,8 +306,30 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 	var users []*domain.User
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		u := obj.(*UserDb)
-		users = append(users, u.Copy().ToUser())
+		users = append(users, u.copy().toUser())
 	}
 
 	return users, nil
+}
+
+func (s *UserService) SendResetPassword(username string) *domain.UserError {
+	user, uerr := getFromDb("username", username, s.Db)
+	if uerr != nil {
+		return uerr
+	}
+
+	claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts}
+	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
+
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	email := domain.Email{FromAddress: "admin@hammergen.net", ToAddress: user.Username, Subject: "password reset", Content: resetToken}
+
+	if eerr := s.EmailService.Send(&email); eerr != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: eerr}
+	}
+
+	return nil
 }
