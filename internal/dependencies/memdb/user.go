@@ -148,19 +148,27 @@ func createNewMemDb() (*memdb.MemDB, error) {
 }
 
 func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
-	user, err := getFromDb("id", id, s.Db)
-	return user.toUser(), err
-}
-
-func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *domain.UserError) {
-	txn := db.Txn(false)
-	userRaw, err := txn.First("user", fieldName, fieldValue)
+	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	if userRaw == nil {
+	if userDb == nil {
 		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
+	}
+
+	return userDb.toUser(), nil
+}
+
+func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, error) {
+	txn := db.Txn(false)
+	userRaw, err := txn.First("user", fieldName, fieldValue)
+	if err != nil {
+		return nil, err
+	}
+
+	if userRaw == nil {
+		return nil, nil
 	}
 	user := userRaw.(*UserDb)
 
@@ -170,7 +178,11 @@ func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, *
 func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, *domain.UserError) {
 	userDb, err := getFromDb("username", username, s.Db)
 	if err != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb == nil {
+		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
 	if !authenticate(userDb, passwd) {
@@ -197,27 +209,32 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
 	}
 
-	if _, err := getFromDb("username", cred.Username, s.Db); err == nil {
+	userDb, err := getFromDb("username", cred.Username, s.Db)
+	if err != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb != nil {
 		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	userDb := newUserDb()
+	userDb = newUserDb()
 	userDb.update(user.SharedAccounts)
 	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if err := insertInDb(userDb, s.Db); err != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	return userDb.toUser(), nil
 }
 
-func insertInDb(u *UserDb, db *memdb.MemDB) *domain.UserError {
+func insertInDb(u *UserDb, db *memdb.MemDB) error {
 
 	txn := db.Txn(true)
 	defer txn.Abort()
 	if err := txn.Insert("user", u.copy()); err != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+		return err
 	}
 	txn.Commit()
 	return nil
@@ -230,13 +247,17 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb == nil {
+		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
 	userDb.update(user.SharedAccounts)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	return userDb.toUser(), nil
@@ -249,7 +270,11 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb == nil {
+		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
 	if !authenticate(userDb, currentPasswd) {
@@ -259,7 +284,7 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	return userDb.toUser(), nil
@@ -279,13 +304,17 @@ func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*
 
 	userDb, err := getFromDb("id", id, s.Db)
 	if err != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb == nil {
+		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
 	userDb.updateClaims(claims.Admin)
 
 	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, err
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	return userDb.toUser(), nil
@@ -324,19 +353,23 @@ func (s *UserService) SendResetPassword(username string, captcha string) *domain
 		return &domain.UserError{Type: domain.UserCaptchaFailure, Err: errors.New("captcha verification failed")}
 	}
 
-	user, uErr := getFromDb("username", username, s.Db)
+	userDb, uErr := getFromDb("username", username, s.Db)
 	if uErr != nil {
-		return uErr
+		return &domain.UserError{Type: domain.UserInternalError, Err: uErr}
 	}
 
-	claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts}
+	if userDb == nil {
+		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
+	}
+
+	claims := domain.Claims{Id: userDb.Id, Admin: userDb.Admin, SharedAccounts: userDb.SharedAccounts}
 	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
 
 	if err != nil {
 		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	email := domain.Email{ToAddress: user.Username, Subject: "password reset", Content: resetToken}
+	email := domain.Email{ToAddress: userDb.Username, Subject: "password reset", Content: resetToken}
 
 	if eErr := s.EmailService.Send(&email); eErr != nil {
 		return &domain.UserError{Type: domain.UserInternalError, Err: eErr}
