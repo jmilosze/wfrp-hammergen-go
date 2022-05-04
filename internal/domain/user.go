@@ -9,7 +9,7 @@ const (
 	UserAlreadyExistsError
 	UserInternalError
 	UserIncorrectPassword
-	UserInvalid
+	UserInvalidArguments
 	UserCaptchaFailure
 )
 

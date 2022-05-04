@@ -40,7 +40,7 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			switch err.Type {
 			case domain.UserAlreadyExistsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
-			case domain.UserInvalid:
+			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserCaptchaFailure:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
@@ -152,7 +152,7 @@ func updateHandler(userService domain.UserService) func(*gin.Context) {
 			switch err.Type {
 			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-			case domain.UserInvalid:
+			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
@@ -196,7 +196,7 @@ func updateCredentialsHandler(userService domain.UserService) func(*gin.Context)
 			switch err.Type {
 			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-			case domain.UserInvalid:
+			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserIncorrectPassword:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "incorrect password"})
@@ -230,7 +230,7 @@ func updateClaims(userService domain.UserService) func(*gin.Context) {
 			switch err.Type {
 			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
-			case domain.UserInvalid:
+			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
@@ -282,7 +282,7 @@ func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context)
 
 		if err != nil {
 			switch err.Type {
-			case domain.UserInvalid:
+			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserCaptchaFailure:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})

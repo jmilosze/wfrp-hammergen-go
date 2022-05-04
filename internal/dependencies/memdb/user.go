@@ -194,7 +194,7 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 
 func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite, captcha string) (*domain.User, *domain.UserError) {
 	if len(cred.Username) == 0 || len(cred.Password) == 0 || len(captcha) == 0 {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: errors.New("missing username, password, or captcha")}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username, password, or captcha")}
 	}
 
 	if !s.CaptchaService.Verify(captcha) {
@@ -202,11 +202,11 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 	}
 
 	if err := s.v.Struct(cred); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
 	if err := s.v.Struct(user); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
 	userDb, err := getFromDb("username", cred.Username, s.Db)
@@ -242,7 +242,7 @@ func insertInDb(u *UserDb, db *memdb.MemDB) error {
 
 func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
 	if err := s.v.Struct(user); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
 	userDb, err := getFromDb("id", id, s.Db)
@@ -265,7 +265,7 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 
 func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
 	if err := s.v.Struct(cred); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
 	userDb, err := getFromDb("id", id, s.Db)
@@ -299,7 +299,7 @@ func authenticate(user *UserDb, password string) bool {
 
 func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
 	if err := s.v.Struct(claims); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalid, Err: err}
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
 	userDb, err := getFromDb("id", id, s.Db)
@@ -350,7 +350,7 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 
 func (s *UserService) SendResetPassword(username string, captcha string) *domain.UserError {
 	if len(username) == 0 || len(captcha) == 0 {
-		return &domain.UserError{Type: domain.UserInvalid, Err: errors.New("missing username, or captcha")}
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username, or captcha")}
 	}
 
 	if !s.CaptchaService.Verify(captcha) {
