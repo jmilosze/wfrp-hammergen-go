@@ -282,6 +282,8 @@ func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context)
 
 		if err != nil {
 			switch err.Type {
+			case domain.UserInvalid:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserCaptchaFailure:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
 			case domain.UserNotFoundError:
