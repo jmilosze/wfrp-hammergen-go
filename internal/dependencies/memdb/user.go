@@ -12,11 +12,12 @@ import (
 )
 
 type UserService struct {
-	Db           *memdb.MemDB
-	BcryptCost   int
-	EmailService domain.EmailService
-	JwtService   domain.JwtService
-	v            *validator.Validate
+	Db             *memdb.MemDB
+	BcryptCost     int
+	EmailService   domain.EmailService
+	JwtService     domain.JwtService
+	CaptchaService domain.CaptchaService
+	v              *validator.Validate
 }
 
 type UserDb struct {
@@ -99,26 +100,28 @@ func (u *UserDb) updateClaims(admin *bool) *UserDb {
 	return u
 }
 
-func NewUserService(cfg *config.MemDbUserService, email domain.EmailService, jwt domain.JwtService, v *validator.Validate) *UserService {
+func NewUserService(cfg *config.MemDbUserService,
+	email domain.EmailService,
+	jwt domain.JwtService,
+	cap domain.CaptchaService,
+	v *validator.Validate) *UserService {
+
 	db, err := createNewMemDb()
 	if err != nil {
 		panic(err)
 	}
 
-	txn := db.Txn(true)
 	for id, u := range cfg.SeedUsers {
 		var userDb = UserDb{Id: id}
 		userDb.updateCredentials(u.Username, u.Password, cfg.BcryptCost)
 		userDb.updateClaims(&u.Admin)
 		userDb.update(u.SharedAccounts)
-		if err := txn.Insert("user", &userDb); err != nil {
+		if err := insertInDb(&userDb, db); err != nil {
 			panic(err)
 		}
 	}
 
-	txn.Commit()
-
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, v: v}
+	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, CaptchaService: cap, v: v}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {
@@ -177,9 +180,13 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 	return userDb.toUser(), nil
 }
 
-func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if s.v.Var(cred.Username, "required") != nil || s.v.Var(cred.Password, "required") != nil {
+func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite, captcha string) (*domain.User, *domain.UserError) {
+	if len(cred.Username) == 0 || len(cred.Password) == 0 {
 		return nil, &domain.UserError{Type: domain.UserInvalid, Err: errors.New("missing username or password")}
+	}
+
+	if !s.CaptchaService.Verify(captcha) {
+		return nil, &domain.UserError{Type: domain.UserCaptchaFailure, Err: errors.New("captcha verification failed")}
 	}
 
 	if err := s.v.Struct(cred); err != nil {
@@ -312,10 +319,14 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 	return users, nil
 }
 
-func (s *UserService) SendResetPassword(username string) *domain.UserError {
-	user, uerr := getFromDb("username", username, s.Db)
-	if uerr != nil {
-		return uerr
+func (s *UserService) SendResetPassword(username string, captcha string) *domain.UserError {
+	if !s.CaptchaService.Verify(captcha) {
+		return &domain.UserError{Type: domain.UserCaptchaFailure, Err: errors.New("captcha verification failed")}
+	}
+
+	user, uErr := getFromDb("username", username, s.Db)
+	if uErr != nil {
+		return uErr
 	}
 
 	claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts}
@@ -325,10 +336,10 @@ func (s *UserService) SendResetPassword(username string) *domain.UserError {
 		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	email := domain.Email{FromAddress: "admin@hammergen.net", ToAddress: user.Username, Subject: "password reset", Content: resetToken}
+	email := domain.Email{ToAddress: user.Username, Subject: "password reset", Content: resetToken}
 
-	if eerr := s.EmailService.Send(&email); eerr != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: eerr}
+	if eErr := s.EmailService.Send(&email); eErr != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: eErr}
 	}
 
 	return nil

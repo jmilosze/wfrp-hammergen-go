@@ -21,6 +21,7 @@ type UserCreate struct {
 	Username       string   `json:"username"`
 	Password       string   `json:"password"`
 	SharedAccounts []string `json:"shared_accounts"`
+	Captcha        string   `json:"captcha"`
 }
 
 func createHandler(userService domain.UserService) func(*gin.Context) {
@@ -34,13 +35,15 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
 		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
 
-		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
+		userRead, err := userService.Create(&userWriteCredentials, &userWrite, userData.Captcha)
 		if err != nil {
 			switch err.Type {
 			case domain.UserAlreadyExistsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
 			case domain.UserInvalid:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			case domain.UserCaptchaFailure:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
@@ -264,6 +267,7 @@ func deleteHandler(userService domain.UserService) func(*gin.Context) {
 
 type UserSendResetPassword struct {
 	Username string `json:"username"`
+	Captcha  string `json:"captcha"`
 }
 
 func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context) {
@@ -274,8 +278,17 @@ func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context)
 			return
 		}
 
-		if err := userService.SendResetPassword(userData.Username); err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
+		err := userService.SendResetPassword(userData.Username, userData.Captcha)
+
+		if err != nil {
+			switch err.Type {
+			case domain.UserCaptchaFailure:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
+			case domain.UserNotFoundError:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			}
 			return
 		}
 

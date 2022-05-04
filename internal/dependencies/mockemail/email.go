@@ -5,14 +5,16 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 )
 
-type EmailService struct{}
+type EmailService struct {
+	FromAddress string
+}
 
-func NewEmailService() *EmailService {
-	return &EmailService{}
+func NewEmailService(fromAddress string) *EmailService {
+	return &EmailService{FromAddress: fromAddress}
 }
 
 func (e *EmailService) Send(email *domain.Email) *domain.EmailError {
-	fmt.Printf("sending email from %s to %s\n", email.FromAddress, email.ToAddress)
+	fmt.Printf("sending email from %s to %s\n", e.FromAddress, email.ToAddress)
 	fmt.Printf("subject: %s\n", email.Subject)
 	fmt.Printf("contents: %s\n", email.Content)
 	return nil

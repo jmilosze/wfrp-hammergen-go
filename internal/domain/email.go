@@ -3,10 +3,9 @@ package domain
 import "fmt"
 
 type Email struct {
-	FromAddress string
-	ToAddress   string
-	Subject     string
-	Content     string
+	ToAddress string
+	Subject   string
+	Content   string
 }
 
 type EmailService interface {

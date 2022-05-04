@@ -21,10 +21,15 @@ type JwtConfig struct {
 	HmacSecret       string
 }
 
+type EmailConfig struct {
+	FromAddress string
+}
+
 type Config struct {
 	ServerConfig     *ServerConfig
 	MemDbUserService *MemDbUserService
 	JwtConfig        *JwtConfig
+	EmailConfig      *EmailConfig
 }
 
 type UserSeed struct {
@@ -54,5 +59,6 @@ func NewDefault() (*Config, error) {
 		ServerConfig:     &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
 		MemDbUserService: &MemDbUserService{BcryptCost: 12, SeedUsers: users},
 		JwtConfig:        &JwtConfig{AccessExpiryTime: 24 * time.Hour, ResetExpiryTime: 48 * time.Hour, HmacSecret: "some_secret"},
+		EmailConfig:      &EmailConfig{FromAddress: "admin@hammergen.net"},
 	}, nil
 }

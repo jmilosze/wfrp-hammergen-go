@@ -7,6 +7,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/golangjwt"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/memdb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mockcaptcha"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mockemail"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 	"log"
@@ -30,8 +31,9 @@ func run() error {
 
 	validate := validator.New()
 	jwtService := golangjwt.NewHmacService(cfg.JwtConfig.HmacSecret, cfg.JwtConfig.AccessExpiryTime, cfg.JwtConfig.ResetExpiryTime)
-	emailService := mockemail.NewEmailService()
-	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, validate)
+	emailService := mockemail.NewEmailService(cfg.EmailConfig.FromAddress)
+	captchaService := mockcaptcha.NewCaptchaService()
+	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, captchaService, validate)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService)
