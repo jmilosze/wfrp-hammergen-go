@@ -350,7 +350,7 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 
 func (s *UserService) SendResetPassword(username string, captcha string) *domain.UserError {
 	if len(username) == 0 || len(captcha) == 0 {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username, or captcha")}
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username or captcha")}
 	}
 
 	if !s.CaptchaService.Verify(captcha) {
@@ -366,17 +366,58 @@ func (s *UserService) SendResetPassword(username string, captcha string) *domain
 		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
-	claims := domain.Claims{Id: userDb.Id, Admin: userDb.Admin, SharedAccounts: userDb.SharedAccounts}
+	claims := domain.Claims{Id: userDb.Id, Admin: userDb.Admin, SharedAccounts: userDb.SharedAccounts, ResetPassword: true}
 	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
 
 	if err != nil {
 		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	email := domain.Email{ToAddress: userDb.Username, Subject: "password reset", Content: resetToken}
+	email := domain.Email{
+		ToAddress: userDb.Username,
+		Subject:   "password reset",
+		Content:   resetToken,
+	}
 
 	if eErr := s.EmailService.Send(&email); eErr != nil {
 		return &domain.UserError{Type: domain.UserInternalError, Err: eErr}
+	}
+
+	return nil
+}
+
+func (s *UserService) ResetPassword(token string, newPassword string) *domain.UserError {
+	if len(token) == 0 || len(newPassword) == 0 {
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing token or username")}
+	}
+
+	claims, err := s.JwtService.ParseToken(token)
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("invalid token")}
+	}
+
+	if !claims.ResetPassword {
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("invalid token")}
+	}
+
+	var newCreds = domain.UserWriteCredentials{Username: "", Password: newPassword}
+	if err := s.v.Struct(newCreds); err != nil {
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
+	}
+
+	userDb, err := getFromDb("id", claims.Id, s.Db)
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
+	if userDb == nil {
+		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
+	}
+
+	userDb.updateCredentials(newCreds.Username, newCreds.Password, s.BcryptCost)
+
+	if e := insertInDb(userDb, s.Db); e != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	return nil

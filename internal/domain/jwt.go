@@ -8,6 +8,7 @@ type Claims struct {
 	Id             string
 	Admin          bool
 	SharedAccounts []string
+	ResetPassword  bool
 }
 
 type JwtService interface {

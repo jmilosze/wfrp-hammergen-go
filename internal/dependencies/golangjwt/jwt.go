@@ -22,10 +22,10 @@ func NewHmacService(hmacSecret string, accessTokenExpiryTime time.Duration, rese
 }
 
 func (jwtService *HmacService) GenerateAccessToken(claims *domain.Claims) (string, error) {
-	return generateToken(claims, false, jwtService.AccessTokenExpiryTime, jwtService.HmacSecret)
+	return generateToken(claims, jwtService.AccessTokenExpiryTime, jwtService.HmacSecret)
 }
 
-func generateToken(claims *domain.Claims, pwd bool, expiryTime time.Duration, hmacSecret []byte) (string, error) {
+func generateToken(claims *domain.Claims, expiryTime time.Duration, hmacSecret []byte) (string, error) {
 	currentTime := time.Now()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -34,13 +34,13 @@ func generateToken(claims *domain.Claims, pwd bool, expiryTime time.Duration, hm
 		"orig_iat": currentTime.Unix(),
 		"adm":      claims.Admin,
 		"shrd_acc": claims.SharedAccounts,
-		"pwd":      pwd,
+		"pwd":      claims.ResetPassword,
 	})
 	return token.SignedString(hmacSecret)
 }
 
 func (jwtService *HmacService) GenerateResetPasswordToken(claims *domain.Claims) (string, error) {
-	return generateToken(claims, true, jwtService.ResetTokenExpiryTime, jwtService.HmacSecret)
+	return generateToken(claims, jwtService.ResetTokenExpiryTime, jwtService.HmacSecret)
 }
 
 func (jwtService *HmacService) ParseToken(tokenString string) (*domain.Claims, error) {
@@ -71,6 +71,7 @@ func (jwtService *HmacService) ParseToken(tokenString string) (*domain.Claims, e
 	var claims domain.Claims
 	claims.Id, _ = jwtClaims["sub"].(string)
 	claims.Admin, _ = jwtClaims["adm"].(bool)
+	claims.ResetPassword, _ = jwtClaims["pwd"].(bool)
 
 	sharedAccounts, _ := jwtClaims["shrd_acc"].([]interface{})
 	claims.SharedAccounts = make([]string, len(sharedAccounts))

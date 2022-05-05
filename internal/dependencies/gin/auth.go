@@ -31,7 +31,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 			return
 		}
 
-		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts}
+		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts, ResetPassword: false}
 		token, tokenErr := jwtService.GenerateAccessToken(&claims)
 
 		if tokenErr != nil {
@@ -55,6 +55,11 @@ func RequireJwt(jwtService domain.JwtService) gin.HandlerFunc {
 
 		claims, err := jwtService.ParseToken(token)
 		if err != nil {
+			unauthorized(c)
+			return
+		}
+
+		if claims.ResetPassword {
 			unauthorized(c)
 			return
 		}

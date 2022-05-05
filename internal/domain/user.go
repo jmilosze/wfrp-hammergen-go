@@ -43,6 +43,7 @@ type UserService interface {
 	List() ([]*User, *UserError)
 	GetAndAuth(username string, passwd string) (*User, *UserError)
 	SendResetPassword(username string, captcha string) *UserError
+	ResetPassword(token string, newPassword string) *UserError
 }
 
 type UserError struct {

@@ -15,6 +15,7 @@ func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtS
 	router.PUT("api/user/claims/:userId", RequireJwt(jwtService), updateClaims(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
 	router.POST("api/user/send_reset_password", resetSendPasswordHandler(userService))
+	router.POST("api/user/reset_password", resetPasswordHandler(userService))
 }
 
 type UserCreate struct {
@@ -296,4 +297,31 @@ func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context)
 
 		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
 	}
+}
+
+type UserResetPassword struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+func resetPasswordHandler(userService domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var userData UserResetPassword
+		if err := c.BindJSON(&userData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			return
+		}
+
+		if err := userService.ResetPassword(userData.Token, userData.Password); err != nil {
+			switch err.Type {
+			case domain.UserInternalError:
+				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			default:
+				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
+			}
+			return
+		}
+		c.JSON(http.StatusNoContent, gin.H{"code": http.StatusNoContent})
+	}
+
 }
