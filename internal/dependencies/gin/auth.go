@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-func RegisterAuthRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
-	router.POST("api/token", tokenHandler(userService, jwtService))
+func RegisterAuthRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService) {
+	router.POST("api/token", tokenHandler(us, js))
 }
 
-func tokenHandler(userService domain.UserService, jwtService domain.JwtService) func(*gin.Context) {
+func tokenHandler(us domain.UserService, jwtService domain.JwtService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		user, err := userService.GetAndAuth(username, password)
+		user, err := us.GetAndAuth(username, password)
 
 		if err != nil {
 			switch err.Type {
@@ -43,7 +43,7 @@ func tokenHandler(userService domain.UserService, jwtService domain.JwtService) 
 	}
 }
 
-func RequireJwt(jwtService domain.JwtService) gin.HandlerFunc {
+func RequireJwt(js domain.JwtService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 
@@ -53,7 +53,7 @@ func RequireJwt(jwtService domain.JwtService) gin.HandlerFunc {
 			return
 		}
 
-		claims, err := jwtService.ParseToken(token)
+		claims, err := js.ParseToken(token)
 		if err != nil {
 			unauthorized(c)
 			return

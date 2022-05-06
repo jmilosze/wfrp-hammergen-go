@@ -17,7 +17,7 @@ type UserService struct {
 	EmailService   domain.EmailService
 	JwtService     domain.JwtService
 	CaptchaService domain.CaptchaService
-	v              *validator.Validate
+	Validator      *validator.Validate
 }
 
 type UserDb struct {
@@ -120,7 +120,7 @@ func NewUserService(cfg *config.MemDbUserService,
 		}
 	}
 
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, v: v}
+	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, Validator: v}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {
@@ -196,11 +196,11 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username or password")}
 	}
 
-	if err := s.v.Struct(cred); err != nil {
+	if err := s.Validator.Struct(cred); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
-	if err := s.v.Struct(user); err != nil {
+	if err := s.Validator.Struct(user); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
@@ -236,7 +236,7 @@ func insertInDb(u *UserDb, db *memdb.MemDB) error {
 }
 
 func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if err := s.v.Struct(user); err != nil {
+	if err := s.Validator.Struct(user); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
@@ -259,7 +259,7 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 }
 
 func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
-	if err := s.v.Struct(cred); err != nil {
+	if err := s.Validator.Struct(cred); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
@@ -293,7 +293,7 @@ func authenticate(user *UserDb, password string) bool {
 }
 
 func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
-	if err := s.v.Struct(claims); err != nil {
+	if err := s.Validator.Struct(claims); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
@@ -392,7 +392,7 @@ func (s *UserService) ResetPassword(token string, newPassword string) *domain.Us
 	}
 
 	var newCreds = domain.UserWriteCredentials{Username: "", Password: newPassword}
-	if err := s.v.Struct(newCreds); err != nil {
+	if err := s.Validator.Struct(newCreds); err != nil {
 		return &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 

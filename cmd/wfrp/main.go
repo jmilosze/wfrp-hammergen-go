@@ -29,11 +29,11 @@ func run() error {
 		return fmt.Errorf("getting service config from environment: %w", err)
 	}
 
-	validate := validator.New()
+	validator := validator.New()
 	jwtService := golangjwt.NewHmacService(cfg.JwtConfig.HmacSecret, cfg.JwtConfig.AccessExpiryTime, cfg.JwtConfig.ResetExpiryTime)
 	emailService := mockemail.NewEmailService(cfg.EmailConfig.FromAddress)
 	captchaService := mockcaptcha.NewCaptchaService()
-	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, validate)
+	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, validator)
 
 	router := gin.NewRouter()
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
