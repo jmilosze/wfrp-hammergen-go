@@ -33,10 +33,10 @@ func run() error {
 	jwtService := golangjwt.NewHmacService(cfg.JwtConfig.HmacSecret, cfg.JwtConfig.AccessExpiryTime, cfg.JwtConfig.ResetExpiryTime)
 	emailService := mockemail.NewEmailService(cfg.EmailConfig.FromAddress)
 	captchaService := mockcaptcha.NewCaptchaService()
-	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, captchaService, validate)
+	userService := memdb.NewUserService(cfg.MemDbUserService, emailService, jwtService, validate)
 
 	router := gin.NewRouter()
-	gin.RegisterUserRoutes(router, userService, jwtService)
+	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
 	gin.RegisterAuthRoutes(router, userService, jwtService)
 
 	server := http.NewServer(cfg.ServerConfig, router)

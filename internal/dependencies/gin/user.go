@@ -6,15 +6,15 @@ import (
 	"net/http"
 )
 
-func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService) {
-	router.POST("api/user", createHandler(userService))
+func RegisterUserRoutes(router *gin.Engine, userService domain.UserService, jwtService domain.JwtService, captchaService domain.CaptchaService) {
+	router.POST("api/user", createHandler(userService, captchaService))
 	router.GET("api/user/:userId", RequireJwt(jwtService), getHandler(userService))
 	router.GET("api/user", RequireJwt(jwtService), listHandler(userService))
 	router.PUT("api/user/:userId", RequireJwt(jwtService), updateHandler(userService))
 	router.PUT("api/user/credentials/:userId", RequireJwt(jwtService), updateCredentialsHandler(userService))
 	router.PUT("api/user/claims/:userId", RequireJwt(jwtService), updateClaims(userService))
 	router.DELETE("api/user/:userId", RequireJwt(jwtService), deleteHandler(userService))
-	router.POST("api/user/send_reset_password", resetSendPasswordHandler(userService))
+	router.POST("api/user/send_reset_password", resetSendPasswordHandler(userService, captchaService))
 	router.POST("api/user/reset_password", resetPasswordHandler(userService))
 }
 
@@ -25,7 +25,7 @@ type UserCreate struct {
 	Captcha        string   `json:"captcha"`
 }
 
-func createHandler(userService domain.UserService) func(*gin.Context) {
+func createHandler(userService domain.UserService, captchaService domain.CaptchaService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var userData UserCreate
 		if err := c.BindJSON(&userData); err != nil {
@@ -33,18 +33,22 @@ func createHandler(userService domain.UserService) func(*gin.Context) {
 			return
 		}
 
+		remoteAddr := c.Request.RemoteAddr
+		if !captchaService.Verify(userData.Captcha, remoteAddr) {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
+			return
+		}
+
 		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
 		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
 
-		userRead, err := userService.Create(&userWriteCredentials, &userWrite, userData.Captcha)
+		userRead, err := userService.Create(&userWriteCredentials, &userWrite)
 		if err != nil {
 			switch err.Type {
 			case domain.UserAlreadyExistsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user already exists"})
 			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
-			case domain.UserCaptchaFailure:
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
@@ -271,23 +275,26 @@ type UserSendResetPassword struct {
 	Captcha  string `json:"captcha"`
 }
 
-func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context) {
+func resetSendPasswordHandler(userService domain.UserService, captchaService domain.CaptchaService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var userData UserSendResetPassword
 		if err := c.BindJSON(&userData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
-		remoteAddr := c.Request.RemoteAddr
 
-		err := userService.SendResetPassword(userData.Username, userData.Captcha, remoteAddr)
+		remoteAddr := c.Request.RemoteAddr
+		if !captchaService.Verify(userData.Captcha, remoteAddr) {
+			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
+			return
+		}
+
+		err := userService.SendResetPassword(userData.Username)
 
 		if err != nil {
 			switch err.Type {
 			case domain.UserInvalidArguments:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
-			case domain.UserCaptchaFailure:
-				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "captcha verification error"})
 			case domain.UserNotFoundError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "user not found"})
 			default:

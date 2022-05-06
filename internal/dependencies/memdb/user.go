@@ -103,7 +103,6 @@ func (u *UserDb) updateClaims(admin *bool) *UserDb {
 func NewUserService(cfg *config.MemDbUserService,
 	email domain.EmailService,
 	jwt domain.JwtService,
-	cap domain.CaptchaService,
 	v *validator.Validate) *UserService {
 
 	db, err := createNewMemDb()
@@ -121,7 +120,7 @@ func NewUserService(cfg *config.MemDbUserService,
 		}
 	}
 
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, CaptchaService: cap, v: v}
+	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, v: v}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {
@@ -192,13 +191,9 @@ func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, 
 	return userDb.toUser(), nil
 }
 
-func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite, captcha string) (*domain.User, *domain.UserError) {
-	if len(cred.Username) == 0 || len(cred.Password) == 0 || len(captcha) == 0 {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username, password, or captcha")}
-	}
-
-	if !s.CaptchaService.Verify(captcha) {
-		return nil, &domain.UserError{Type: domain.UserCaptchaFailure, Err: errors.New("captcha verification failed")}
+func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if len(cred.Username) == 0 || len(cred.Password) == 0 {
+		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username or password")}
 	}
 
 	if err := s.v.Struct(cred); err != nil {
@@ -348,13 +343,9 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 	return users, nil
 }
 
-func (s *UserService) SendResetPassword(username string, captcha string) *domain.UserError {
-	if len(username) == 0 || len(captcha) == 0 {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username or captcha")}
-	}
-
-	if !s.CaptchaService.Verify(captcha) {
-		return &domain.UserError{Type: domain.UserCaptchaFailure, Err: errors.New("captcha verification failed")}
+func (s *UserService) SendResetPassword(username string) *domain.UserError {
+	if len(username) == 0 {
+		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username")}
 	}
 
 	userDb, uErr := getFromDb("username", username, s.Db)
