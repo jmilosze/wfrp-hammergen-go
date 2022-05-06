@@ -278,8 +278,9 @@ func resetSendPasswordHandler(userService domain.UserService) func(*gin.Context)
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
+		remoteAddr := c.Request.RemoteAddr
 
-		err := userService.SendResetPassword(userData.Username, userData.Captcha)
+		err := userService.SendResetPassword(userData.Username, userData.Captcha, remoteAddr)
 
 		if err != nil {
 			switch err.Type {
