@@ -12,7 +12,7 @@ func RegisterAuthRoutes(router *gin.Engine, us domain.UserService, js domain.Jwt
 	router.POST("api/token", tokenHandler(us, js))
 }
 
-func tokenHandler(us domain.UserService, jwtService domain.JwtService) func(*gin.Context) {
+func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
@@ -32,7 +32,7 @@ func tokenHandler(us domain.UserService, jwtService domain.JwtService) func(*gin
 		}
 
 		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccounts, ResetPassword: false}
-		token, tokenErr := jwtService.GenerateAccessToken(&claims)
+		token, tokenErr := js.GenerateAccessToken(&claims)
 
 		if tokenErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "error generating token"})
