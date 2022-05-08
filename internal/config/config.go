@@ -10,7 +10,7 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration
 }
 
-type MemDbUserService struct {
+type UserServiceConfig struct {
 	BcryptCost int
 	SeedUsers  map[string]*UserSeed
 }
@@ -26,10 +26,10 @@ type EmailConfig struct {
 }
 
 type Config struct {
-	ServerConfig     *ServerConfig
-	MemDbUserService *MemDbUserService
-	JwtConfig        *JwtConfig
-	EmailConfig      *EmailConfig
+	ServerConfig      *ServerConfig
+	UserServiceConfig *UserServiceConfig
+	JwtConfig         *JwtConfig
+	EmailConfig       *EmailConfig
 }
 
 type UserSeed struct {
@@ -56,9 +56,9 @@ func NewDefault() (*Config, error) {
 	}
 
 	return &Config{
-		ServerConfig:     &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
-		MemDbUserService: &MemDbUserService{BcryptCost: 12, SeedUsers: users},
-		JwtConfig:        &JwtConfig{AccessExpiryTime: 24 * time.Hour, ResetExpiryTime: 48 * time.Hour, HmacSecret: "some_secret"},
-		EmailConfig:      &EmailConfig{FromAddress: "admin@hammergen.net"},
+		ServerConfig:      &ServerConfig{Host: "localhost", Port: 8081, ShutdownTimeout: 2 * time.Second},
+		UserServiceConfig: &UserServiceConfig{BcryptCost: 12, SeedUsers: users},
+		JwtConfig:         &JwtConfig{AccessExpiryTime: 24 * time.Hour, ResetExpiryTime: 48 * time.Hour, HmacSecret: "some_secret"},
+		EmailConfig:       &EmailConfig{FromAddress: "admin@hammergen.net"},
 	}, nil
 }

@@ -1,126 +1,22 @@
 package memdb
 
 import (
-	"errors"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashicorp/go-memdb"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
-	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
-type UserService struct {
-	Db             *memdb.MemDB
-	BcryptCost     int
-	EmailService   domain.EmailService
-	JwtService     domain.JwtService
-	CaptchaService domain.CaptchaService
-	Validator      *validator.Validate
+type UserDbService struct {
+	Db *memdb.MemDB
 }
 
-type UserDb struct {
-	Id             string
-	Username       string
-	PasswordHash   []byte
-	Admin          bool
-	SharedAccounts []string
-}
-
-func newUserDb() *UserDb {
-	newId := xid.New().String()
-	return &UserDb{Id: newId, Username: "", PasswordHash: []byte{}, Admin: false, SharedAccounts: []string{}}
-}
-
-func (u *UserDb) toUser() *domain.User {
-	if u == nil {
-		return nil
-	}
-
-	return &domain.User{Id: u.Id, Admin: u.Admin, Username: u.Username, SharedAccounts: u.SharedAccounts}
-}
-
-func (u *UserDb) copy() *UserDb {
-	if u == nil {
-		return nil
-	}
-	userCopy := *u
-	userCopy.Username = strings.Clone(u.Username)
-	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
-	copy(userCopy.PasswordHash, u.PasswordHash)
-	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
-	for i, s := range u.SharedAccounts {
-		userCopy.SharedAccounts[i] = strings.Clone(s)
-	}
-
-	return &userCopy
-}
-
-func (u *UserDb) update(sharedAccounts []string) *UserDb {
-	if u == nil {
-		return nil
-	}
-
-	if sharedAccounts != nil {
-		u.SharedAccounts = make([]string, len(sharedAccounts))
-		for i, s := range sharedAccounts {
-			u.SharedAccounts[i] = strings.Clone(s)
-		}
-	}
-
-	return u
-}
-
-func (u *UserDb) updateCredentials(username string, password string, bcryptCost int) *UserDb {
-	if u == nil {
-		return nil
-	}
-
-	if len(username) != 0 {
-		u.Username = strings.Clone(username)
-	}
-
-	if len(password) != 0 {
-		u.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
-	}
-
-	return u
-}
-
-func (u *UserDb) updateClaims(admin *bool) *UserDb {
-	if u == nil {
-		return nil
-	}
-
-	if admin != nil {
-		u.Admin = *admin
-	}
-
-	return u
-}
-
-func NewUserService(cfg *config.MemDbUserService,
-	email domain.EmailService,
-	jwt domain.JwtService,
-	v *validator.Validate) *UserService {
-
+func NewUserDbService() *UserDbService {
 	db, err := createNewMemDb()
 	if err != nil {
 		panic(err)
 	}
 
-	for id, u := range cfg.SeedUsers {
-		var userDb = UserDb{Id: id}
-		userDb.updateCredentials(u.Username, u.Password, cfg.BcryptCost)
-		userDb.updateClaims(&u.Admin)
-		userDb.update(u.SharedAccounts)
-		if err := insertInDb(&userDb, db); err != nil {
-			panic(err)
-		}
-	}
-
-	return &UserService{Db: db, BcryptCost: cfg.BcryptCost, EmailService: email, JwtService: jwt, Validator: v}
+	return &UserDbService{Db: db}
 }
 
 func createNewMemDb() (*memdb.MemDB, error) {
@@ -146,21 +42,19 @@ func createNewMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
-	userDb, err := getFromDb("id", id, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+func (s *UserDbService) NewUserDb(id string) *domain.UserDb {
+	var newId string
+	if len(id) != 0 {
+		newId = xid.New().String()
+	} else {
+		newId = id
 	}
 
-	if userDb == nil {
-		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	return userDb.toUser(), nil
+	return &domain.UserDb{Id: newId, Username: "", PasswordHash: []byte{}, Admin: false, SharedAccounts: []string{}}
 }
 
-func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, error) {
-	txn := db.Txn(false)
+func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, error) {
+	txn := s.Db.Txn(false)
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
 		return nil, err
@@ -169,153 +63,22 @@ func getFromDb(fieldName string, fieldValue string, db *memdb.MemDB) (*UserDb, e
 	if userRaw == nil {
 		return nil, nil
 	}
-	user := userRaw.(*UserDb)
+	user := userRaw.(*domain.UserDb)
 
-	return user.copy(), nil
+	return user.Copy(), nil
 }
 
-func (s *UserService) GetAndAuth(username string, passwd string) (*domain.User, *domain.UserError) {
-	userDb, err := getFromDb("username", username, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb == nil {
-		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	if !authenticate(userDb, passwd) {
-		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
-	}
-
-	return userDb.toUser(), nil
-}
-
-func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if len(cred.Username) == 0 || len(cred.Password) == 0 {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username or password")}
-	}
-
-	if err := s.Validator.Struct(cred); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	if err := s.Validator.Struct(user); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	userDb, err := getFromDb("username", cred.Username, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb != nil {
-		return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: errors.New("user already exists")}
-	}
-
-	userDb = newUserDb()
-	userDb.update(user.SharedAccounts)
-	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
-
-	if err := insertInDb(userDb, s.Db); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	return userDb.toUser(), nil
-}
-
-func insertInDb(u *UserDb, db *memdb.MemDB) error {
-
-	txn := db.Txn(true)
+func (s *UserDbService) Insert(user *domain.UserDb) error {
+	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", u.copy()); err != nil {
+	if err := txn.Insert("user", user.Copy()); err != nil {
 		return err
 	}
 	txn.Commit()
 	return nil
 }
 
-func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if err := s.Validator.Struct(user); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	userDb, err := getFromDb("id", id, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb == nil {
-		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	userDb.update(user.SharedAccounts)
-
-	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	return userDb.toUser(), nil
-}
-
-func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
-	if err := s.Validator.Struct(cred); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	userDb, err := getFromDb("id", id, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb == nil {
-		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	if !authenticate(userDb, currentPasswd) {
-		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
-	}
-
-	userDb.updateCredentials(cred.Username, cred.Password, s.BcryptCost)
-
-	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	return userDb.toUser(), nil
-}
-
-func authenticate(user *UserDb, password string) bool {
-	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) == nil {
-		return true
-	}
-	return false
-}
-
-func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
-	if err := s.Validator.Struct(claims); err != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	userDb, err := getFromDb("id", id, s.Db)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb == nil {
-		return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	userDb.updateClaims(claims.Admin)
-
-	if e := insertInDb(userDb, s.Db); e != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	return userDb.toUser(), nil
-}
-
-func (s *UserService) Delete(id string) *domain.UserError {
+func (s *UserDbService) Delete(id string) error {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if _, err := txn.DeleteAll("user", "id", id); err != nil {
@@ -326,90 +89,18 @@ func (s *UserService) Delete(id string) *domain.UserError {
 	return nil
 }
 
-func (s *UserService) List() ([]*domain.User, *domain.UserError) {
+func (s *UserDbService) List() ([]*domain.UserDb, error) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")
 	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+		return nil, err
 	}
 
-	var users []*domain.User
+	var users []*domain.UserDb
 	for obj := it.Next(); obj != nil; obj = it.Next() {
-		u := obj.(*UserDb)
-		users = append(users, u.copy().toUser())
+		u := obj.(*domain.UserDb)
+		users = append(users, u.Copy())
 	}
-
 	return users, nil
-}
-
-func (s *UserService) SendResetPassword(username string) *domain.UserError {
-	if len(username) == 0 {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing username")}
-	}
-
-	userDb, uErr := getFromDb("username", username, s.Db)
-	if uErr != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: uErr}
-	}
-
-	if userDb == nil {
-		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	claims := domain.Claims{Id: userDb.Id, Admin: userDb.Admin, SharedAccounts: userDb.SharedAccounts, ResetPassword: true}
-	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
-
-	if err != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	email := domain.Email{
-		ToAddress: userDb.Username,
-		Subject:   "password reset",
-		Content:   resetToken,
-	}
-
-	if eErr := s.EmailService.Send(&email); eErr != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: eErr}
-	}
-
-	return nil
-}
-
-func (s *UserService) ResetPassword(token string, newPassword string) *domain.UserError {
-	if len(token) == 0 || len(newPassword) == 0 {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("missing token or username")}
-	}
-
-	claims, err := s.JwtService.ParseToken(token)
-	if err != nil {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("invalid token")}
-	}
-
-	if !claims.ResetPassword {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: errors.New("invalid token")}
-	}
-
-	var newCreds = domain.UserWriteCredentials{Username: "", Password: newPassword}
-	if err := s.Validator.Struct(newCreds); err != nil {
-		return &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
-	}
-
-	userDb, err := getFromDb("id", claims.Id, s.Db)
-	if err != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	if userDb == nil {
-		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
-	}
-
-	userDb.updateCredentials(newCreds.Username, newCreds.Password, s.BcryptCost)
-
-	if e := insertInDb(userDb, s.Db); e != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err}
-	}
-
-	return nil
 }
