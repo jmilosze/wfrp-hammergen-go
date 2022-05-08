@@ -44,14 +44,8 @@ func createNewMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *UserDbService) NewUserDb(id string) *domain.UserDb {
-	var newId string
-	if len(id) != 0 {
-		newId = xid.New().String()
-	} else {
-		newId = id
-	}
-
+func (s *UserDbService) NewUserDb() *domain.UserDb {
+	newId := xid.New().String()
 	admin := false
 	username := ""
 	return &domain.UserDb{Id: newId, Username: &username, PasswordHash: []byte{}, Admin: &admin, SharedAccounts: []string{}}
@@ -92,10 +86,10 @@ func (s *UserDbService) Create(user *domain.UserDb) *domain.UserDbError {
 	return nil
 }
 
-func (s *UserDbService) Update(user *domain.UserDb) *domain.UserDbError {
+func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.UserDbError) {
 	userDb, err := s.Retrieve("id", user.Id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if user.Username != nil {
@@ -122,11 +116,11 @@ func (s *UserDbService) Update(user *domain.UserDb) *domain.UserDbError {
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", user.Copy()); err != nil {
-		return &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+	if err := txn.Insert("user", userDb); err != nil {
+		return nil, &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
 	}
 	txn.Commit()
-	return nil
+	return userDb, nil
 }
 
 func (s *UserDbService) Delete(id string) *domain.UserDbError {

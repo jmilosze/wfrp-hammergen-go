@@ -45,10 +45,10 @@ func (u *UserDb) Copy() *UserDb {
 type UserDbService interface {
 	Create(user *UserDb) *UserDbError
 	Retrieve(fieldName string, fieldValue string) (*UserDb, *UserDbError)
-	Update(user *UserDb) *UserDbError
+	Update(user *UserDb) (*UserDb, *UserDbError)
 	Delete(id string) *UserDbError
 	List() ([]*UserDb, *UserDbError)
-	NewUserDb(id string) *UserDb
+	NewUserDb() *UserDb
 }
 
 type UserDbError struct {

@@ -40,7 +40,7 @@ type UserService interface {
 	UpdateClaims(id string, claims *UserWriteClaims) (*User, *UserError)
 	Delete(id string) *UserError
 	List() ([]*User, *UserError)
-	GetAndAuth(username string, passwd string) (*User, *UserError)
+	Authenticate(username string, password string) (*User, *UserError)
 	SendResetPassword(username string) *UserError
 	ResetPassword(token string, newPassword string) *UserError
 }
