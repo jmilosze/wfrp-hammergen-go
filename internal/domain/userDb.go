@@ -1,12 +1,21 @@
 package domain
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+const (
+	UserDbNotFoundError = iota
+	UserDbAlreadyExistsError
+	UserDbInternalError
+)
 
 type UserDb struct {
 	Id             string
-	Username       string
+	Username       *string
 	PasswordHash   []byte
-	Admin          bool
+	Admin          *bool
 	SharedAccounts []string
 }
 
@@ -22,7 +31,7 @@ func (u *UserDb) Copy() *UserDb {
 		return nil
 	}
 	userCopy := *u
-	userCopy.Username = strings.Clone(u.Username)
+	*userCopy.Username = strings.Clone(*u.Username)
 	userCopy.PasswordHash = make([]byte, len(u.PasswordHash))
 	copy(userCopy.PasswordHash, u.PasswordHash)
 	userCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
@@ -34,9 +43,23 @@ func (u *UserDb) Copy() *UserDb {
 }
 
 type UserDbService interface {
-	Retrieve(fieldName string, fieldValue string) (*UserDb, error)
-	Insert(user *UserDb) error
-	Delete(id string) error
-	List() ([]*UserDb, error)
+	Create(user *UserDb) *UserDbError
+	Retrieve(fieldName string, fieldValue string) (*UserDb, *UserDbError)
+	Update(user *UserDb) *UserDbError
+	Delete(id string) *UserDbError
+	List() ([]*UserDb, *UserDbError)
 	NewUserDb(id string) *UserDb
+}
+
+type UserDbError struct {
+	Type int
+	Err  error
+}
+
+func (e *UserDbError) Unwrap() error {
+	return e.Err
+}
+
+func (e *UserDbError) Error() string {
+	return fmt.Sprintf("%s", e.Err)
 }

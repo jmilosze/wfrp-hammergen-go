@@ -27,8 +27,8 @@ type UserWriteClaims struct {
 
 type User struct {
 	Id             string
-	Username       string
-	Admin          bool
+	Username       *string
+	Admin          *bool
 	SharedAccounts []string
 }
 
