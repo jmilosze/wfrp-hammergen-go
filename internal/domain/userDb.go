@@ -61,5 +61,5 @@ func (e *UserDbError) Unwrap() error {
 }
 
 func (e *UserDbError) Error() string {
-	return fmt.Sprintf("%s", e.Err)
+	return fmt.Sprintf("userDb error, %s", e.Err)
 }
