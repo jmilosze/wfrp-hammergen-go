@@ -1,14 +1,7 @@
 package domain
 
 import (
-	"fmt"
 	"strings"
-)
-
-const (
-	UserDbNotFoundError = iota
-	UserDbAlreadyExistsError
-	UserDbInternalError
 )
 
 type UserDb struct {
@@ -43,23 +36,10 @@ func (u *UserDb) Copy() *UserDb {
 }
 
 type UserDbService interface {
-	Create(user *UserDb) *UserDbError
-	Retrieve(fieldName string, fieldValue string) (*UserDb, *UserDbError)
-	Update(user *UserDb) (*UserDb, *UserDbError)
-	Delete(id string) *UserDbError
-	List() ([]*UserDb, *UserDbError)
+	Create(user *UserDb) *DbError
+	Retrieve(fieldName string, fieldValue string) (*UserDb, *DbError)
+	Update(user *UserDb) (*UserDb, *DbError)
+	Delete(id string) *DbError
+	List() ([]*UserDb, *DbError)
 	NewUserDb() *UserDb
-}
-
-type UserDbError struct {
-	Type int
-	Err  error
-}
-
-func (e *UserDbError) Unwrap() error {
-	return e.Err
-}
-
-func (e *UserDbError) Error() string {
-	return fmt.Sprintf("userDb error, %s", e.Err)
 }

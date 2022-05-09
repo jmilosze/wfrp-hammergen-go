@@ -51,42 +51,42 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 	return &domain.UserDb{Id: newId, Username: &username, PasswordHash: []byte{}, Admin: &admin, SharedAccounts: []string{}}
 }
 
-func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.UserDbError) {
+func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	txn := s.Db.Txn(false)
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
-		return nil, &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 
 	if userRaw == nil {
-		return nil, &domain.UserDbError{Type: domain.UserDbNotFoundError, Err: errors.New("user not found")}
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
 	}
 	user := userRaw.(*domain.UserDb)
 
 	return user.Copy(), nil
 }
 
-func (s *UserDbService) Create(user *domain.UserDb) *domain.UserDbError {
+func (s *UserDbService) Create(user *domain.UserDb) *domain.DbError {
 	_, err := s.Retrieve("username", *user.Username)
 
 	if err == nil {
-		return &domain.UserDbError{Type: domain.UserDbAlreadyExistsError, Err: errors.New("user already exists")}
+		return &domain.DbError{Type: domain.DbAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 
-	if err != nil && err.Type != domain.UserDbNotFoundError {
-		return &domain.UserDbError{Type: domain.UserDbInternalError, Err: err.Unwrap()}
+	if err != nil && err.Type != domain.DbNotFoundError {
+		return &domain.DbError{Type: domain.DbInternalError, Err: err.Unwrap()}
 	}
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if err := txn.Insert("user", user.Copy()); err != nil {
-		return &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+		return &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
 	return nil
 }
 
-func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.UserDbError) {
+func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
 	userDb, err := s.Retrieve("id", user.Id)
 	if err != nil {
 		return nil, err
@@ -117,29 +117,29 @@ func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.Use
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if err := txn.Insert("user", userDb); err != nil {
-		return nil, &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
 	return userDb, nil
 }
 
-func (s *UserDbService) Delete(id string) *domain.UserDbError {
+func (s *UserDbService) Delete(id string) *domain.DbError {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if _, err := txn.DeleteAll("user", "id", id); err != nil {
-		return &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+		return &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
 
 	return nil
 }
 
-func (s *UserDbService) List() ([]*domain.UserDb, *domain.UserDbError) {
+func (s *UserDbService) List() ([]*domain.UserDb, *domain.DbError) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")
 	if err != nil {
-		return nil, &domain.UserDbError{Type: domain.UserDbInternalError, Err: err}
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 
 	var users []*domain.UserDb

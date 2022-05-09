@@ -50,7 +50,7 @@ func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 	userDb, err := s.UserDbService.Retrieve("id", id)
 	if err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -64,7 +64,7 @@ func (s *UserService) Authenticate(username string, password string) (*domain.Us
 	userDb, err := s.UserDbService.Retrieve("username", username)
 	if err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -104,7 +104,7 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 
 	if err := s.UserDbService.Create(userDb); err != nil {
 		switch err.Type {
-		case domain.UserDbAlreadyExistsError:
+		case domain.DbAlreadyExistsError:
 			return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -125,7 +125,7 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 
 	if err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -143,7 +143,7 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 	userDb, err := s.UserDbService.Retrieve("id", id)
 	if err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -159,7 +159,7 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 
 	if _, err := s.UserDbService.Update(userDb); err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -178,7 +178,7 @@ func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*
 	userDb, err := s.UserDbService.Update(&userUpdate)
 	if err != nil {
 		switch err.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
@@ -270,7 +270,7 @@ func (s *UserService) ResetPassword(token string, newPassword string) *domain.Us
 
 	if _, err4 := s.UserDbService.Update(&userUpdate); err4 != nil {
 		switch err4.Type {
-		case domain.UserDbNotFoundError:
+		case domain.DbNotFoundError:
 			return &domain.UserError{Type: domain.UserNotFoundError, Err: err4}
 		default:
 			return &domain.UserError{Type: domain.UserInternalError, Err: err4}
