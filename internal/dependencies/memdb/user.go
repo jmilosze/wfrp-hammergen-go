@@ -66,6 +66,22 @@ func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.U
 	return copyUserDb(user), nil
 }
 
+func (s *UserDbService) RetrieveMany(fieldName string, fieldValues []string) (*domain.UserDb, *domain.DbError) {
+	txn := s.Db.Txn(false)
+
+	it, err := txn.Get("user", "id")
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	var users []*domain.UserDb
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		u := obj.(*domain.UserDb)
+		users = append(users, copyUserDb(u))
+	}
+	return users, nil
+}
+
 func copyUserDb(from *domain.UserDb) *domain.UserDb {
 	if from == nil {
 		return nil

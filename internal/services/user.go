@@ -17,7 +17,7 @@ type UserService struct {
 	JwtService    domain.JwtService
 }
 
-func usernamesToIds(usernames []string, db domain.UserDbService) ([]string, error) {
+func usernamesToIds(usernames []string, userDbs []domain.UserDb) ([]string, error) {
 	ids := make([]string, 0)
 	for _, u := range usernames {
 		// get id(u) from db
@@ -26,7 +26,7 @@ func usernamesToIds(usernames []string, db domain.UserDbService) ([]string, erro
 	return ids, nil
 }
 
-func idsToUsernames(ids []string, db domain.UserDbService) ([]string, error) {
+func idsToUsernames(ids []string, userDbs []domain.UserDb) ([]string, error) {
 	usernames := make([]string, 0)
 	for _, id := range ids {
 		// get id(u) from db
