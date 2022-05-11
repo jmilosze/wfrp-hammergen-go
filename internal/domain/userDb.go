@@ -11,7 +11,7 @@ type UserDb struct {
 type UserDbService interface {
 	Create(user *UserDb) *DbError
 	Retrieve(fieldName string, fieldValue string) (*UserDb, *DbError)
-	RetrieveMany(fieldName string, fieldValues []string) (*UserDb, *DbError)
+	RetrieveMany(fieldName string, fieldValues []string) ([]*UserDb, *DbError)
 	Update(user *UserDb) (*UserDb, *DbError)
 	Delete(id string) *DbError
 	List() ([]*UserDb, *DbError)

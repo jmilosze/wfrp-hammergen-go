@@ -33,25 +33,25 @@ type Config struct {
 }
 
 type UserSeed struct {
-	Username       string
-	Password       string
-	Admin          bool
-	SharedAccounts []string
+	Username          string
+	Password          string
+	Admin             bool
+	SharedAccountsIds []string
 }
 
 func NewDefault() (*Config, error) {
 	users := map[string]*UserSeed{
 		"0": {
-			Username:       "user1@test.com",
-			Password:       "123456",
-			Admin:          true,
-			SharedAccounts: []string{"1"},
+			Username:          "user1@test.com",
+			Password:          "123456",
+			Admin:             true,
+			SharedAccountsIds: []string{"1"},
 		},
 		"1": {
-			Username:       "user2@test.com",
-			Password:       "789123",
-			Admin:          false,
-			SharedAccounts: []string{},
+			Username:          "user2@test.com",
+			Password:          "789123",
+			Admin:             false,
+			SharedAccountsIds: []string{},
 		},
 	}
 

@@ -17,22 +17,22 @@ type UserService struct {
 	JwtService    domain.JwtService
 }
 
-func usernamesToIds(usernames []string, userDbs []domain.UserDb) ([]string, error) {
+func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
 	ids := make([]string, 0)
 	for _, u := range usernames {
-		// get id(u) from db
+		// get id(u) from userDbs
 		ids = append(ids, fmt.Sprintf("id_of_%s", u))
 	}
-	return ids, nil
+	return ids
 }
 
-func idsToUsernames(ids []string, userDbs []domain.UserDb) ([]string, error) {
+func idsToUsernames(ids []string, userDbs []*domain.UserDb) []string {
 	usernames := make([]string, 0)
 	for _, id := range ids {
-		// get id(u) from db
+		// get id(u) from userDbs
 		usernames = append(usernames, fmt.Sprintf("username_of_%s", id))
 	}
-	return usernames, nil
+	return usernames
 }
 
 func NewUserService(cfg *config.UserServiceConfig,
@@ -47,7 +47,7 @@ func NewUserService(cfg *config.UserServiceConfig,
 		userDb.Id = id
 		userDb.Username = &u.Username
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
-		userDb.SharedAccountIds = u.SharedAccounts
+		userDb.SharedAccountIds = u.SharedAccountsIds
 		userDb.Admin = &u.Admin
 
 		if err := db.Create(userDb); err != nil {
@@ -69,12 +69,16 @@ func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 		}
 	}
 
-	sharedAccNames, err2 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
+	linkedUsers, err2 := s.UserDbService.RetrieveMany("id", userDb.SharedAccountIds)
 	if err2 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 	}
-
-	user := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
+	user := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
+	}
 
 	return &user, nil
 }
@@ -107,12 +111,16 @@ func (s *UserService) Authenticate(username string, password string) (*domain.Us
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	sharedAccNames, err2 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
+	linkedUsers, err2 := s.UserDbService.RetrieveMany("id", userDb.SharedAccountIds)
 	if err2 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 	}
-
-	user := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
+	user := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
+	}
 
 	return &user, nil
 }
@@ -136,15 +144,15 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
-	userDb := s.UserDbService.NewUserDb()
-	userDb.Username = &cred.Username
-	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
-
-	var err1 error
-	userDb.SharedAccountIds, err1 = usernamesToIds(user.SharedAccountNames, s.UserDbService)
+	linkedUsers, err1 := s.UserDbService.RetrieveMany("username", user.SharedAccountNames)
 	if err1 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
 	}
+
+	userDb := s.UserDbService.NewUserDb()
+	userDb.Username = &cred.Username
+	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
+	userDb.SharedAccountIds = usernamesToIds(user.SharedAccountNames, linkedUsers)
 
 	if err := s.UserDbService.Create(userDb); err != nil {
 		switch err.Type {
@@ -155,12 +163,12 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 		}
 	}
 
-	sharedAccNames, err2 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
-	if err2 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+	userCreated := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
 	}
-
-	userCreated := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
 
 	return &userCreated, nil
 }
@@ -170,12 +178,14 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
-	userUpdate := domain.UserDb{Id: id}
+	linkedUsers, err2 := s.UserDbService.RetrieveMany("username", user.SharedAccountNames)
+	if err2 != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+	}
 
-	var err1 error
-	userUpdate.SharedAccountIds, err1 = usernamesToIds(user.SharedAccountNames, s.UserDbService)
-	if err1 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+	userUpdate := domain.UserDb{
+		Id:               id,
+		SharedAccountIds: usernamesToIds(user.SharedAccountNames, linkedUsers),
 	}
 
 	userDb, err2 := s.UserDbService.Update(&userUpdate)
@@ -189,12 +199,12 @@ func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *
 		}
 	}
 
-	sharedAccNames, err3 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
-	if err3 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err3}
+	userUpdated := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
 	}
-
-	userUpdated := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
 
 	return &userUpdated, nil
 }
