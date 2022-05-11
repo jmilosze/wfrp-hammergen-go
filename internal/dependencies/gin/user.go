@@ -41,7 +41,7 @@ func createHandler(us domain.UserService, cs domain.CaptchaService) func(*gin.Co
 		}
 
 		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
-		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
+		userWrite := domain.UserWrite{SharedAccountNames: userData.SharedAccounts}
 
 		userRead, err := us.Create(&userWriteCredentials, &userWrite)
 		if err != nil {
