@@ -240,12 +240,17 @@ func (s *UserService) UpdateCredentials(id string, currentPasswd string, cred *d
 		}
 	}
 
-	sharedAccNames, err2 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
+	linkedUsers, err2 := s.UserDbService.RetrieveMany("id", userDb.SharedAccountIds)
 	if err2 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 	}
 
-	userUpdated := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
+	userUpdated := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
+	}
 
 	return &userUpdated, nil
 }
@@ -266,12 +271,17 @@ func (s *UserService) UpdateClaims(id string, claims *domain.UserWriteClaims) (*
 		}
 	}
 
-	sharedAccNames, err2 := idsToUsernames(userDb.SharedAccountIds, s.UserDbService)
+	linkedUsers, err2 := s.UserDbService.RetrieveMany("id", userDb.SharedAccountIds)
 	if err2 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 	}
 
-	userUpdated := domain.User{Id: userDb.Id, Admin: userDb.Admin, Username: userDb.Username, SharedAccountNames: sharedAccNames}
+	userUpdated := domain.User{
+		Id:                 userDb.Id,
+		Admin:              userDb.Admin,
+		Username:           userDb.Username,
+		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
+	}
 
 	return &userUpdated, nil
 }
@@ -286,19 +296,19 @@ func (s *UserService) Delete(id string) *domain.UserError {
 }
 
 func (s *UserService) List() ([]*domain.User, *domain.UserError) {
-	usersDb, err1 := s.UserDbService.List()
+	usersDb, err := s.UserDbService.List()
 
-	if err1 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+	if err != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
 	users := make([]*domain.User, len(usersDb))
 	for i, udb := range usersDb {
-		sharedAccNames, err2 := idsToUsernames(udb.SharedAccountIds, s.UserDbService)
-		if err2 != nil {
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
-		}
-		users[i] = &domain.User{Id: udb.Id, Admin: udb.Admin, Username: udb.Username, SharedAccountNames: sharedAccNames}
+		users[i] = &domain.User{
+			Id:                 udb.Id,
+			Admin:              udb.Admin,
+			Username:           udb.Username,
+			SharedAccountNames: idsToUsernames(udb.SharedAccountIds, usersDb)}
 	}
 	return users, nil
 }
