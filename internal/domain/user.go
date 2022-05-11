@@ -26,14 +26,15 @@ type UserWriteClaims struct {
 }
 
 type User struct {
-	Id             string
-	Username       *string
-	Admin          *bool
-	SharedAccounts []string
+	Id                 string
+	Username           *string
+	Admin              *bool
+	SharedAccountNames []string
 }
 
 type UserService interface {
 	Get(id string) (*User, *UserError)
+	Exists(username string) (bool, *UserError)
 	Create(cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
 	Update(id string, user *UserWrite) (*User, *UserError)
 	UpdateCredentials(id string, currentPasswd string, cred *UserWriteCredentials) (*User, *UserError)

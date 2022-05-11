@@ -1,11 +1,11 @@
 package domain
 
 type UserDb struct {
-	Id             string
-	Username       *string
-	PasswordHash   []byte
-	Admin          *bool
-	SharedAccounts []string
+	Id               string
+	Username         *string
+	PasswordHash     []byte
+	Admin            *bool
+	SharedAccountIds []string
 }
 
 type UserDbService interface {

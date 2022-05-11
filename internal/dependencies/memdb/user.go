@@ -48,7 +48,7 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 	newId := xid.New().String()
 	admin := false
 	username := ""
-	return &domain.UserDb{Id: newId, Username: &username, PasswordHash: []byte{}, Admin: &admin, SharedAccounts: []string{}}
+	return &domain.UserDb{Id: newId, Username: &username, PasswordHash: []byte{}, Admin: &admin, SharedAccountIds: []string{}}
 }
 
 func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
@@ -74,9 +74,9 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 	*userCopy.Username = strings.Clone(*from.Username)
 	userCopy.PasswordHash = make([]byte, len(from.PasswordHash))
 	copy(userCopy.PasswordHash, from.PasswordHash)
-	userCopy.SharedAccounts = make([]string, len(from.SharedAccounts))
-	for i, s := range from.SharedAccounts {
-		userCopy.SharedAccounts[i] = strings.Clone(s)
+	userCopy.SharedAccountIds = make([]string, len(from.SharedAccountIds))
+	for i, s := range from.SharedAccountIds {
+		userCopy.SharedAccountIds[i] = strings.Clone(s)
 	}
 
 	return &userCopy
@@ -119,10 +119,10 @@ func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.DbE
 		}
 	}
 
-	if user.SharedAccounts != nil {
-		userDb.SharedAccounts = make([]string, len(user.SharedAccounts))
-		for i, s := range user.SharedAccounts {
-			userDb.SharedAccounts[i] = strings.Clone(s)
+	if user.SharedAccountIds != nil {
+		userDb.SharedAccountIds = make([]string, len(user.SharedAccountIds))
+		for i, s := range user.SharedAccountIds {
+			userDb.SharedAccountIds[i] = strings.Clone(s)
 		}
 	}
 

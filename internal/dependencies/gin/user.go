@@ -9,6 +9,7 @@ import (
 func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService, cs domain.CaptchaService) {
 	router.POST("api/user", createHandler(us, cs))
 	router.GET("api/user/:userId", RequireJwt(js), getHandler(us))
+	router.GET("api/user/exists/:userName", RequireJwt(js), getExistsHandler(us))
 	router.GET("api/user", RequireJwt(js), listHandler(us))
 	router.PUT("api/user/:userId", RequireJwt(js), updateHandler(us))
 	router.PUT("api/user/credentials/:userId", RequireJwt(js), updateCredentialsHandler(us))
@@ -60,7 +61,7 @@ func createHandler(us domain.UserService, cs domain.CaptchaService) func(*gin.Co
 }
 
 func userToMap(user *domain.User) map[string]interface{} {
-	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccounts, "admin": user.Admin}
+	return gin.H{"id": user.Id, "username": user.Username, "shared_accounts": user.SharedAccountNames, "admin": user.Admin}
 }
 
 func getHandler(us domain.UserService) func(*gin.Context) {
@@ -85,6 +86,19 @@ func getHandler(us domain.UserService) func(*gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": userToMap(user)})
+	}
+}
+
+func getExistsHandler(us domain.UserService) func(*gin.Context) {
+	return func(c *gin.Context) {
+		userId := c.Param("userName")
+
+		exists, err := us.Exists(userId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"exists": exists}})
 	}
 }
 
