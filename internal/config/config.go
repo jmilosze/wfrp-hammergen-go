@@ -53,6 +53,12 @@ func NewDefault() (*Config, error) {
 			Admin:             false,
 			SharedAccountsIds: []string{},
 		},
+		"2": {
+			Username:          "user3@test.com",
+			Password:          "111111",
+			Admin:             false,
+			SharedAccountsIds: []string{"0", "1"},
+		},
 	}
 
 	return &Config{

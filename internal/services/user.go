@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
@@ -15,24 +14,6 @@ type UserService struct {
 	UserDbService domain.UserDbService
 	EmailService  domain.EmailService
 	JwtService    domain.JwtService
-}
-
-func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
-	ids := make([]string, 0)
-	for _, u := range usernames {
-		// get id(u) from userDbs
-		ids = append(ids, fmt.Sprintf("id_of_%s", u))
-	}
-	return ids
-}
-
-func idsToUsernames(ids []string, userDbs []*domain.UserDb) []string {
-	usernames := make([]string, 0)
-	for _, id := range ids {
-		// get id(u) from userDbs
-		usernames = append(usernames, fmt.Sprintf("username_of_%s", id))
-	}
-	return usernames
 }
 
 func NewUserService(cfg *config.UserServiceConfig,
@@ -81,6 +62,23 @@ func (s *UserService) Get(id string) (*domain.User, *domain.UserError) {
 	}
 
 	return &user, nil
+}
+
+func idsToUsernames(ids []string, userDbs []*domain.UserDb) []string {
+	userDbMap := map[string]string{}
+	for _, u := range userDbs {
+		if u.Username != nil {
+			userDbMap[u.Id] = *u.Username
+		}
+	}
+
+	usernames := make([]string, 0)
+	for _, id := range ids {
+		if username, ok := userDbMap[id]; ok {
+			usernames = append(usernames, username)
+		}
+	}
+	return usernames
 }
 
 func (s *UserService) Exists(username string) (bool, *domain.UserError) {
@@ -171,6 +169,23 @@ func (s *UserService) Create(cred *domain.UserWriteCredentials, user *domain.Use
 	}
 
 	return &userCreated, nil
+}
+
+func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
+	userDbMap := map[string]string{}
+	for _, u := range userDbs {
+		if u.Username != nil {
+			userDbMap[*u.Username] = u.Id
+		}
+	}
+
+	ids := make([]string, 0)
+	for _, u := range usernames {
+		if id, ok := userDbMap[u]; ok {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 func (s *UserService) Update(id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {

@@ -2,6 +2,7 @@ package memdb
 
 import (
 	"errors"
+	"fmt"
 	"github.com/hashicorp/go-memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
@@ -52,6 +53,10 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 }
 
 func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
+	if fieldName != "username" && fieldName != "id" {
+		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
+	}
+
 	txn := s.Db.Txn(false)
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
@@ -67,8 +72,38 @@ func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.U
 }
 
 func (s *UserDbService) RetrieveMany(fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
-	users := make([]*domain.UserDb, 0)
+	if fieldName != "username" && fieldName != "id" {
+		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
+	}
+
+	txn := s.Db.Txn(false)
+
+	it, err := txn.Get("user", "id")
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	var users []*domain.UserDb
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		u := obj.(*domain.UserDb)
+		if fieldName == "username" && u.Username != nil && contains(fieldValues, *u.Username) {
+			users = append(users, copyUserDb(u))
+		}
+		if fieldName == "id" && contains(fieldValues, u.Id) {
+			users = append(users, copyUserDb(u))
+		}
+
+	}
 	return users, nil
+}
+
+func contains(elems []string, v string) bool {
+	for _, s := range elems {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func copyUserDb(from *domain.UserDb) *domain.UserDb {

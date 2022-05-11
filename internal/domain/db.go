@@ -6,6 +6,7 @@ const (
 	DbNotFoundError = iota
 	DbAlreadyExistsError
 	DbInternalError
+	DbInvalidUserFieldError
 )
 
 type DbError struct {
