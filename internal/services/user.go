@@ -202,7 +202,6 @@ func (s *UserService) List() ([]*domain.User, *domain.UserError) {
 
 	if err != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
-
 	}
 
 	users := make([]*domain.User, len(usersDb))
