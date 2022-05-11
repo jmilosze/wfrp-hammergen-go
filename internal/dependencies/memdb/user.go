@@ -63,7 +63,23 @@ func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.U
 	}
 	user := userRaw.(*domain.UserDb)
 
-	return user.Copy(), nil
+	return copyUserDb(user), nil
+}
+
+func copyUserDb(from *domain.UserDb) *domain.UserDb {
+	if from == nil {
+		return nil
+	}
+	userCopy := *from
+	*userCopy.Username = strings.Clone(*from.Username)
+	userCopy.PasswordHash = make([]byte, len(from.PasswordHash))
+	copy(userCopy.PasswordHash, from.PasswordHash)
+	userCopy.SharedAccounts = make([]string, len(from.SharedAccounts))
+	for i, s := range from.SharedAccounts {
+		userCopy.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	return &userCopy
 }
 
 func (s *UserDbService) Create(user *domain.UserDb) *domain.DbError {
@@ -79,7 +95,7 @@ func (s *UserDbService) Create(user *domain.UserDb) *domain.DbError {
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", user.Copy()); err != nil {
+	if err := txn.Insert("user", copyUserDb(user)); err != nil {
 		return &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
@@ -145,7 +161,7 @@ func (s *UserDbService) List() ([]*domain.UserDb, *domain.DbError) {
 	var users []*domain.UserDb
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		u := obj.(*domain.UserDb)
-		users = append(users, u.Copy())
+		users = append(users, copyUserDb(u))
 	}
 	return users, nil
 }
