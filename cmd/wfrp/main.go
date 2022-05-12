@@ -43,7 +43,7 @@ func run() error {
 
 	server := http.NewServer(cfg.ServerConfig, router)
 
-	done := make(chan os.Signal)
+	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	server.Start()
