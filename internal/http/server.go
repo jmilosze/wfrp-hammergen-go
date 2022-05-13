@@ -12,34 +12,34 @@ import (
 )
 
 type Server struct {
-	server          *http.Server
-	shutdownTimeout time.Duration
+	Server          *http.Server
+	ShutdownTimeout time.Duration
 }
 
 func NewServer(cfg *config.ServerConfig, router http.Handler) *Server {
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Handler: router,
+		Handler: http.TimeoutHandler(router, cfg.HandlerTimeout, "service unavailable\n"),
 	}
 
 	return &Server{
-		server:          server,
-		shutdownTimeout: cfg.ShutdownTimeout,
+		Server:          server,
+		ShutdownTimeout: cfg.ShutdownTimeout,
 	}
 }
 
 func (s *Server) Start() {
 	go func() {
-		log.Printf("server starting on %s", s.server.Addr)
-		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("server starting on %s", s.Server.Addr)
+		if err := s.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 	}()
 }
 
 func (s *Server) Stop() error {
-	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.ShutdownTimeout)
 	defer cancel()
 
-	return s.server.Shutdown(ctx)
+	return s.Server.Shutdown(ctx)
 }
