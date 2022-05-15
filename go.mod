@@ -8,6 +8,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/hashicorp/go-memdb v1.3.2
 	github.com/rs/xid v1.4.0
+	github.com/vearne/gin-timeout v0.0.9
 	go.mongodb.org/mongo-driver v1.9.1
 	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
 )

@@ -18,3 +18,7 @@ func NewDbService(uri string) *DbService {
 
 	return &DbService{Client: client}
 }
+
+func (db *DbService) Disconnect() error {
+	return db.Client.Disconnect(context.TODO())
+}

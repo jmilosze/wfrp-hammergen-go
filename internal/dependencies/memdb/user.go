@@ -1,6 +1,7 @@
 package memdb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/hashicorp/go-memdb"
@@ -58,7 +59,7 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 	}
 }
 
-func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
+func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
 	}
@@ -77,7 +78,7 @@ func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.U
 	return copyUserDb(user), nil
 }
 
-func (s *UserDbService) RetrieveMany(fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
+func (s *UserDbService) RetrieveMany(ctx context.Context, fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
 	}
@@ -128,8 +129,8 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 	return &userCopy
 }
 
-func (s *UserDbService) Create(user *domain.UserDb) *domain.DbError {
-	_, err := s.Retrieve("username", *user.Username)
+func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain.DbError {
+	_, err := s.Retrieve(ctx, "username", *user.Username)
 
 	if err == nil {
 		return &domain.DbError{Type: domain.DbAlreadyExistsError, Err: errors.New("user already exists")}
@@ -148,8 +149,8 @@ func (s *UserDbService) Create(user *domain.UserDb) *domain.DbError {
 	return nil
 }
 
-func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	userDb, err := s.Retrieve("id", user.Id)
+func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
+	userDb, err := s.Retrieve(ctx, "id", user.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func (s *UserDbService) Update(user *domain.UserDb) (*domain.UserDb, *domain.DbE
 	return userDb, nil
 }
 
-func (s *UserDbService) Delete(id string) *domain.DbError {
+func (s *UserDbService) Delete(ctx context.Context, id string) *domain.DbError {
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
 	if _, err := txn.DeleteAll("user", "id", id); err != nil {
@@ -196,7 +197,7 @@ func (s *UserDbService) Delete(id string) *domain.DbError {
 	return nil
 }
 
-func (s *UserDbService) List() ([]*domain.UserDb, *domain.DbError) {
+func (s *UserDbService) List(ctx context.Context) ([]*domain.UserDb, *domain.DbError) {
 	txn := s.Db.Txn(false)
 
 	it, err := txn.Get("user", "id")

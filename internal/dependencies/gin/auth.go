@@ -17,7 +17,7 @@ func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		user, err := us.Authenticate(username, password)
+		user, err := us.Authenticate(c.Request.Context(), username, password)
 
 		if err != nil {
 			switch err.Type {

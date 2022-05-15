@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -33,17 +34,17 @@ type User struct {
 }
 
 type UserService interface {
-	Get(id string) (*User, *UserError)
-	Exists(username string) (bool, *UserError)
-	Create(cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
-	Update(id string, user *UserWrite) (*User, *UserError)
-	UpdateCredentials(id string, currentPasswd string, cred *UserWriteCredentials) (*User, *UserError)
-	UpdateClaims(id string, claims *UserWriteClaims) (*User, *UserError)
-	Delete(id string) *UserError
-	List() ([]*User, *UserError)
-	Authenticate(username string, password string) (*User, *UserError)
-	SendResetPassword(username string) *UserError
-	ResetPassword(token string, newPassword string) *UserError
+	Get(ctx context.Context, id string) (*User, *UserError)
+	Exists(ctx context.Context, username string) (bool, *UserError)
+	Create(ctx context.Context, cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
+	Update(ctx context.Context, id string, user *UserWrite) (*User, *UserError)
+	UpdateCredentials(ctx context.Context, id string, currentPasswd string, cred *UserWriteCredentials) (*User, *UserError)
+	UpdateClaims(ctx context.Context, id string, claims *UserWriteClaims) (*User, *UserError)
+	Delete(ctx context.Context, id string) *UserError
+	List(ctx context.Context) ([]*User, *UserError)
+	Authenticate(ctx context.Context, username string, password string) (*User, *UserError)
+	SendResetPassword(ctx context.Context, username string) *UserError
+	ResetPassword(ctx context.Context, token string, newPassword string) *UserError
 }
 
 type UserError struct {

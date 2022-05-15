@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type UserDb struct {
 	Id               string
 	Username         *string
@@ -9,11 +11,11 @@ type UserDb struct {
 }
 
 type UserDbService interface {
-	Create(user *UserDb) *DbError
-	Retrieve(fieldName string, fieldValue string) (*UserDb, *DbError)
-	RetrieveMany(fieldName string, fieldValues []string) ([]*UserDb, *DbError)
-	Update(user *UserDb) (*UserDb, *DbError)
-	Delete(id string) *DbError
-	List() ([]*UserDb, *DbError)
+	Create(ctx context.Context, user *UserDb) *DbError
+	Retrieve(ctx context.Context, fieldName string, fieldValue string) (*UserDb, *DbError)
+	RetrieveMany(ctx context.Context, fieldName string, fieldValues []string) ([]*UserDb, *DbError)
+	Update(ctx context.Context, user *UserDb) (*UserDb, *DbError)
+	Delete(ctx context.Context, id string) *DbError
+	List(ctx context.Context) ([]*UserDb, *DbError)
 	NewUserDb() *UserDb
 }

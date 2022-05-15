@@ -43,7 +43,7 @@ func createHandler(us domain.UserService, cs domain.CaptchaService) func(*gin.Co
 		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
 		userWrite := domain.UserWrite{SharedAccountNames: userData.SharedAccounts}
 
-		userRead, err := us.Create(&userWriteCredentials, &userWrite)
+		userRead, err := us.Create(c.Request.Context(), &userWriteCredentials, &userWrite)
 		if err != nil {
 			switch err.Type {
 			case domain.UserAlreadyExistsError:
@@ -73,7 +73,7 @@ func getHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user, err := us.Get(userId)
+		user, err := us.Get(c.Request.Context(), userId)
 
 		if err != nil {
 			if err.Type == domain.UserNotFoundError {
@@ -93,7 +93,7 @@ func getExistsHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userName")
 
-		exists, err := us.Exists(userId)
+		exists, err := us.Exists(c.Request.Context(), userId)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			return
@@ -121,7 +121,7 @@ func getUserClaims(c *gin.Context) *domain.Claims {
 
 func listHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
-		allUsers, err := us.List()
+		allUsers, err := us.List(c.Request.Context())
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
@@ -166,7 +166,7 @@ func updateHandler(users domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		userRead, err := users.Update(userId, &userData)
+		userRead, err := users.Update(c.Request.Context(), userId, &userData)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:
@@ -210,7 +210,7 @@ func updateCredentialsHandler(us domain.UserService) func(*gin.Context) {
 
 		userWriteCredentials := domain.UserWriteCredentials{Username: uc.Username, Password: uc.Password}
 
-		userRead, err := us.UpdateCredentials(userId, uc.CurrentPassword, &userWriteCredentials)
+		userRead, err := us.UpdateCredentials(c.Request.Context(), userId, uc.CurrentPassword, &userWriteCredentials)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:
@@ -244,7 +244,7 @@ func updateClaims(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		userRead, err := us.UpdateClaims(userId, &userData)
+		userRead, err := us.UpdateClaims(c.Request.Context(), userId, &userData)
 		if err != nil {
 			switch err.Type {
 			case domain.UserNotFoundError:
@@ -275,7 +275,7 @@ func deleteHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		if err := us.Delete(userId); err != nil {
+		if err := us.Delete(c.Request.Context(), userId); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			return
 		}
@@ -303,7 +303,7 @@ func resetSendPasswordHandler(us domain.UserService, cs domain.CaptchaService) f
 			return
 		}
 
-		err := us.SendResetPassword(userData.Username)
+		err := us.SendResetPassword(c.Request.Context(), userData.Username)
 
 		if err != nil {
 			switch err.Type {
@@ -334,7 +334,7 @@ func resetPasswordHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		if err := us.ResetPassword(userData.Token, userData.Password); err != nil {
+		if err := us.ResetPassword(c.Request.Context(), userData.Token, userData.Password); err != nil {
 			switch err.Type {
 			case domain.UserInternalError:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})

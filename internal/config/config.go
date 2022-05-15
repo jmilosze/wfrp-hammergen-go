@@ -7,7 +7,6 @@ import (
 type ServerConfig struct {
 	Host            string
 	Port            int
-	HandlerTimeout  time.Duration
 	ShutdownTimeout time.Duration
 }
 
@@ -31,6 +30,7 @@ type Config struct {
 	UserServiceConfig *UserServiceConfig
 	JwtConfig         *JwtConfig
 	EmailConfig       *EmailConfig
+	RequestTimeout    time.Duration
 }
 
 type UserSeed struct {
@@ -66,8 +66,7 @@ func NewDefault() (*Config, error) {
 		ServerConfig: &ServerConfig{
 			Host:            "localhost",
 			Port:            8080,
-			HandlerTimeout:  2 * time.Second,
-			ShutdownTimeout: 2 * time.Second,
+			ShutdownTimeout: 10 * time.Second,
 		},
 		UserServiceConfig: &UserServiceConfig{
 			BcryptCost: 12,
@@ -78,6 +77,7 @@ func NewDefault() (*Config, error) {
 			ResetExpiryTime:  48 * time.Hour,
 			HmacSecret:       "some_secret",
 		},
-		EmailConfig: &EmailConfig{FromAddress: "admin@hammergen.net"},
+		EmailConfig:    &EmailConfig{FromAddress: "admin@hammergen.net"},
+		RequestTimeout: 5 * time.Second,
 	}, nil
 }
