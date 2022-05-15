@@ -49,7 +49,13 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 	newId := xid.New().String()
 	admin := false
 	username := ""
-	return &domain.UserDb{Id: newId, Username: &username, PasswordHash: []byte{}, Admin: &admin, SharedAccountIds: []string{}}
+	return &domain.UserDb{
+		Id:               newId,
+		Username:         &username,
+		PasswordHash:     []byte{},
+		Admin:            &admin,
+		SharedAccountIds: []string{},
+	}
 }
 
 func (s *UserDbService) Retrieve(fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
