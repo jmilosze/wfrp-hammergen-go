@@ -8,6 +8,7 @@ type ServerConfig struct {
 	Host            string
 	Port            int
 	ShutdownTimeout time.Duration
+	RequestTimeout  time.Duration
 }
 
 type UserServiceConfig struct {
@@ -30,7 +31,7 @@ type Config struct {
 	UserServiceConfig *UserServiceConfig
 	JwtConfig         *JwtConfig
 	EmailConfig       *EmailConfig
-	RequestTimeout    time.Duration
+	MongoDbConfig     *MongoDbConfig
 }
 
 type UserSeed struct {
@@ -38,6 +39,10 @@ type UserSeed struct {
 	Password          string
 	Admin             bool
 	SharedAccountsIds []string
+}
+
+type MongoDbConfig struct {
+	Uri string
 }
 
 func NewDefault() (*Config, error) {
@@ -67,6 +72,7 @@ func NewDefault() (*Config, error) {
 			Host:            "localhost",
 			Port:            8080,
 			ShutdownTimeout: 10 * time.Second,
+			RequestTimeout:  10 * time.Second,
 		},
 		UserServiceConfig: &UserServiceConfig{
 			BcryptCost: 12,
@@ -77,7 +83,7 @@ func NewDefault() (*Config, error) {
 			ResetExpiryTime:  48 * time.Hour,
 			HmacSecret:       "some_secret",
 		},
-		EmailConfig:    &EmailConfig{FromAddress: "admin@hammergen.net"},
-		RequestTimeout: 10 * time.Second,
+		EmailConfig:   &EmailConfig{FromAddress: "admin@hammergen.net"},
+		MongoDbConfig: &MongoDbConfig{Uri: ""},
 	}, nil
 }

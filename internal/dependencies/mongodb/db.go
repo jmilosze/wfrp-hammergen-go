@@ -4,6 +4,7 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 )
 
 type DbService struct {
@@ -19,6 +20,8 @@ func NewDbService(uri string) *DbService {
 	return &DbService{Client: client}
 }
 
-func (db *DbService) Disconnect() error {
-	return db.Client.Disconnect(context.TODO())
+func (db *DbService) Disconnect() {
+	if err := db.Client.Disconnect(context.TODO()); err != nil {
+		log.Fatal(err)
+	}
 }

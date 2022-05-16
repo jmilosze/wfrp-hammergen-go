@@ -17,30 +17,30 @@ type UserService struct {
 	JwtService    domain.JwtService
 }
 
-func NewUserService(
-	ctx context.Context,
-	cfg *config.UserServiceConfig,
-	db domain.UserDbService,
-	email domain.EmailService,
-	jwt domain.JwtService,
-	v *validator.Validate,
-) *UserService {
+func NewUserService(cfg *config.UserServiceConfig, db domain.UserDbService, email domain.EmailService, jwt domain.JwtService, v *validator.Validate) *UserService {
+	return &UserService{
+		BcryptCost:    cfg.BcryptCost,
+		UserDbService: db,
+		EmailService:  email,
+		JwtService:    jwt,
+		Validator:     v}
 
-	for id, u := range cfg.SeedUsers {
-		userDb := db.NewUserDb()
+}
+
+func (s *UserService) SeedUsers(ctx context.Context, users map[string]*config.UserSeed) {
+	for id, u := range users {
+		userDb := s.UserDbService.NewUserDb()
 
 		userDb.Id = id
 		userDb.Username = &u.Username
-		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), cfg.BcryptCost)
+		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
 		userDb.SharedAccountIds = u.SharedAccountsIds
 		userDb.Admin = &u.Admin
 
-		if err := db.Create(ctx, userDb); err != nil {
+		if err := s.UserDbService.Create(ctx, userDb); err != nil {
 			panic(err)
 		}
 	}
-
-	return &UserService{BcryptCost: cfg.BcryptCost, UserDbService: db, EmailService: email, JwtService: jwt, Validator: v}
 }
 
 func (s *UserService) Get(ctx context.Context, id string) (*domain.User, *domain.UserError) {
