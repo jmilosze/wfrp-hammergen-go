@@ -7,6 +7,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 )
 
 type UserService struct {
@@ -27,18 +28,18 @@ func NewUserService(cfg *config.UserServiceConfig, db domain.UserDbService, emai
 
 }
 
-func (s *UserService) SeedUsers(ctx context.Context, users map[string]*config.UserSeed) {
-	for id, u := range users {
+func (s *UserService) SeedUsers(ctx context.Context, users []*config.UserSeed) {
+	for _, u := range users {
 		userDb := s.UserDbService.NewUserDb()
 
-		userDb.Id = id
+		userDb.Id = u.Id
 		userDb.Username = &u.Username
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
 		userDb.SharedAccountIds = u.SharedAccountsIds
 		userDb.Admin = &u.Admin
 
 		if err := s.UserDbService.Create(ctx, userDb); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}
 }

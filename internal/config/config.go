@@ -30,7 +30,7 @@ type ServerConfig struct {
 
 type UserServiceConfig struct {
 	BcryptCost int
-	SeedUsers  map[string]*UserSeed
+	SeedUsers  []*UserSeed
 }
 
 type JwtConfig struct {
@@ -56,6 +56,7 @@ type Config struct {
 }
 
 type UserSeed struct {
+	Id                string
 	Username          string
 	Password          string
 	Admin             bool
@@ -63,20 +64,23 @@ type UserSeed struct {
 }
 
 func NewDefault() *Config {
-	users := map[string]*UserSeed{
-		"0": {
+	users := []*UserSeed{
+		{
+			Id:                "0",
 			Username:          "user1@test.com",
 			Password:          "123456",
 			Admin:             true,
 			SharedAccountsIds: []string{"1"},
 		},
-		"1": {
+		{
+			Id:                "1",
 			Username:          "user2@test.com",
 			Password:          "789123",
 			Admin:             false,
 			SharedAccountsIds: []string{},
 		},
-		"2": {
+		{
+			Id:                "2",
 			Username:          "user3@test.com",
 			Password:          "111111",
 			Admin:             false,
