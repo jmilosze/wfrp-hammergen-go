@@ -78,6 +78,6 @@ func NewDefault() (*Config, error) {
 			HmacSecret:       "some_secret",
 		},
 		EmailConfig:    &EmailConfig{FromAddress: "admin@hammergen.net"},
-		RequestTimeout: 5 * time.Second,
+		RequestTimeout: 10 * time.Second,
 	}, nil
 }
