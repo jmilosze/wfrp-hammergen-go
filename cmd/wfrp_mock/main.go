@@ -33,11 +33,11 @@ func run() error {
 	userDbService := memdb.NewUserDbService()
 
 	userService := services.NewUserService(cfg.UserServiceConfig, userDbService, emailService, jwtService, val)
-	if len(cfg.UserServiceConfig.SeedUsers) != 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.ServerConfig.RequestTimeout)
-		defer cancel()
-		userService.SeedUsers(ctx, cfg.UserServiceConfig.SeedUsers)
-	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.ServerConfig.RequestTimeout)
+	defer cancel()
+	mockUsers := config.NewMockUsers()
+	userService.SeedUsers(ctx, mockUsers)
 
 	router := gin.NewRouter(cfg.ServerConfig.RequestTimeout)
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)

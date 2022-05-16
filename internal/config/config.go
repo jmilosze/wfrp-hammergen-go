@@ -13,7 +13,6 @@ const (
 	EnvServerShutdownTimeoutSeconds = "SERVER_SHUTDOWN_TIMEOUT_SEC"
 	EnvServerRequestTimeoutSeconds  = "SERVER_REQUEST_TIMEOUT_SEC"
 	EnvUserBcryptCost               = "USER_BCRYPT_COST"
-	EnvUserSeed                     = "USER_SEED"
 	EnvJwtAccessExpirySeconds       = "JWT_ACCESS_EXPIRY_SEC"
 	EnvJwtResetExpirySeconds        = "JWT_RESET_EXPIRY_SEC"
 	EnvJwtHmacSecret                = "JWT_HMAC_SECRET"
@@ -30,7 +29,6 @@ type ServerConfig struct {
 
 type UserServiceConfig struct {
 	BcryptCost int
-	SeedUsers  []*UserSeed
 }
 
 type JwtConfig struct {
@@ -64,29 +62,6 @@ type UserSeed struct {
 }
 
 func NewDefault() *Config {
-	users := []*UserSeed{
-		{
-			Id:                "0",
-			Username:          "user1@test.com",
-			Password:          "123456",
-			Admin:             true,
-			SharedAccountsIds: []string{"1"},
-		},
-		{
-			Id:                "1",
-			Username:          "user2@test.com",
-			Password:          "789123",
-			Admin:             false,
-			SharedAccountsIds: []string{},
-		},
-		{
-			Id:                "2",
-			Username:          "user3@test.com",
-			Password:          "111111",
-			Admin:             false,
-			SharedAccountsIds: []string{"0", "1"},
-		},
-	}
 
 	return &Config{
 		ServerConfig: &ServerConfig{
@@ -97,7 +72,6 @@ func NewDefault() *Config {
 		},
 		UserServiceConfig: &UserServiceConfig{
 			BcryptCost: 12,
-			SeedUsers:  users,
 		},
 		JwtConfig: &JwtConfig{
 			AccessExpiry: 24 * time.Hour,
@@ -129,4 +103,30 @@ func readEnv(key string, def string) string {
 		return val
 	}
 	return def
+}
+
+func NewMockUsers() []*UserSeed {
+	return []*UserSeed{
+		{
+			Id:                "0",
+			Username:          "user1@test.com",
+			Password:          "123456",
+			Admin:             true,
+			SharedAccountsIds: []string{"1"},
+		},
+		{
+			Id:                "1",
+			Username:          "user2@test.com",
+			Password:          "789123",
+			Admin:             false,
+			SharedAccountsIds: []string{},
+		},
+		{
+			Id:                "2",
+			Username:          "user3@test.com",
+			Password:          "111111",
+			Admin:             false,
+			SharedAccountsIds: []string{"0", "1"},
+		},
+	}
 }
