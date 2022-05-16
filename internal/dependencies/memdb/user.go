@@ -8,6 +8,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
 	"strings"
+	"time"
 )
 
 type UserDbService struct {
@@ -56,6 +57,8 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 		PasswordHash:     []byte{},
 		Admin:            &admin,
 		SharedAccountIds: []string{},
+		CreatedOn:        time.Now(),
+		LastAuthOn:       time.Time{},
 	}
 }
 
@@ -175,6 +178,16 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 
 	if user.Admin != nil {
 		*userDb.Admin = *user.Admin
+	}
+
+	if !user.LastAuthOn.IsZero() {
+		t, _ := user.LastAuthOn.MarshalJSON()
+		_ = userDb.LastAuthOn.UnmarshalJSON(t)
+	}
+
+	if !user.CreatedOn.IsZero() {
+		t, _ := user.CreatedOn.MarshalJSON()
+		_ = userDb.CreatedOn.UnmarshalJSON(t)
 	}
 
 	txn := s.Db.Txn(true)

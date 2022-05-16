@@ -8,6 +8,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"time"
 )
 
 type UserService struct {
@@ -123,6 +124,15 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 		Admin:              userDb.Admin,
 		Username:           userDb.Username,
 		SharedAccountNames: idsToUsernames(userDb.SharedAccountIds, linkedUsers),
+	}
+
+	if _, err := s.UserDbService.Update(ctx, &domain.UserDb{Id: userDb.Id, LastAuthOn: time.Now()}); err != nil {
+		switch err.Type {
+		case domain.DbNotFoundError:
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
+		default:
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+		}
 	}
 
 	return &user, nil

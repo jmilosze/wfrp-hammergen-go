@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type UserDb struct {
 	Id               string
@@ -8,6 +11,8 @@ type UserDb struct {
 	PasswordHash     []byte
 	Admin            *bool
 	SharedAccountIds []string
+	CreatedOn        time.Time
+	LastAuthOn       time.Time
 }
 
 type UserDbService interface {
