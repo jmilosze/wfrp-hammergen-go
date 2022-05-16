@@ -42,7 +42,9 @@ type EmailConfig struct {
 }
 
 type MongoDbConfig struct {
-	Uri string
+	Uri            string
+	DbName         string
+	UserCollection string
 }
 
 type Config struct {
@@ -79,7 +81,7 @@ func NewDefault() *Config {
 			HmacSecret:   "some_secret",
 		},
 		EmailConfig:   &EmailConfig{FromAddress: "admin@hammergen.net"},
-		MongoDbConfig: &MongoDbConfig{Uri: ""},
+		MongoDbConfig: &MongoDbConfig{Uri: "", DbName: "HammergenGo", UserCollection: "User"},
 	}
 }
 

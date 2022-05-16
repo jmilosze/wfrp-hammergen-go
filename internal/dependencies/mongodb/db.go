@@ -9,15 +9,16 @@ import (
 
 type DbService struct {
 	Client *mongo.Client
+	DbName string
 }
 
-func NewDbService(uri string) *DbService {
+func NewDbService(uri string, dbName string) *DbService {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return &DbService{Client: client}
+	return &DbService{Client: client, DbName: dbName}
 }
 
 func (db *DbService) Disconnect() {
