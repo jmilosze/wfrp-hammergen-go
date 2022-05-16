@@ -1,7 +1,24 @@
 package config
 
 import (
+	"fmt"
+	"os"
+	"strconv"
 	"time"
+)
+
+const (
+	EnvServerHost                   = "SERVER_HOST"
+	EnvServerPort                   = "SERVER_PORT"
+	EnvServerShutdownTimeoutSeconds = "SERVER_SHUTDOWN_TIMEOUT_SEC"
+	EnvServerRequestTimeoutSeconds  = "SERVER_REQUEST_TIMEOUT_SEC"
+	EnvUserBcryptCost               = "USER_BCRYPT_COST"
+	EnvUserSeed                     = "USER_SEED"
+	EnvJwtAccessExpirySeconds       = "JWT_ACCESS_EXPIRY_SEC"
+	EnvJwtResetExpirySeconds        = "JWT_RESET_EXPIRY_SEC"
+	EnvJwtHmacSecret                = "JWT_HMAC_SECRET"
+	EnvEmailFromAddress             = "EMAIL_FROM_ADDRESS"
+	EnvMongoDbUri                   = "MONGODB_URI"
 )
 
 type ServerConfig struct {
@@ -17,13 +34,17 @@ type UserServiceConfig struct {
 }
 
 type JwtConfig struct {
-	AccessExpiryTime time.Duration
-	ResetExpiryTime  time.Duration
-	HmacSecret       string
+	AccessExpiry time.Duration
+	ResetExpiry  time.Duration
+	HmacSecret   string
 }
 
 type EmailConfig struct {
 	FromAddress string
+}
+
+type MongoDbConfig struct {
+	Uri string
 }
 
 type Config struct {
@@ -41,11 +62,7 @@ type UserSeed struct {
 	SharedAccountsIds []string
 }
 
-type MongoDbConfig struct {
-	Uri string
-}
-
-func NewDefault() (*Config, error) {
+func NewDefault() *Config {
 	users := map[string]*UserSeed{
 		"0": {
 			Username:          "user1@test.com",
@@ -79,11 +96,33 @@ func NewDefault() (*Config, error) {
 			SeedUsers:  users,
 		},
 		JwtConfig: &JwtConfig{
-			AccessExpiryTime: 24 * time.Hour,
-			ResetExpiryTime:  48 * time.Hour,
-			HmacSecret:       "some_secret",
+			AccessExpiry: 24 * time.Hour,
+			ResetExpiry:  48 * time.Hour,
+			HmacSecret:   "some_secret",
 		},
 		EmailConfig:   &EmailConfig{FromAddress: "admin@hammergen.net"},
 		MongoDbConfig: &MongoDbConfig{Uri: ""},
-	}, nil
+	}
+}
+
+func NewFromEnv() (*Config, error) {
+	cfg := NewDefault()
+	var err error
+
+	cfg.ServerConfig.Host = readEnv(EnvServerHost, cfg.ServerConfig.Host)
+	cfg.ServerConfig.Port, err = strconv.Atoi(readEnv(EnvServerPort, fmt.Sprintf("%d", cfg.ServerConfig.Port)))
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.MongoDbConfig.Uri = readEnv(EnvMongoDbUri, cfg.MongoDbConfig.Uri)
+
+	return cfg, nil
+}
+
+func readEnv(key string, def string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return def
 }

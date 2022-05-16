@@ -14,7 +14,7 @@ type DbService struct {
 func NewDbService(uri string) *DbService {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return &DbService{Client: client}
