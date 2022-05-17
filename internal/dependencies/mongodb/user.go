@@ -151,7 +151,6 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain
 
 	filter := bson.D{{"_id", newUser.Id}}
 	opts := options.Replace().SetUpsert(true)
-
 	if _, err := s.Collection.ReplaceOne(ctx, filter, newUser, opts); err != nil {
 		return &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
