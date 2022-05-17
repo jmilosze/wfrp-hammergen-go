@@ -8,7 +8,7 @@ import (
 
 func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService, cs domain.CaptchaService) {
 	router.POST("api/user", createHandler(us, cs))
-	router.GET("api/user/:userId", RequireJwt(js), getHandler(us))
+	router.GET("api/user/:userId", getHandler(us))
 	router.GET("api/user/exists/:userName", RequireJwt(js), getExistsHandler(us))
 	router.GET("api/user", RequireJwt(js), listHandler(us))
 	router.PUT("api/user/:userId", RequireJwt(js), updateHandler(us))
@@ -68,10 +68,10 @@ func getHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 
-		if !authorizeGet(c, userId) {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
-			return
-		}
+		//if !authorizeGet(c, userId) {
+		//	c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+		//	return
+		//}
 
 		user, err := us.Get(c.Request.Context(), userId)
 

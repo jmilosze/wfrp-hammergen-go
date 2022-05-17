@@ -2,6 +2,8 @@ package mongodb
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,6 +42,19 @@ func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
 	return &userMongoDb, nil
 }
 
+func toUserDb(u *UserMongoDb) *domain.UserDb {
+	userMongoDb := domain.UserDb{
+		Id:               u.Id.Hex(),
+		Username:         u.Username,
+		PasswordHash:     u.PasswordHash,
+		Admin:            u.Admin,
+		SharedAccountIds: u.SharedAccountIds,
+		CreatedOn:        u.CreatedOn,
+		LastAuthOn:       u.LastAuthOn,
+	}
+	return &userMongoDb
+}
+
 type UserDbService struct {
 	Db         *DbService
 	Collection *mongo.Collection
@@ -76,7 +91,26 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 }
 
 func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
-	return s.NewUserDb(), nil
+	if fieldName != "username" && fieldName != "id" {
+		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
+	}
+
+	var userMongoDb UserMongoDb
+	var err1 error
+	if fieldName == "username" {
+		err1 = s.Collection.FindOne(ctx, bson.D{{"username", fieldValue}}).Decode(&userMongoDb)
+	} else {
+		id, err2 := primitive.ObjectIDFromHex(fieldValue)
+		if err2 != nil {
+			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+		}
+		err1 = s.Collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&userMongoDb)
+	}
+	if err1 != nil {
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
+	}
+
+	return toUserDb(&userMongoDb), nil
 }
 
 func (s *UserDbService) RetrieveMany(ctx context.Context, fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
