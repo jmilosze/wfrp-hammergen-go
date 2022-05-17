@@ -115,7 +115,7 @@ func NewMockUsers() []*UserSeed {
 			Username:          "user1@test.com",
 			Password:          "123456",
 			Admin:             true,
-			SharedAccountsIds: []string{"1"},
+			SharedAccountsIds: []string{"000000000000000000000001"},
 		},
 		{
 			Id:                "000000000000000000000001",
@@ -129,7 +129,7 @@ func NewMockUsers() []*UserSeed {
 			Username:          "user3@test.com",
 			Password:          "111111",
 			Admin:             false,
-			SharedAccountsIds: []string{"0", "1"},
+			SharedAccountsIds: []string{"000000000000000000000000", "000000000000000000000001"},
 		},
 	}
 }
