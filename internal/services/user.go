@@ -50,7 +50,7 @@ func (s *UserService) Get(ctx context.Context, id string) (*domain.User, *domain
 	if err != nil {
 		switch err.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
 		default:
 			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 		}

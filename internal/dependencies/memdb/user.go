@@ -55,7 +55,7 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, err1
 	}
 
-	linkedUsers, err2 := getMany(s.Db, "username", user.SharedAccounts)
+	linkedUsers, err2 := getMany(s.Db, "id", user.SharedAccounts)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -157,16 +157,22 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 	if from == nil {
 		return nil
 	}
-	userCopy := *from
-	*userCopy.Username = strings.Clone(*from.Username)
-	userCopy.PasswordHash = make([]byte, len(from.PasswordHash))
-	copy(userCopy.PasswordHash, from.PasswordHash)
-	userCopy.SharedAccounts = make([]string, len(from.SharedAccounts))
+	to := *from
+	*to.Username = strings.Clone(*from.Username)
+	to.PasswordHash = make([]byte, len(from.PasswordHash))
+	copy(to.PasswordHash, from.PasswordHash)
+	to.SharedAccounts = make([]string, len(from.SharedAccounts))
 	for i, s := range from.SharedAccounts {
-		userCopy.SharedAccounts[i] = strings.Clone(s)
+		to.SharedAccounts[i] = strings.Clone(s)
 	}
 
-	return &userCopy
+	t, _ := from.LastAuthOn.MarshalJSON()
+	_ = to.LastAuthOn.UnmarshalJSON(t)
+
+	t, _ = from.CreatedOn.MarshalJSON()
+	_ = to.CreatedOn.UnmarshalJSON(t)
+
+	return &to
 }
 
 func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain.DbError {
@@ -189,7 +195,7 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", copyUserDb(user)); err != nil {
+	if err := txn.Insert("user", userCreate); err != nil {
 		return &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
@@ -267,9 +273,10 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 	}
 	txn.Commit()
 
-	userDb.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers)
+	userDbRet := copyUserDb(userDb)
+	userDbRet.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers)
 
-	return userDb, nil
+	return userDbRet, nil
 }
 
 func (s *UserDbService) Delete(ctx context.Context, id string) *domain.DbError {
