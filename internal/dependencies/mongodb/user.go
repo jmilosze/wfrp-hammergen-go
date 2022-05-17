@@ -14,13 +14,13 @@ import (
 )
 
 type UserMongoDb struct {
-	Id               primitive.ObjectID `bson:"_id"`
-	Username         *string            `bson:"username"`
-	PasswordHash     []byte             `bson:"passwordHash"`
-	Admin            *bool              `bson:"admin"`
-	SharedAccountIds []string           `bson:"sharedAccountIds"`
-	CreatedOn        time.Time          `bson:"createdOn"`
-	LastAuthOn       time.Time          `bson:"lastAuthOn"`
+	Id             primitive.ObjectID   `bson:"_id"`
+	Username       *string              `bson:"username"`
+	PasswordHash   []byte               `bson:"passwordHash"`
+	Admin          *bool                `bson:"admin"`
+	SharedAccounts []primitive.ObjectID `bson:"sharedAccounts"`
+	CreatedOn      time.Time            `bson:"createdOn"`
+	LastAuthOn     time.Time            `bson:"lastAuthOn"`
 }
 
 func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
@@ -29,26 +29,50 @@ func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
 		return nil, err
 	}
 
+	var sharedAccounts []primitive.ObjectID
+	if u.SharedAccounts != nil {
+		sharedAccounts = make([]primitive.ObjectID, len(u.SharedAccounts))
+		for i, sa := range u.SharedAccounts {
+			id, err = primitive.ObjectIDFromHex(sa)
+			if err != nil {
+				return nil, err
+			}
+			sharedAccounts[i] = id
+		}
+	} else {
+		sharedAccounts = nil
+	}
+
 	userMongoDb := UserMongoDb{
-		Id:               id,
-		Username:         u.Username,
-		PasswordHash:     u.PasswordHash,
-		Admin:            u.Admin,
-		SharedAccountIds: u.SharedAccounts,
-		CreatedOn:        u.CreatedOn,
-		LastAuthOn:       u.LastAuthOn,
+		Id:             id,
+		Username:       u.Username,
+		PasswordHash:   u.PasswordHash,
+		Admin:          u.Admin,
+		SharedAccounts: sharedAccounts,
+		CreatedOn:      u.CreatedOn,
+		LastAuthOn:     u.LastAuthOn,
 	}
 
 	return &userMongoDb, nil
 }
 
 func toUserDb(u *UserMongoDb) *domain.UserDb {
+	var sharedAccounts []string
+	if u.SharedAccounts != nil {
+		sharedAccounts = make([]string, len(u.SharedAccounts))
+		for i, sa := range u.SharedAccounts {
+			sharedAccounts[i] = sa.Hex()
+		}
+	} else {
+		sharedAccounts = nil
+	}
+
 	userMongoDb := domain.UserDb{
 		Id:             u.Id.Hex(),
 		Username:       u.Username,
 		PasswordHash:   u.PasswordHash,
 		Admin:          u.Admin,
-		SharedAccounts: u.SharedAccountIds,
+		SharedAccounts: sharedAccounts,
 		CreatedOn:      u.CreatedOn,
 		LastAuthOn:     u.LastAuthOn,
 	}
