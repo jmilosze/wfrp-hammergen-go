@@ -14,7 +14,7 @@ const (
 )
 
 type UserWrite struct {
-	SharedAccountNames []string `json:"shared_accounts" validate:"omitempty,dive,email,required"`
+	SharedAccounts []string `json:"shared_accounts" validate:"omitempty,dive,email,required"`
 }
 
 type UserWriteCredentials struct {
@@ -27,10 +27,10 @@ type UserWriteClaims struct {
 }
 
 type User struct {
-	Id                 string
-	Username           *string
-	Admin              *bool
-	SharedAccountNames []string
+	Id             string
+	Username       *string
+	Admin          *bool
+	SharedAccounts []string
 }
 
 type UserService interface {

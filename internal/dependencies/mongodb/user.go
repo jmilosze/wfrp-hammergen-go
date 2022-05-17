@@ -34,7 +34,7 @@ func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
 		Username:         u.Username,
 		PasswordHash:     u.PasswordHash,
 		Admin:            u.Admin,
-		SharedAccountIds: u.SharedAccountIds,
+		SharedAccountIds: u.SharedAccounts,
 		CreatedOn:        u.CreatedOn,
 		LastAuthOn:       u.LastAuthOn,
 	}
@@ -44,13 +44,13 @@ func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
 
 func toUserDb(u *UserMongoDb) *domain.UserDb {
 	userMongoDb := domain.UserDb{
-		Id:               u.Id.Hex(),
-		Username:         u.Username,
-		PasswordHash:     u.PasswordHash,
-		Admin:            u.Admin,
-		SharedAccountIds: u.SharedAccountIds,
-		CreatedOn:        u.CreatedOn,
-		LastAuthOn:       u.LastAuthOn,
+		Id:             u.Id.Hex(),
+		Username:       u.Username,
+		PasswordHash:   u.PasswordHash,
+		Admin:          u.Admin,
+		SharedAccounts: u.SharedAccountIds,
+		CreatedOn:      u.CreatedOn,
+		LastAuthOn:     u.LastAuthOn,
 	}
 	return &userMongoDb
 }
@@ -75,18 +75,18 @@ func NewUserDbService(db *DbService, userCollection string, createIndex bool) *U
 	return &UserDbService{Db: db, Collection: coll}
 }
 
-func (s *UserDbService) NewUserDb() *domain.UserDb {
+func newUserDb() *domain.UserDb {
 	newId := primitive.NewObjectID().String()
 	admin := false
 	username := ""
 	return &domain.UserDb{
-		Id:               newId,
-		Username:         &username,
-		PasswordHash:     []byte{},
-		Admin:            &admin,
-		SharedAccountIds: []string{},
-		CreatedOn:        time.Now(),
-		LastAuthOn:       time.Time{},
+		Id:             newId,
+		Username:       &username,
+		PasswordHash:   []byte{},
+		Admin:          &admin,
+		SharedAccounts: []string{},
+		CreatedOn:      time.Now(),
+		LastAuthOn:     time.Time{},
 	}
 }
 
@@ -113,9 +113,9 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	return toUserDb(&userMongoDb), nil
 }
 
-func (s *UserDbService) RetrieveMany(ctx context.Context, fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
+func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *domain.DbError) {
 	a := make([]*domain.UserDb, 1)
-	a[0] = s.NewUserDb()
+	a[0] = newUserDb()
 	return a, nil
 }
 
@@ -136,15 +136,9 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain
 }
 
 func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	return s.NewUserDb(), nil
+	return newUserDb(), nil
 }
 
 func (s *UserDbService) Delete(ctx context.Context, id string) *domain.DbError {
 	return nil
-}
-
-func (s *UserDbService) List(ctx context.Context) ([]*domain.UserDb, *domain.DbError) {
-	a := make([]*domain.UserDb, 1)
-	a[0] = s.NewUserDb()
-	return a, nil
 }
