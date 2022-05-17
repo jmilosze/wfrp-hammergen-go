@@ -45,6 +45,7 @@ type MongoDbConfig struct {
 	Uri            string
 	DbName         string
 	UserCollection string
+	CreateIndexes  bool
 }
 
 type Config struct {
@@ -81,7 +82,7 @@ func NewDefault() *Config {
 			HmacSecret:   "some_secret",
 		},
 		EmailConfig:   &EmailConfig{FromAddress: "admin@hammergen.net"},
-		MongoDbConfig: &MongoDbConfig{Uri: "", DbName: "HammergenGo", UserCollection: "User"},
+		MongoDbConfig: &MongoDbConfig{Uri: "", DbName: "hammergenGo", UserCollection: "user", CreateIndexes: true},
 	}
 }
 
@@ -110,21 +111,21 @@ func readEnv(key string, def string) string {
 func NewMockUsers() []*UserSeed {
 	return []*UserSeed{
 		{
-			Id:                "0",
+			Id:                "000000000000000000000000",
 			Username:          "user1@test.com",
 			Password:          "123456",
 			Admin:             true,
 			SharedAccountsIds: []string{"1"},
 		},
 		{
-			Id:                "1",
+			Id:                "000000000000000000000001",
 			Username:          "user2@test.com",
 			Password:          "789123",
 			Admin:             false,
 			SharedAccountsIds: []string{},
 		},
 		{
-			Id:                "2",
+			Id:                "000000000000000000000002",
 			Username:          "user3@test.com",
 			Password:          "111111",
 			Admin:             false,

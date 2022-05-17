@@ -2,9 +2,10 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -42,16 +43,19 @@ func (s *UserDbService) RetrieveMany(ctx context.Context, fieldName string, fiel
 }
 
 func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain.DbError {
-	doc := bson.D{
-		//{"_id", primitive.ObjectIDFromHex(user.Id)},
-		{"username", user.Username},
-		{"passwordHash", user.PasswordHash},
-		{"admin", user.Admin},
-	}
-	_, err := s.Collection.InsertOne(ctx, doc)
-	if err != nil {
-		panic(err)
-	}
+	id, _ := primitive.ObjectIDFromHex(user.Id)
+	fmt.Printf("%s ", user.Id)
+	fmt.Printf("%s\n", id.String())
+	//doc := bson.D{
+	//	{"_id", id},
+	//	{"username", user.Username},
+	//	{"password_Hash", user.PasswordHash},
+	//	{"admin", user.Admin},
+	//}
+	//_, err := s.Collection.InsertOne(ctx, doc)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	return nil
 }
