@@ -2,25 +2,66 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
-	"github.com/rs/xid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
+	"time"
 )
+
+type UserMongoDb struct {
+	Id               primitive.ObjectID `bson:"_id"`
+	Username         *string            `bson:"username"`
+	PasswordHash     []byte             `bson:"passwordHash"`
+	Admin            *bool              `bson:"admin"`
+	SharedAccountIds []string           `bson:"sharedAccountIds"`
+	CreatedOn        time.Time          `bson:"createdOn"`
+	LastAuthOn       time.Time          `bson:"lastAuthOn"`
+}
+
+func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
+	id, err := primitive.ObjectIDFromHex(u.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	userMongoDb := UserMongoDb{
+		Id:               id,
+		Username:         u.Username,
+		PasswordHash:     u.PasswordHash,
+		Admin:            u.Admin,
+		SharedAccountIds: u.SharedAccountIds,
+		CreatedOn:        u.CreatedOn,
+		LastAuthOn:       u.LastAuthOn,
+	}
+
+	return &userMongoDb, nil
+}
 
 type UserDbService struct {
 	Db         *DbService
 	Collection *mongo.Collection
 }
 
-func NewUserDbService(db *DbService, userCollection string) *UserDbService {
+func NewUserDbService(db *DbService, userCollection string, createIndex bool) *UserDbService {
 	coll := db.Client.Database(db.DbName).Collection(userCollection)
+
+	if createIndex {
+		unique := true
+		mod := mongo.IndexModel{Keys: bson.M{"username": 1}, Options: &options.IndexOptions{Unique: &unique}}
+		_, err := coll.Indexes().CreateOne(context.TODO(), mod)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	return &UserDbService{Db: db, Collection: coll}
 }
 
 func (s *UserDbService) NewUserDb() *domain.UserDb {
-	newId := xid.New().String()
+	newId := primitive.NewObjectID().String()
 	admin := false
 	username := ""
 	return &domain.UserDb{
@@ -29,6 +70,8 @@ func (s *UserDbService) NewUserDb() *domain.UserDb {
 		PasswordHash:     []byte{},
 		Admin:            &admin,
 		SharedAccountIds: []string{},
+		CreatedOn:        time.Now(),
+		LastAuthOn:       time.Time{},
 	}
 }
 
@@ -43,19 +86,17 @@ func (s *UserDbService) RetrieveMany(ctx context.Context, fieldName string, fiel
 }
 
 func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain.DbError {
-	id, _ := primitive.ObjectIDFromHex(user.Id)
-	fmt.Printf("%s ", user.Id)
-	fmt.Printf("%s\n", id.String())
-	//doc := bson.D{
-	//	{"_id", id},
-	//	{"username", user.Username},
-	//	{"password_Hash", user.PasswordHash},
-	//	{"admin", user.Admin},
-	//}
-	//_, err := s.Collection.InsertOne(ctx, doc)
-	//if err != nil {
-	//	panic(err)
-	//}
+	newUser, err := fromUserDb(user)
+	if err != nil {
+		return &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	filter := bson.D{{"_id", newUser.Id}}
+	opts := options.Replace().SetUpsert(true)
+
+	if _, err := s.Collection.ReplaceOne(ctx, filter, newUser, opts); err != nil {
+		return &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
 
 	return nil
 }

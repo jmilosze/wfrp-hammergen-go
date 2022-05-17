@@ -38,7 +38,7 @@ func run() error {
 
 	mongoDbService := mongodb.NewDbService(cfg.MongoDbConfig.Uri, cfg.MongoDbConfig.DbName)
 	defer mongoDbService.Disconnect()
-	userDbService := mongodb.NewUserDbService(mongoDbService, cfg.MongoDbConfig.UserCollection)
+	userDbService := mongodb.NewUserDbService(mongoDbService, cfg.MongoDbConfig.UserCollection, cfg.MongoDbConfig.CreateIndexes)
 
 	userService := services.NewUserService(cfg.UserServiceConfig, userDbService, emailService, jwtService, val)
 
