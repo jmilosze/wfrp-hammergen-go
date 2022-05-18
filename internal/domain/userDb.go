@@ -19,7 +19,7 @@ type UserDb struct {
 func NewUserDb() *UserDb {
 	newId := xid.New().String()
 	admin := false
-	createOn := time.Now()
+	createdOn := time.Now()
 	username := ""
 	return &UserDb{
 		Id:             newId,
@@ -27,7 +27,7 @@ func NewUserDb() *UserDb {
 		PasswordHash:   []byte{},
 		Admin:          &admin,
 		SharedAccounts: []string{},
-		CreatedOn:      &createOn,
+		CreatedOn:      &createdOn,
 		LastAuthOn:     &time.Time{},
 	}
 }
