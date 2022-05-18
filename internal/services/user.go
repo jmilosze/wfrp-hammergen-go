@@ -87,8 +87,7 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	now := time.Now()
-	if _, err := s.UserDbService.Update(ctx, &domain.UserDb{Id: userDb.Id, LastAuthOn: &now}); err != nil {
+	if _, err := s.UserDbService.Update(ctx, &domain.UserDb{Id: userDb.Id, LastAuthOn: time.Now()}); err != nil {
 		switch err.Type {
 		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}

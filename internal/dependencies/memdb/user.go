@@ -166,8 +166,8 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 		to.SharedAccounts[i] = strings.Clone(s)
 	}
 
-	*from.LastAuthOn = *to.LastAuthOn
-	*from.CreatedOn = *to.CreatedOn
+	to.LastAuthOn = from.LastAuthOn.UTC()
+	to.CreatedOn = from.CreatedOn.UTC()
 
 	return &to
 }
@@ -253,12 +253,12 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 		*userDb.Admin = *user.Admin
 	}
 
-	if user.LastAuthOn != nil {
-		*userDb.LastAuthOn = *user.LastAuthOn
+	if !user.LastAuthOn.IsZero() {
+		userDb.LastAuthOn = user.LastAuthOn.UTC()
 	}
 
-	if user.CreatedOn != nil {
-		*userDb.CreatedOn = *user.CreatedOn
+	if !user.CreatedOn.IsZero() {
+		userDb.CreatedOn = user.CreatedOn.UTC()
 	}
 
 	txn := s.Db.Txn(true)

@@ -12,14 +12,13 @@ type UserDb struct {
 	PasswordHash   []byte
 	Admin          *bool
 	SharedAccounts []string
-	CreatedOn      *time.Time
-	LastAuthOn     *time.Time
+	CreatedOn      time.Time
+	LastAuthOn     time.Time
 }
 
 func NewUserDb() *UserDb {
 	newId := xid.New().String()
 	admin := false
-	createdOn := time.Now()
 	username := ""
 	return &UserDb{
 		Id:             newId,
@@ -27,8 +26,8 @@ func NewUserDb() *UserDb {
 		PasswordHash:   []byte{},
 		Admin:          &admin,
 		SharedAccounts: []string{},
-		CreatedOn:      &createdOn,
-		LastAuthOn:     &time.Time{},
+		CreatedOn:      time.Now(),
+		LastAuthOn:     time.Time{},
 	}
 }
 
@@ -38,8 +37,8 @@ func (udb *UserDb) ToUser() *User {
 		Admin:          *udb.Admin,
 		Username:       *udb.Username,
 		SharedAccounts: udb.SharedAccounts,
-		CreatedOn:      *udb.CreatedOn,
-		LastAuthOn:     *udb.LastAuthOn,
+		CreatedOn:      udb.CreatedOn,
+		LastAuthOn:     udb.LastAuthOn,
 	}
 }
 
