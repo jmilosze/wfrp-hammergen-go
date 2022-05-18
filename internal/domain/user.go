@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 const (
@@ -28,9 +29,11 @@ type UserWriteClaims struct {
 
 type User struct {
 	Id             string
-	Username       *string
-	Admin          *bool
+	Username       string
+	Admin          bool
 	SharedAccounts []string
+	CreatedOn      time.Time
+	LastAuthOn     time.Time
 }
 
 type UserService interface {

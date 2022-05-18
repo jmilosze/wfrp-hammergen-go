@@ -19,8 +19,8 @@ type UserMongoDb struct {
 	PasswordHash   []byte               `bson:"passwordHash"`
 	Admin          *bool                `bson:"admin"`
 	SharedAccounts []primitive.ObjectID `bson:"sharedAccounts"`
-	CreatedOn      time.Time            `bson:"createdOn"`
-	LastAuthOn     time.Time            `bson:"lastAuthOn"`
+	CreatedOn      *time.Time           `bson:"createdOn"`
+	LastAuthOn     *time.Time           `bson:"lastAuthOn"`
 }
 
 func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
@@ -103,14 +103,15 @@ func newUserDb() *domain.UserDb {
 	newId := primitive.NewObjectID().String()
 	admin := false
 	username := ""
+	now := time.Now()
 	return &domain.UserDb{
 		Id:             newId,
 		Username:       &username,
 		PasswordHash:   []byte{},
 		Admin:          &admin,
 		SharedAccounts: []string{},
-		CreatedOn:      time.Now(),
-		LastAuthOn:     time.Time{},
+		CreatedOn:      &now,
+		LastAuthOn:     &time.Time{},
 	}
 }
 

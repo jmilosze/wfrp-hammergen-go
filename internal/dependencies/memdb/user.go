@@ -256,12 +256,12 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 		*userDb.Admin = *user.Admin
 	}
 
-	if !user.LastAuthOn.IsZero() {
+	if user.LastAuthOn != nil {
 		t, _ := user.LastAuthOn.MarshalJSON()
 		_ = userDb.LastAuthOn.UnmarshalJSON(t)
 	}
 
-	if !user.CreatedOn.IsZero() {
+	if user.CreatedOn != nil {
 		t, _ := user.CreatedOn.MarshalJSON()
 		_ = userDb.CreatedOn.UnmarshalJSON(t)
 	}
