@@ -15,12 +15,12 @@ import (
 
 type UserMongoDb struct {
 	Id             primitive.ObjectID   `bson:"_id"`
-	Username       *string              `bson:"username"`
+	Username       string               `bson:"username"`
 	PasswordHash   []byte               `bson:"passwordHash"`
 	Admin          *bool                `bson:"admin"`
 	SharedAccounts []primitive.ObjectID `bson:"sharedAccounts"`
-	CreatedOn      *time.Time           `bson:"createdOn"`
-	LastAuthOn     *time.Time           `bson:"lastAuthOn"`
+	CreatedOn      time.Time            `bson:"createdOn"`
+	LastAuthOn     time.Time            `bson:"lastAuthOn"`
 }
 
 func fromUserDb(u *domain.UserDb) (*UserMongoDb, error) {
@@ -100,18 +100,15 @@ func NewUserDbService(db *DbService, userCollection string, createIndex bool) *U
 }
 
 func newUserDb() *domain.UserDb {
-	newId := primitive.NewObjectID().String()
 	admin := false
-	username := ""
-	now := time.Now()
 	return &domain.UserDb{
-		Id:             newId,
-		Username:       &username,
+		Id:             primitive.NewObjectID().String(),
+		Username:       "",
 		PasswordHash:   []byte{},
 		Admin:          &admin,
 		SharedAccounts: []string{},
-		CreatedOn:      &now,
-		LastAuthOn:     &time.Time{},
+		CreatedOn:      time.Now(),
+		LastAuthOn:     time.Time{},
 	}
 }
 
