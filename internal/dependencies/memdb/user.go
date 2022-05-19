@@ -103,7 +103,7 @@ func getMany(db *memdb.MemDB, fieldName string, fieldValues []string) ([]*domain
 		if getAll {
 			users = append(users, copyUserDb(u))
 		} else {
-			if fieldName == "username" && u.Username != nil && contains(fieldValues, *u.Username) {
+			if fieldName == "username" && contains(fieldValues, u.Username) {
 				users = append(users, copyUserDb(u))
 			}
 			if fieldName == "id" && contains(fieldValues, u.Id) {
@@ -126,9 +126,7 @@ func contains(elems []string, v string) bool {
 func idsToUsernames(ids []string, userDbs []*domain.UserDb) []string {
 	userDbMap := map[string]string{}
 	for _, u := range userDbs {
-		if u.Username != nil {
-			userDbMap[u.Id] = *u.Username
-		}
+		userDbMap[u.Id] = u.Username
 	}
 
 	usernames := make([]string, 0)
@@ -158,7 +156,7 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 		return nil
 	}
 	to := *from
-	*to.Username = strings.Clone(*from.Username)
+	to.Username = strings.Clone(from.Username)
 	to.PasswordHash = make([]byte, len(from.PasswordHash))
 	copy(to.PasswordHash, from.PasswordHash)
 	to.SharedAccounts = make([]string, len(from.SharedAccounts))
@@ -172,39 +170,43 @@ func copyUserDb(from *domain.UserDb) *domain.UserDb {
 	return &to
 }
 
-func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) *domain.DbError {
-	_, err1 := getOne(s.Db, "username", *user.Username)
+func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
+	_, err1 := getOne(s.Db, "username", user.Username)
 	if err1 == nil {
-		return &domain.DbError{Type: domain.DbAlreadyExistsError, Err: errors.New("user already exists")}
+		return nil, &domain.DbError{Type: domain.DbAlreadyExistsError, Err: errors.New("user already exists")}
 	}
 	if err1 != nil && err1.Type != domain.DbNotFoundError {
-		return &domain.DbError{Type: domain.DbInternalError, Err: err1.Unwrap()}
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1.Unwrap()}
 	}
 
-	userCreate := copyUserDb(user)
+	linkedUsers := make([]*domain.UserDb, 0)
+	userDbCreate := copyUserDb(user)
 	if user.SharedAccounts != nil {
-		linkedUsers, err2 := getMany(s.Db, "username", user.SharedAccounts)
+		var err2 *domain.DbError
+		linkedUsers, err2 = getMany(s.Db, "username", user.SharedAccounts)
 		if err2 != nil {
-			return err2
+			return nil, err2
 		}
-		userCreate.SharedAccounts = usernamesToIds(userCreate.SharedAccounts, linkedUsers)
+		userDbCreate.SharedAccounts = usernamesToIds(userDbCreate.SharedAccounts, linkedUsers)
 	}
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", userCreate); err != nil {
-		return &domain.DbError{Type: domain.DbInternalError, Err: err}
+	if err := txn.Insert("user", userDbCreate); err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
-	return nil
+
+	userDbRet := copyUserDb(userDbCreate)
+	userDbRet.SharedAccounts = idsToUsernames(userDbCreate.SharedAccounts, linkedUsers)
+
+	return userDbRet, nil
 }
 
 func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
 	userDbMap := map[string]string{}
 	for _, u := range userDbs {
-		if u.Username != nil {
-			userDbMap[*u.Username] = u.Id
-		}
+		userDbMap[u.Username] = u.Id
 	}
 
 	ids := make([]string, 0)
@@ -222,8 +224,8 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 		return nil, err
 	}
 
-	if user.Username != nil {
-		*userDb.Username = strings.Clone(*user.Username)
+	if len(user.Username) != 0 {
+		userDb.Username = strings.Clone(user.Username)
 	}
 
 	if user.PasswordHash != nil {

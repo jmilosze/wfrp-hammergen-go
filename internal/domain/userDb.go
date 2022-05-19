@@ -8,7 +8,7 @@ import (
 
 type UserDb struct {
 	Id             string
-	Username       *string
+	Username       string
 	PasswordHash   []byte
 	Admin          *bool
 	SharedAccounts []string
@@ -19,10 +19,9 @@ type UserDb struct {
 func NewUserDb() *UserDb {
 	newId := xid.New().String()
 	admin := false
-	username := ""
 	return &UserDb{
 		Id:             newId,
-		Username:       &username,
+		Username:       "",
 		PasswordHash:   []byte{},
 		Admin:          &admin,
 		SharedAccounts: []string{},
@@ -35,7 +34,7 @@ func (udb *UserDb) ToUser() *User {
 	return &User{
 		Id:             udb.Id,
 		Admin:          *udb.Admin,
-		Username:       *udb.Username,
+		Username:       udb.Username,
 		SharedAccounts: udb.SharedAccounts,
 		CreatedOn:      udb.CreatedOn,
 		LastAuthOn:     udb.LastAuthOn,
@@ -43,7 +42,7 @@ func (udb *UserDb) ToUser() *User {
 }
 
 type UserDbService interface {
-	Create(ctx context.Context, user *UserDb) *DbError
+	Create(ctx context.Context, user *UserDb) (*UserDb, *DbError)
 	Retrieve(ctx context.Context, fieldName string, fieldValue string) (*UserDb, *DbError)
 	RetrieveAll(ctx context.Context) ([]*UserDb, *DbError)
 	Update(ctx context.Context, user *UserDb) (*UserDb, *DbError)

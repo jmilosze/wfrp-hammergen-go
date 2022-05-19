@@ -34,12 +34,12 @@ func (s *UserService) SeedUsers(ctx context.Context, users []*config.UserSeed) {
 		userDb := domain.NewUserDb()
 
 		userDb.Id = u.Id
-		userDb.Username = &u.Username
+		userDb.Username = u.Username
 		userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
 		userDb.SharedAccounts = u.SharedAccounts
 		userDb.Admin = &u.Admin
 
-		if err := s.UserDbService.Create(ctx, userDb); err != nil {
+		if _, err := s.UserDbService.Create(ctx, userDb); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -118,26 +118,27 @@ func (s *UserService) Create(ctx context.Context, cred *domain.UserWriteCredenti
 		return nil, &domain.UserError{Type: domain.UserInvalidArguments, Err: err}
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
-	if err != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+	passwordHash, err1 := bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
+	if err1 != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
 	}
 
 	userDb := domain.NewUserDb()
-	userDb.Username = &cred.Username
+	userDb.Username = cred.Username
 	userDb.PasswordHash = passwordHash
 	userDb.SharedAccounts = user.SharedAccounts
 
-	if err := s.UserDbService.Create(ctx, userDb); err != nil {
-		switch err.Type {
+	createdUserDb, err2 := s.UserDbService.Create(ctx, userDb)
+	if err2 != nil {
+		switch err2.Type {
 		case domain.DbAlreadyExistsError:
-			return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err2}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 		}
 	}
 
-	return userDb.ToUser(), nil
+	return createdUserDb.ToUser(), nil
 }
 
 func (s *UserService) Update(ctx context.Context, id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
@@ -183,7 +184,7 @@ func (s *UserService) UpdateCredentials(ctx context.Context, id string, currentP
 		return nil, &domain.UserError{Type: domain.UserIncorrectPassword, Err: errors.New("incorrect password")}
 	}
 
-	userDb.Username = &cred.Username
+	userDb.Username = cred.Username
 	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
 
 	if _, err := s.UserDbService.Update(ctx, userDb); err != nil {
@@ -262,7 +263,7 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 	}
 
 	email := domain.Email{
-		ToAddress: *userDb.Username,
+		ToAddress: userDb.Username,
 		Subject:   "password reset",
 		Content:   resetToken,
 	}
