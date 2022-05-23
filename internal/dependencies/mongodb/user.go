@@ -135,6 +135,75 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	return toUserDb(&userMongoDb), nil
 }
 
+func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
+	var user UserMongoDb
+	var err1 error
+	if fieldName == "username" {
+		err1 = coll.FindOne(ctx, bson.D{{"username", fieldValue}}).Decode(&user)
+	} else {
+		id, err2 := primitive.ObjectIDFromHex(fieldValue)
+		if err2 != nil {
+			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+		}
+		err1 = coll.FindOne(ctx, bson.D{{"_id", id}}).Decode(&user)
+	}
+	if err1 != nil {
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
+	}
+
+	return &user, nil
+}
+
+func getMany(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValues []string) ([]*UserMongoDb, *domain.DbError) {
+	getAll := false
+	if fieldValues == nil {
+		getAll = true
+	} else {
+		if len(fieldValues) == 0 {
+			return []*UserMongoDb{}, nil
+		}
+	}
+
+	var query bson.D
+	if !getAll {
+		var queryValueList []bson.D
+		for _, fieldValue := range fieldValues {
+			if fieldName == "username" {
+				queryValueList = append(queryValueList, bson.D{{"username", fieldValue}})
+			} else {
+				id, err := primitive.ObjectIDFromHex(fieldValue)
+				if err != nil {
+					return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+				}
+				queryValueList = append(queryValueList, bson.D{{"_id", id}})
+			}
+		}
+		query = bson.D{{"$or", queryValueList}}
+	} else {
+		query = bson.D{{}}
+	}
+
+	cur, err := coll.Find(ctx, query)
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	users := make([]*UserMongoDb, 0)
+	for cur.Next(ctx) {
+		var user UserMongoDb
+		if cur.Decode(&user) != nil {
+			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+		}
+		users = append(users, &user)
+	}
+
+	if cur.Close(ctx) != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	return users, nil
+}
+
 func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *domain.DbError) {
 	a := make([]*domain.UserDb, 1)
 	a[0] = newUserDb()
