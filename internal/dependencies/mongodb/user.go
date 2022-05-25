@@ -133,6 +133,33 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
 	}
 
+	var matchStage bson.D
+	if fieldName == "username" {
+		id, err2 := primitive.ObjectIDFromHex(fieldValue)
+		if err2 != nil {
+			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+		}
+		matchStage = bson.D{{"$match", bson.D{{"_id", id}}}}
+	} else {
+		matchStage = bson.D{{"$match", bson.D{{"username", fieldValue}}}}
+	}
+	unwidStage := bson.D{{"$unwind", bson.D{{"path", "$sharedAccounts"}}}}
+	lookupStage := bson.D{{"$lookup", bson.D{
+		{"from", s.Collection.Name()},
+		{"localField", "sharedAccounts"},
+		{"foreignField", "_id"},
+		{"as", "sharedAcc"},
+	}}}
+	groupStage := bson.D{{"$group", bson.D{
+		{"_id", "$_id"},
+		{"sharedAccounts", bson.D{{"$push", bson.D{{"$arrayElemAt", bson.A{"sharedAcc.username", 0}}}}}},
+		{"username", bson.D{{"$first", "$username"}}},
+		{"passwordHash", bson.D{{"$first", "$passwordHash"}}},
+		{"admin", bson.D{{"$first", "admin"}}},
+		{"createdOn", bson.D{{"$first", "createdOn"}}},
+		{"lastAuthOn", bson.D{{"$first", "lastAuthOn"}}},
+	}}}
+
 	return newUserDb(), nil
 }
 
