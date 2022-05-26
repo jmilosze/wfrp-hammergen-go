@@ -128,6 +128,16 @@ func newUserDb() *domain.UserDb {
 	}
 }
 
+type UserDbAnnotated struct {
+	Id             string    `bson:"_id"`
+	Username       string    `bson:"username"`
+	PasswordHash   []byte    `bson:"passwordHash"`
+	Admin          *bool     `bson:"admin"`
+	SharedAccounts []string  `bson:"sharedAccounts"`
+	CreatedOn      time.Time `bson:"createdOn"`
+	LastAuthOn     time.Time `bson:"lastAuthOn"`
+}
+
 func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
@@ -135,15 +145,15 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 
 	var matchStage bson.D
 	if fieldName == "username" {
-		id, err2 := primitive.ObjectIDFromHex(fieldValue)
-		if err2 != nil {
-			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+		id, err1 := primitive.ObjectIDFromHex(fieldValue)
+		if err1 != nil {
+			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1}
 		}
 		matchStage = bson.D{{"$match", bson.D{{"_id", id}}}}
 	} else {
 		matchStage = bson.D{{"$match", bson.D{{"username", fieldValue}}}}
 	}
-	unwidStage := bson.D{{"$unwind", bson.D{{"path", "$sharedAccounts"}}}}
+	unwindStage := bson.D{{"$unwind", bson.D{{"path", "$sharedAccounts"}}}}
 	lookupStage := bson.D{{"$lookup", bson.D{
 		{"from", s.Collection.Name()},
 		{"localField", "sharedAccounts"},
@@ -151,7 +161,7 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		{"as", "sharedAcc"},
 	}}}
 	groupStage := bson.D{{"$group", bson.D{
-		{"_id", "$_id"},
+		{"_id", bson.D{{"$toString", "$_id"}}},
 		{"sharedAccounts", bson.D{{"$push", bson.D{{"$arrayElemAt", bson.A{"sharedAcc.username", 0}}}}}},
 		{"username", bson.D{{"$first", "$username"}}},
 		{"passwordHash", bson.D{{"$first", "$passwordHash"}}},
@@ -160,7 +170,22 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		{"lastAuthOn", bson.D{{"$first", "lastAuthOn"}}},
 	}}}
 
-	return newUserDb(), nil
+	cur, err2 := s.Collection.Aggregate(ctx, mongo.Pipeline{matchStage, unwindStage, lookupStage, groupStage})
+	if err2 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+	}
+
+	var user UserDbAnnotated
+	ok := cur.Next(ctx)
+	if !ok {
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
+	}
+	err3 := cur.Decode(&user)
+	if err3 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err3}
+	}
+
+	return (*domain.UserDb)(&user), nil
 }
 
 func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
