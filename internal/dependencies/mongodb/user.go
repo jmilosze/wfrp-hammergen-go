@@ -128,23 +128,13 @@ func newUserDb() *domain.UserDb {
 	}
 }
 
-type UserDbAnnotated struct {
-	Id             string    `bson:"_id"`
-	Username       string    `bson:"username"`
-	PasswordHash   []byte    `bson:"passwordHash"`
-	Admin          *bool     `bson:"admin"`
-	SharedAccounts []string  `bson:"sharedAccounts"`
-	CreatedOn      time.Time `bson:"createdOn"`
-	LastAuthOn     time.Time `bson:"lastAuthOn"`
-}
-
 func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
 	}
 
 	var matchStage bson.D
-	if fieldName == "username" {
+	if fieldName == "id" {
 		id, err1 := primitive.ObjectIDFromHex(fieldValue)
 		if err1 != nil {
 			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1}
@@ -153,7 +143,10 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	} else {
 		matchStage = bson.D{{"$match", bson.D{{"username", fieldValue}}}}
 	}
-	unwindStage := bson.D{{"$unwind", bson.D{{"path", "$sharedAccounts"}}}}
+	unwindStage := bson.D{{"$unwind", bson.D{
+		{"path", "$sharedAccounts"},
+		{"preserveNullAndEmptyArrays", true},
+	}}}
 	lookupStage := bson.D{{"$lookup", bson.D{
 		{"from", s.Collection.Name()},
 		{"localField", "sharedAccounts"},
@@ -175,17 +168,27 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
 	}
 
-	var user UserDbAnnotated
+	var userDoc bson.M
 	ok := cur.Next(ctx)
 	if !ok {
 		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
 	}
-	err3 := cur.Decode(&user)
+	err3 := cur.Decode(&userDoc)
 	if err3 != nil {
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err3}
 	}
 
-	return (*domain.UserDb)(&user), nil
+	user := domain.UserDb{}
+
+	user.Id = userDoc["_id"].(primitive.ObjectID).Hex()
+	user.Username = userDoc["username"].(string)
+	user.PasswordHash = userDoc["passwordHash"].([]byte)
+	user.Admin = userDoc["admin"].(*bool)
+	user.SharedAccounts = userDoc["sharedAccounts"].([]string)
+	user.CreatedOn = userDoc["createdOn"].(time.Time)
+	user.LastAuthOn = userDoc["lastAuthOn"].(time.Time)
+
+	return &user, nil
 }
 
 func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
