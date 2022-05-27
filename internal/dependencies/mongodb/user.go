@@ -128,16 +128,6 @@ func newUserDb() *domain.UserDb {
 	}
 }
 
-type UserDbAnnotated struct {
-	Id             string    `bson:"_id"`
-	Username       string    `bson:"username"`
-	PasswordHash   []byte    `bson:"passwordHash"`
-	Admin          *bool     `bson:"admin"`
-	SharedAccounts []string  `bson:"sharedAccounts"`
-	CreatedOn      time.Time `bson:"createdOn"`
-	LastAuthOn     time.Time `bson:"lastAuthOn"`
-}
-
 func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
@@ -189,6 +179,16 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	}
 
 	return (*domain.UserDb)(&userDoc), nil
+}
+
+type UserDbAnnotated struct {
+	Id             string    `bson:"_id"`
+	Username       string    `bson:"username"`
+	PasswordHash   []byte    `bson:"passwordHash"`
+	Admin          *bool     `bson:"admin"`
+	SharedAccounts []string  `bson:"sharedAccounts"`
+	CreatedOn      time.Time `bson:"createdOn"`
+	LastAuthOn     time.Time `bson:"lastAuthOn"`
 }
 
 func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
