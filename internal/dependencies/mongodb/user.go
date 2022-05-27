@@ -128,6 +128,16 @@ func newUserDb() *domain.UserDb {
 	}
 }
 
+type UserDbAnnotated struct {
+	Id             string    `bson:"_id"`
+	Username       string    `bson:"username"`
+	PasswordHash   []byte    `bson:"passwordHash"`
+	Admin          *bool     `bson:"admin"`
+	SharedAccounts []string  `bson:"sharedAccounts"`
+	CreatedOn      time.Time `bson:"createdOn"`
+	LastAuthOn     time.Time `bson:"lastAuthOn"`
+}
+
 func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	if fieldName != "username" && fieldName != "id" {
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
@@ -155,12 +165,12 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	}}}
 	groupStage := bson.D{{"$group", bson.D{
 		{"_id", bson.D{{"$toString", "$_id"}}},
-		{"sharedAccounts", bson.D{{"$push", bson.D{{"$arrayElemAt", bson.A{"sharedAcc.username", 0}}}}}},
+		{"sharedAccounts", bson.D{{"$push", bson.D{{"$arrayElemAt", bson.A{"$sharedAcc.username", 0}}}}}},
 		{"username", bson.D{{"$first", "$username"}}},
 		{"passwordHash", bson.D{{"$first", "$passwordHash"}}},
-		{"admin", bson.D{{"$first", "admin"}}},
-		{"createdOn", bson.D{{"$first", "createdOn"}}},
-		{"lastAuthOn", bson.D{{"$first", "lastAuthOn"}}},
+		{"admin", bson.D{{"$first", "$admin"}}},
+		{"createdOn", bson.D{{"$first", "$createdOn"}}},
+		{"lastAuthOn", bson.D{{"$first", "$lastAuthOn"}}},
 	}}}
 
 	cur, err2 := s.Collection.Aggregate(ctx, mongo.Pipeline{matchStage, unwindStage, lookupStage, groupStage})
@@ -168,7 +178,7 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
 	}
 
-	var userDoc bson.M
+	var userDoc UserDbAnnotated
 	ok := cur.Next(ctx)
 	if !ok {
 		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
@@ -178,17 +188,7 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err3}
 	}
 
-	user := domain.UserDb{}
-
-	user.Id = userDoc["_id"].(primitive.ObjectID).Hex()
-	user.Username = userDoc["username"].(string)
-	user.PasswordHash = userDoc["passwordHash"].([]byte)
-	user.Admin = userDoc["admin"].(*bool)
-	user.SharedAccounts = userDoc["sharedAccounts"].([]string)
-	user.CreatedOn = userDoc["createdOn"].(time.Time)
-	user.LastAuthOn = userDoc["lastAuthOn"].(time.Time)
-
-	return &user, nil
+	return (*domain.UserDb)(&userDoc), nil
 }
 
 func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
