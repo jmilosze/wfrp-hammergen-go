@@ -191,25 +191,6 @@ type UserDbAnnotated struct {
 	LastAuthOn     time.Time `bson:"lastAuthOn"`
 }
 
-func getOne(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValue string) (*UserMongoDb, *domain.DbError) {
-	var user UserMongoDb
-	var err1 error
-	if fieldName == "username" {
-		err1 = coll.FindOne(ctx, bson.D{{"username", fieldValue}}).Decode(&user)
-	} else {
-		id, err2 := primitive.ObjectIDFromHex(fieldValue)
-		if err2 != nil {
-			return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
-		}
-		err1 = coll.FindOne(ctx, bson.D{{"_id", id}}).Decode(&user)
-	}
-	if err1 != nil {
-		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
-	}
-
-	return &user, nil
-}
-
 func getMany(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValues []string) ([]*UserMongoDb, *domain.DbError) {
 	getAll := false
 	if fieldValues == nil {
