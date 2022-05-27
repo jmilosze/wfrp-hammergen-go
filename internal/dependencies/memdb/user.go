@@ -218,49 +218,56 @@ func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
 	return ids
 }
 
+func updateUserDb(to *domain.UserDb, from *domain.UserDb) *domain.UserDb {
+	if len(from.Username) != 0 {
+		to.Username = strings.Clone(from.Username)
+	}
+
+	if from.PasswordHash != nil {
+		to.PasswordHash = make([]byte, len(from.PasswordHash))
+		for i, s := range from.PasswordHash {
+			to.PasswordHash[i] = s
+		}
+	}
+
+	if from.Admin != nil {
+		*to.Admin = *from.Admin
+	}
+
+	if !from.LastAuthOn.IsZero() {
+		to.LastAuthOn = from.LastAuthOn.UTC()
+	}
+
+	if !from.CreatedOn.IsZero() {
+		to.CreatedOn = from.CreatedOn.UTC()
+	}
+
+	if from.SharedAccounts != nil {
+		to.SharedAccounts = make([]string, len(from.SharedAccounts))
+		for i, s := range from.SharedAccounts {
+			to.SharedAccounts[i] = s
+		}
+	}
+
+	return to
+}
+
 func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
 	userDb, err := getOne(s.Db, "id", user.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(user.Username) != 0 {
-		userDb.Username = strings.Clone(user.Username)
+	updateUserDb(userDb, user)
+
+	linkedUsers, err2 := getMany(s.Db, "username", userDb.SharedAccounts)
+	if err2 != nil {
+		return nil, err2
 	}
 
-	if user.PasswordHash != nil {
-		userDb.PasswordHash = make([]byte, len(user.PasswordHash))
-		for i, s := range user.PasswordHash {
-			userDb.PasswordHash[i] = s
-		}
-	}
+	if userDb.SharedAccounts != nil {
+		userDb.SharedAccounts = usernamesToIds(userDb.SharedAccounts, linkedUsers)
 
-	var linkedUsers []*domain.UserDb
-	var err2 *domain.DbError
-
-	if user.SharedAccounts != nil {
-		linkedUsers, err2 = getMany(s.Db, "username", user.SharedAccounts)
-		userDb.SharedAccounts = usernamesToIds(user.SharedAccounts, linkedUsers)
-		if err2 != nil {
-			return nil, err2
-		}
-	} else {
-		linkedUsers, err2 = getMany(s.Db, "username", userDb.SharedAccounts)
-		if err2 != nil {
-			return nil, err2
-		}
-	}
-
-	if user.Admin != nil {
-		*userDb.Admin = *user.Admin
-	}
-
-	if !user.LastAuthOn.IsZero() {
-		userDb.LastAuthOn = user.LastAuthOn.UTC()
-	}
-
-	if !user.CreatedOn.IsZero() {
-		userDb.CreatedOn = user.CreatedOn.UTC()
 	}
 
 	txn := s.Db.Txn(true)

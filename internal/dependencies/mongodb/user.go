@@ -23,6 +23,16 @@ type UserMongoDb struct {
 	LastAuthOn     time.Time            `bson:"lastAuthOn"`
 }
 
+type UserDbAnnotated struct {
+	Id             string    `bson:"_id,omitempty"`
+	Username       string    `bson:"username,omitempty"`
+	PasswordHash   []byte    `bson:"passwordHash,omitempty"`
+	Admin          *bool     `bson:"admin,omitempty"`
+	SharedAccounts []string  `bson:"sharedAccounts,omitempty"`
+	CreatedOn      time.Time `bson:"createdOn,omitempty"`
+	LastAuthOn     time.Time `bson:"lastAuthOn,omitempty"`
+}
+
 func fromUserDb(u *domain.UserDb, linkedUsers []*UserMongoDb) (*UserMongoDb, error) {
 	id, err := primitive.ObjectIDFromHex(u.Id)
 	if err != nil {
@@ -181,16 +191,6 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	return (*domain.UserDb)(&userDoc), nil
 }
 
-type UserDbAnnotated struct {
-	Id             string    `bson:"_id"`
-	Username       string    `bson:"username"`
-	PasswordHash   []byte    `bson:"passwordHash"`
-	Admin          *bool     `bson:"admin"`
-	SharedAccounts []string  `bson:"sharedAccounts"`
-	CreatedOn      time.Time `bson:"createdOn"`
-	LastAuthOn     time.Time `bson:"lastAuthOn"`
-}
-
 func getMany(ctx context.Context, coll *mongo.Collection, fieldName string, fieldValues []string) ([]*UserMongoDb, *domain.DbError) {
 	getAll := false
 	if fieldValues == nil {
@@ -272,6 +272,11 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domai
 }
 
 func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
+	updateUser := (*UserDbAnnotated)(user)
+	zxc, ok := bson.Marshal(updateUser)
+
+	cur, err := s.Collection.UpdateOne(ctx, bson.D{{"_id", primitive.ObjectIDFromHex(updateUser.Id)}}, bson.D{{"$set", zxc}})
+
 	return newUserDb(), nil
 }
 

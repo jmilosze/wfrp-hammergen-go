@@ -30,19 +30,19 @@ func NewUserDb() *UserDb {
 	}
 }
 
-func (udb *UserDb) ToUser() *User {
+func (u *UserDb) ToUser() *User {
 	var isAdmin bool
-	if udb.Admin != nil {
-		isAdmin = *udb.Admin
+	if u.Admin != nil {
+		isAdmin = *u.Admin
 	}
 
 	return &User{
-		Id:             udb.Id,
+		Id:             u.Id,
 		Admin:          isAdmin,
-		Username:       udb.Username,
-		SharedAccounts: udb.SharedAccounts,
-		CreatedOn:      udb.CreatedOn,
-		LastAuthOn:     udb.LastAuthOn,
+		Username:       u.Username,
+		SharedAccounts: u.SharedAccounts,
+		CreatedOn:      u.CreatedOn,
+		LastAuthOn:     u.LastAuthOn,
 	}
 }
 
