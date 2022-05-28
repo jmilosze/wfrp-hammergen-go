@@ -8,8 +8,7 @@ import (
 
 func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService, cs domain.CaptchaService) {
 	router.POST("api/user", createHandler(us, cs))
-	//router.GET("api/user/:userId", RequireJwt(js), getHandler(us))
-	router.GET("api/user/:userId", getHandler(us))
+	router.GET("api/user/:userId", RequireJwt(js), getHandler(us))
 	router.GET("api/user/exists/:userName", RequireJwt(js), getExistsHandler(us))
 	router.GET("api/user", RequireJwt(js), listHandler(us))
 	router.PUT("api/user/:userId", RequireJwt(js), updateHandler(us))
@@ -76,10 +75,10 @@ func getHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 
-		//if !authorizeGet(c, userId) {
-		//	c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
-		//	return
-		//}
+		if !authorizeGet(c, userId) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+			return
+		}
 
 		user, err := us.Get(c.Request.Context(), userId)
 
@@ -97,6 +96,11 @@ func getHandler(us domain.UserService) func(*gin.Context) {
 	}
 }
 
+func authorizeGet(c *gin.Context, userId string) bool {
+	claims := getUserClaims(c)
+	return userId == claims.Id || claims.Admin
+}
+
 func getExistsHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userName")
@@ -108,11 +112,6 @@ func getExistsHandler(us domain.UserService) func(*gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": gin.H{"exists": exists}})
 	}
-}
-
-func authorizeGet(c *gin.Context, userId string) bool {
-	claims := getUserClaims(c)
-	return userId == claims.Id || claims.Admin
 }
 
 func getUserClaims(c *gin.Context) *domain.Claims {
