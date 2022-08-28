@@ -45,6 +45,7 @@ func run() error {
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
 	gin.RegisterAuthRoutes(router, userService, jwtService)
+	gin.RegisterWhRoutes(router)
 
 	server := http.NewServer(cfg.Server, router)
 

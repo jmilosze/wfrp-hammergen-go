@@ -7,13 +7,13 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService, cs domain.CaptchaService) {
-	router.POST("api/user", createHandler(us, cs))
-	router.GET("api/user/:userId", RequireJwt(js), getHandler(us))
-	router.GET("api/user", RequireJwt(js), getHandler(us))
-	router.GET("api/user/exists/:userName", RequireJwt(js), getExistsHandler(us))
-	router.GET("api/user/list", RequireJwt(js), listHandler(us))
-	router.PUT("api/user/:userId", RequireJwt(js), updateHandler(us))
-	router.PUT("api/user/credentials/:userId", RequireJwt(js), updateCredentialsHandler(us))
+	router.POST("api/user", userCreateHandler(us, cs))
+	router.GET("api/user/:userId", RequireJwt(js), userGetHandler(us))
+	router.GET("api/user", RequireJwt(js), userGetHandler(us))
+	router.GET("api/user/exists/:userName", RequireJwt(js), userGetExistsHandler(us))
+	router.GET("api/user/list", RequireJwt(js), userListHandler(us))
+	router.PUT("api/user/:userId", RequireJwt(js), userUpdateHandler(us))
+	router.PUT("api/user/credentials/:userId", RequireJwt(js), userUpdateCredentialsHandler(us))
 	router.PUT("api/user/claims/:userId", RequireJwt(js), updateClaims(us))
 	router.DELETE("api/user/:userId", RequireJwt(js), deleteHandler(us))
 	router.POST("api/user/send_reset_password", resetSendPasswordHandler(us, cs))
@@ -27,7 +27,7 @@ type UserCreate struct {
 	Captcha        string   `json:"captcha"`
 }
 
-func createHandler(us domain.UserService, cs domain.CaptchaService) func(*gin.Context) {
+func userCreateHandler(us domain.UserService, cs domain.CaptchaService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var userData UserCreate
 		if err := c.BindJSON(&userData); err != nil {
@@ -72,7 +72,7 @@ func userToMap(user *domain.User) map[string]interface{} {
 	}
 }
 
-func getHandler(us domain.UserService) func(*gin.Context) {
+func userGetHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		claims := getUserClaims(c)
@@ -111,7 +111,7 @@ func getUserClaims(c *gin.Context) *domain.Claims {
 	return &claims
 }
 
-func getExistsHandler(us domain.UserService) func(*gin.Context) {
+func userGetExistsHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userName")
 
@@ -124,7 +124,7 @@ func getExistsHandler(us domain.UserService) func(*gin.Context) {
 	}
 }
 
-func listHandler(us domain.UserService) func(*gin.Context) {
+func userListHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		claims := getUserClaims(c)
 		allUsers, err := us.List(c.Request.Context(), claims)
@@ -142,7 +142,7 @@ func listHandler(us domain.UserService) func(*gin.Context) {
 	}
 }
 
-func updateHandler(users domain.UserService) func(*gin.Context) {
+func userUpdateHandler(users domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		claims := getUserClaims(c)
@@ -178,7 +178,7 @@ type UserCredentials struct {
 	CurrentPassword string `json:"current_password"`
 }
 
-func updateCredentialsHandler(us domain.UserService) func(*gin.Context) {
+func userUpdateCredentialsHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		claims := getUserClaims(c)
