@@ -6,22 +6,22 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 )
 
-type WhService[W domain.WhTypePointer] struct {
+type WhService[W domain.WhType] struct {
 	Validator *validator.Validate
 }
 
-func NewWhService[W domain.WhTypePointer](v *validator.Validate) *WhService[W] {
+func NewWhService[W domain.WhType](v *validator.Validate) *WhService[W] {
 	return &WhService[W]{
 		Validator: v,
 	}
 }
 
-func (s *WhService[W]) Create(ctx context.Context, whWrite W) (W, *domain.WhError) {
+func (s *WhService[W]) Create(ctx context.Context, whWrite *W, c *domain.Claims) (*W, *domain.WhError) {
 
-	//if err := s.Validator.Struct(cred); err != nil {
-	//	return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
-	//}
+	if err := s.Validator.Struct(whWrite); err != nil {
+		return nil, &domain.WhError{ErrType: domain.WhInvalidArgumentsError, Err: err}
+	}
 
 	var newWh W
-	return newWh, nil
+	return &newWh, nil
 }

@@ -39,14 +39,14 @@ type User struct {
 }
 
 type UserService interface {
-	Get(ctx context.Context, userClaims *Claims, id string) (*User, *UserError)
+	Get(ctx context.Context, c *Claims, id string) (*User, *UserError)
 	Exists(ctx context.Context, username string) (bool, *UserError)
-	Create(ctx context.Context, cred *UserWriteCredentials, user *UserWrite) (*User, *UserError)
-	Update(ctx context.Context, userClaims *Claims, id string, user *UserWrite) (*User, *UserError)
-	UpdateCredentials(ctx context.Context, userClaims *Claims, id string, currentPasswd string, cred *UserWriteCredentials) (*User, *UserError)
-	UpdateClaims(ctx context.Context, userClaims *Claims, id string, claims *UserWriteClaims) (*User, *UserError)
-	Delete(ctx context.Context, userClaims *Claims, id string) *UserError
-	List(ctx context.Context, userClaims *Claims) ([]*User, *UserError)
+	Create(ctx context.Context, uwc *UserWriteCredentials, uw *UserWrite) (*User, *UserError)
+	Update(ctx context.Context, c *Claims, id string, uw *UserWrite) (*User, *UserError)
+	UpdateCredentials(ctx context.Context, c *Claims, id string, currentPasswd string, uwc *UserWriteCredentials) (*User, *UserError)
+	UpdateClaims(ctx context.Context, c *Claims, id string, uwc *UserWriteClaims) (*User, *UserError)
+	Delete(ctx context.Context, c *Claims, id string) *UserError
+	List(ctx context.Context, c *Claims) ([]*User, *UserError)
 	Authenticate(ctx context.Context, username string, password string) (*User, *UserError)
 	SendResetPassword(ctx context.Context, username string) *UserError
 	ResetPassword(ctx context.Context, token string, newPassword string) *UserError

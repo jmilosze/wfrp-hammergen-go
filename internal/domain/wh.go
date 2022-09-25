@@ -1,6 +1,10 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"strings"
+)
 
 const (
 	WhTypeMutation = 0
@@ -10,27 +14,46 @@ const (
 	MutationMental   = 1
 )
 
+const (
+	WhInvalidArgumentsError = iota
+)
+
 type WhError struct {
 	WhType  int
 	ErrType int
 	Err     error
 }
 
-type WhTypePointer interface {
-	*Mutation | *Spell
-	SetOwnerId(string)
+func (e *WhError) Unwrap() error {
+	return e.Err
 }
+
+func (e *WhError) Error() string {
+	return fmt.Sprintf("wh error, %s", e.Err)
+}
+
+type WhType interface {
+	Mutation | Spell
+}
+
 type Mutation struct {
 	Name        string `json:"name" validate:"omitempty,min=0,max=200,excludesall=<>"`
 	Description string `json:"description" validate:"omitempty,min=0,max=100000,excludesall=<>"`
 	Shared      *bool  `json:"shared" validate:"omitempty"`
-	Type        *int   `json:"type" validate:"omitempty,oneof 0 1"`
+	Type        *int   `json:"type" validate:"omitempty,oneof=0 1"`
 	Id          string `json:"id,omitempty"`
 	OwnerId     string `json:"owner_id,omitempty"`
 }
 
-func (m *Mutation) SetOwnerId(ownerId string) {
-	m.OwnerId = ownerId
+func copyMutation(from *Mutation) (to *Mutation) {
+	return &Mutation{
+		Name:        strings.Clone(from.Name),
+		Description: strings.Clone(from.Description),
+		Shared:      *(&from.Shared),
+		Type:        *(&from.Type),
+		Id:          strings.Clone(from.Id),
+		OwnerId:     strings.Clone(from.OwnerId),
+	}
 }
 
 type Spell struct {
@@ -44,10 +67,22 @@ type Spell struct {
 	OwnerId     string `json:"owner_id,omitempty"`
 }
 
-func (s *Spell) SetOwnerId(ownerId string) {
-	s.OwnerId = ownerId
+type WHService[W WhType] interface {
+	Create(ctx context.Context, whWrite *W, c *Claims) (*W, *WhError)
 }
 
-type WHService[W WhTypePointer] interface {
-	Create(ctx context.Context, whWrite W) (W, *WhError)
+func SetOwnerId[W WhType](wh *W, ownerId string) error {
+	switch v := any(wh).(type) {
+	case *Mutation:
+		v.OwnerId = ownerId
+	case *Spell:
+		v.OwnerId = ownerId
+	default:
+		return fmt.Errorf("could not set OwnerId on type %T", v)
+	}
+	return nil
+}
+
+type WhDbService[W WhType] interface {
+	Create(ctx context.Context, wh *W) (*W, *DbError)
 }

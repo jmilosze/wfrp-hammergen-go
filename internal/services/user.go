@@ -35,8 +35,8 @@ func NewUserService(cfg *config.UserService, db domain.UserDbService, email doma
 
 }
 
-func (s *UserService) SeedUsers(ctx context.Context, users []*config.UserSeed) {
-	for _, u := range users {
+func (s *UserService) SeedUsers(ctx context.Context, su []*config.UserSeed) {
+	for _, u := range su {
 		userDb := domain.NewUserDb()
 
 		userDb.Id = u.Id
@@ -51,8 +51,8 @@ func (s *UserService) SeedUsers(ctx context.Context, users []*config.UserSeed) {
 	}
 }
 
-func (s *UserService) Get(ctx context.Context, userClaims *domain.Claims, id string) (*domain.User, *domain.UserError) {
-	if !(id == userClaims.Id || userClaims.Admin) {
+func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*domain.User, *domain.UserError) {
+	if !(id == c.Id || c.Admin) {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
@@ -109,34 +109,34 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 	return userDb.ToUser(), nil
 }
 
-func authenticate(user *domain.UserDb, password string) bool {
+func authenticate(user *domain.UserDb, password string) (success bool) {
 	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) == nil {
 		return true
 	}
 	return false
 }
 
-func (s *UserService) Create(ctx context.Context, cred *domain.UserWriteCredentials, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if len(cred.Username) == 0 || len(cred.Password) == 0 {
+func (s *UserService) Create(ctx context.Context, uwc *domain.UserWriteCredentials, uw *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if len(uwc.Username) == 0 || len(uwc.Password) == 0 {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("missing username or password")}
 	}
 
-	if err := s.Validator.Struct(cred); err != nil {
+	if err := s.Validator.Struct(uwc); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
-	if err := s.Validator.Struct(user); err != nil {
+	if err := s.Validator.Struct(uw); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	passwordHash, err1 := bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
+	passwordHash, err1 := bcrypt.GenerateFromPassword([]byte(uwc.Password), s.BcryptCost)
 	if err1 != nil {
 		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
 	}
 
 	userDb := domain.NewUserDb()
-	userDb.Username = cred.Username
+	userDb.Username = uwc.Username
 	userDb.PasswordHash = passwordHash
-	userDb.SharedAccounts = user.SharedAccounts
+	userDb.SharedAccounts = uw.SharedAccounts
 
 	createdUserDb, err2 := s.UserDbService.Create(ctx, userDb)
 	if err2 != nil {
@@ -151,18 +151,18 @@ func (s *UserService) Create(ctx context.Context, cred *domain.UserWriteCredenti
 	return createdUserDb.ToUser(), nil
 }
 
-func (s *UserService) Update(ctx context.Context, userClaims *domain.Claims, id string, user *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if id != userClaims.Id {
+func (s *UserService) Update(ctx context.Context, c *domain.Claims, id string, uw *domain.UserWrite) (*domain.User, *domain.UserError) {
+	if id != c.Id {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err := s.Validator.Struct(user); err != nil {
+	if err := s.Validator.Struct(uw); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
 	userUpdate := domain.UserDb{
 		Id:             id,
-		SharedAccounts: user.SharedAccounts,
+		SharedAccounts: uw.SharedAccounts,
 	}
 
 	userDb, err := s.UserDbService.Update(ctx, &userUpdate)
@@ -179,12 +179,12 @@ func (s *UserService) Update(ctx context.Context, userClaims *domain.Claims, id 
 	return userDb.ToUser(), nil
 }
 
-func (s *UserService) UpdateCredentials(ctx context.Context, userClaims *domain.Claims, id string, currentPasswd string, cred *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
-	if id != userClaims.Id {
+func (s *UserService) UpdateCredentials(ctx context.Context, c *domain.Claims, id string, currentPasswd string, uwc *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
+	if id != c.Id {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err := s.Validator.Struct(cred); err != nil {
+	if err := s.Validator.Struct(uwc); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
@@ -202,8 +202,8 @@ func (s *UserService) UpdateCredentials(ctx context.Context, userClaims *domain.
 		return nil, &domain.UserError{Type: domain.UserIncorrectPasswordError, Err: errors.New("incorrect password")}
 	}
 
-	userDb.Username = cred.Username
-	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(cred.Password), s.BcryptCost)
+	userDb.Username = uwc.Username
+	userDb.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(uwc.Password), s.BcryptCost)
 
 	if _, err := s.UserDbService.Update(ctx, userDb); err != nil {
 		switch err.Type {
@@ -217,16 +217,16 @@ func (s *UserService) UpdateCredentials(ctx context.Context, userClaims *domain.
 	return userDb.ToUser(), nil
 }
 
-func (s *UserService) UpdateClaims(ctx context.Context, userClaims *domain.Claims, id string, claims *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
-	if !userClaims.Admin {
+func (s *UserService) UpdateClaims(ctx context.Context, c *domain.Claims, id string, uwc *domain.UserWriteClaims) (*domain.User, *domain.UserError) {
+	if !c.Admin {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err := s.Validator.Struct(claims); err != nil {
+	if err := s.Validator.Struct(uwc); err != nil {
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	userUpdate := domain.UserDb{Id: id, Admin: claims.Admin}
+	userUpdate := domain.UserDb{Id: id, Admin: uwc.Admin}
 	userDb, err := s.UserDbService.Update(ctx, &userUpdate)
 	if err != nil {
 		switch err.Type {
@@ -240,8 +240,8 @@ func (s *UserService) UpdateClaims(ctx context.Context, userClaims *domain.Claim
 	return userDb.ToUser(), nil
 }
 
-func (s *UserService) Delete(ctx context.Context, userClaims *domain.Claims, id string) *domain.UserError {
-	if id != userClaims.Id {
+func (s *UserService) Delete(ctx context.Context, c *domain.Claims, id string) *domain.UserError {
+	if id != c.Id {
 		return &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
@@ -253,8 +253,8 @@ func (s *UserService) Delete(ctx context.Context, userClaims *domain.Claims, id 
 	}
 }
 
-func (s *UserService) List(ctx context.Context, userClaims *domain.Claims) ([]*domain.User, *domain.UserError) {
-	if !userClaims.Admin {
+func (s *UserService) List(ctx context.Context, c *domain.Claims) ([]*domain.User, *domain.UserError) {
+	if !c.Admin {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 

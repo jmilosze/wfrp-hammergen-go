@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"github.com/rs/xid"
+	"strings"
 	"time"
 )
 
@@ -44,6 +45,25 @@ func (u *UserDb) ToUser() *User {
 		CreatedOn:      u.CreatedOn,
 		LastAuthOn:     u.LastAuthOn,
 	}
+}
+
+func (u *UserDb) Copy() *UserDb {
+	if u == nil {
+		return nil
+	}
+	uCopy := *u
+	uCopy.Username = strings.Clone(u.Username)
+	uCopy.PasswordHash = make([]byte, len(u.PasswordHash))
+	copy(uCopy.PasswordHash, u.PasswordHash)
+	uCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
+	for i, s := range u.SharedAccounts {
+		uCopy.SharedAccounts[i] = strings.Clone(s)
+	}
+
+	uCopy.LastAuthOn = u.LastAuthOn.UTC()
+	uCopy.CreatedOn = u.CreatedOn.UTC()
+
+	return &uCopy
 }
 
 type UserDbService interface {

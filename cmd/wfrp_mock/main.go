@@ -35,7 +35,7 @@ func run() error {
 
 	userService := services.NewUserService(cfg.UserService, userDbService, emailService, jwtService, val)
 
-	mutationService := services.NewWhService[*domain.Mutation](val)
+	mutationService := services.NewWhService[domain.Mutation](val)
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.RequestTimeout)
 	defer cancel()
