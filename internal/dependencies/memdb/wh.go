@@ -1,7 +1,10 @@
 package memdb
 
 import (
+	"context"
+	"errors"
 	"github.com/hashicorp/go-memdb"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 )
 
 type WhDbService struct {
@@ -45,24 +48,26 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-//func getOneWh[W domain.WhType](db *memdb.MemDB, table string, fieldName string, fieldValue string) (*W, *domain.DbError) {
-//	txn := db.Txn(false)
-//	whRaw, err := txn.First(table, fieldName, fieldValue)
-//	if err != nil {
-//		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
-//	}
-//
-//	if whRaw == nil {
-//		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
-//	}
-//	user := whRaw.(*domain.UserDb)
-//
-//	return copyWh(user), nil
-//}
+func getOneWh[W domain.WhType](db *memdb.MemDB, table string, fieldName string, fieldValue string) (*W, *domain.DbError) {
+	txn := db.Txn(false)
+	whRaw, err := txn.First(table, fieldName, fieldValue)
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
 
-//func copyWh[W domain.WhType](from *W) *W {
-//	switch v := any(from).(type) {
-//	case domain.Mutation:
-//
-//	}
-//}
+	if whRaw == nil {
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
+	}
+	whTyped := whRaw.(*W)
+
+	var wh W
+	if err := domain.WhCopy(whTyped, &wh); err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	return &wh, nil
+}
+
+func (s *WhDbService) Create(ctx context.Context, whWrite *domain.W, c *domain.Claims) (*domain.W, *domain.WhError) {
+
+}

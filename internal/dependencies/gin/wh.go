@@ -22,7 +22,7 @@ func whCreateHandler[W domain.WhType](s domain.WHService[W]) func(*gin.Context) 
 			return
 		}
 
-		if err := domain.SetOwnerId(&whData, ownerId); err != nil {
+		if err := domain.WhSetOwnerId(&whData, ownerId); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusInternalServerError, "message": err.Error()})
 			return
 		}
