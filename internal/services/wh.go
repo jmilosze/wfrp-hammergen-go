@@ -6,22 +6,50 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 )
 
-type WhService[W domain.WhType] struct {
-	Validator *validator.Validate
+type WhService struct {
+	Validator   *validator.Validate
+	WhDbService domain.WhDbService
+	WhType      int
 }
 
-func NewWhService[W domain.WhType](v *validator.Validate) *WhService[W] {
-	return &WhService[W]{
-		Validator: v,
-	}
+func NewWhService(v *validator.Validate, db domain.WhDbService, whType int) *WhService {
+	return &WhService{Validator: v, WhDbService: db, WhType: whType}
 }
 
-func (s *WhService[W]) Create(ctx context.Context, whWrite *W, c *domain.Claims) (*W, *domain.WhError) {
-
-	if err := s.Validator.Struct(whWrite); err != nil {
-		return nil, &domain.WhError{ErrType: domain.WhInvalidArgumentsError, Err: err}
+func (s *WhService) Create(ctx context.Context, w domain.Warhammer, c *domain.Claims) (domain.Warhammer, *domain.WhError) {
+	if err := w.Validate(s.Validator); err != nil {
+		return nil, &domain.WhError{WhType: s.WhType, ErrType: domain.WhInvalidArgumentsError, Err: err}
 	}
 
-	var newWh W
-	return &newWh, nil
+	if !c.Admin {
+		w.SetOwnerId("admin")
+	} else {
+		w.SetOwnerId(c.Id)
+	}
+	w.SetNewId()
+
+	createdWh, err := s.WhDbService.Create(ctx, w)
+	if err != nil {
+		return nil, &domain.WhError{WhType: s.WhType, ErrType: domain.UserInternalError, Err: err}
+	}
+
+	return createdWh, nil
+}
+
+func (s *WhService) Get(ctx context.Context, whId string, c *domain.Claims) (domain.Warhammer, *domain.WhError) {
+	users := []string{"admin", c.Id}
+	wh, err := s.WhDbService.Retrieve(ctx, whId, users, c.SharedAccounts)
+
+	if err != nil {
+		switch err.Type {
+		case domain.DbNotFoundError:
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: s.WhType, Err: err}
+		default:
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: s.WhType, Err: err}
+		}
+	}
+
+	wh.SetCanEdit(c.Admin, c.Id, c.SharedAccounts)
+	return wh, nil
+
 }

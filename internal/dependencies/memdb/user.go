@@ -50,12 +50,12 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, &domain.DbError{Type: domain.DbInvalidUserFieldError, Err: fmt.Errorf("invalid field name %s", fieldName)}
 	}
 
-	user, err1 := getOne(s.Db, fieldName, fieldValue)
+	user, err1 := getOneUser(s.Db, fieldName, fieldValue)
 	if err1 != nil {
 		return nil, err1
 	}
 
-	linkedUsers, err2 := getMany(s.Db, "id", user.SharedAccounts)
+	linkedUsers, err2 := getManyUsers(s.Db, "id", user.SharedAccounts)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -65,7 +65,7 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 	return user, nil
 }
 
-func getOne(db *memdb.MemDB, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
+func getOneUser(db *memdb.MemDB, fieldName string, fieldValue string) (*domain.UserDb, *domain.DbError) {
 	txn := db.Txn(false)
 	userRaw, err := txn.First("user", fieldName, fieldValue)
 	if err != nil {
@@ -80,7 +80,7 @@ func getOne(db *memdb.MemDB, fieldName string, fieldValue string) (*domain.UserD
 	return user.Copy(), nil
 }
 
-func getMany(db *memdb.MemDB, fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
+func getManyUsers(db *memdb.MemDB, fieldName string, fieldValues []string) ([]*domain.UserDb, *domain.DbError) {
 	getAll := false
 	if fieldValues == nil {
 		getAll = true
@@ -139,7 +139,7 @@ func idsToUsernames(ids []string, userDbs []*domain.UserDb) []string {
 }
 
 func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *domain.DbError) {
-	users, err := getMany(s.Db, "username", nil)
+	users, err := getManyUsers(s.Db, "username", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *dom
 }
 
 func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	_, err1 := getOne(s.Db, "username", user.Username)
+	_, err1 := getOneUser(s.Db, "username", user.Username)
 	if err1 == nil {
 		return nil, &domain.DbError{Type: domain.DbAlreadyExistsError, Err: errors.New("user already exists")}
 	}
@@ -164,7 +164,7 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domai
 	userDbCreate := user.Copy()
 	if user.SharedAccounts != nil {
 		var err2 *domain.DbError
-		linkedUsers, err2 = getMany(s.Db, "username", user.SharedAccounts)
+		linkedUsers, err2 = getManyUsers(s.Db, "username", user.SharedAccounts)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -234,14 +234,14 @@ func updateUserDb(to *domain.UserDb, from *domain.UserDb) *domain.UserDb {
 }
 
 func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	userDb, err := getOne(s.Db, "id", user.Id)
-	if err != nil {
-		return nil, err
+	userDb, err1 := getOneUser(s.Db, "id", user.Id)
+	if err1 != nil {
+		return nil, err1
 	}
 
 	updateUserDb(userDb, user)
 
-	linkedUsers, err2 := getMany(s.Db, "username", userDb.SharedAccounts)
+	linkedUsers, err2 := getManyUsers(s.Db, "username", userDb.SharedAccounts)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -253,8 +253,8 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err := txn.Insert("user", userDb); err != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	if err3 := txn.Insert("user", userDb); err3 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err3}
 	}
 	txn.Commit()
 

@@ -3,38 +3,63 @@ package memdb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/hashicorp/go-memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
+	"golang.org/x/exp/slices"
 )
 
-type WhDbService struct {
-	Db *memdb.MemDB
+func whTypeToTable(whType int) string {
+	switch whType {
+	case domain.WhTypeMutation:
+		return "mutation"
+	case domain.WhTypeSpell:
+		return "spell"
+	default:
+		panic("invalid whType")
+	}
 }
 
-func NewWhDbService() *WhDbService {
-	db, err := createNewWhMemDb()
+func whFromRaw(raw any, whType int) (domain.Warhammer, error) {
+	var wh domain.Warhammer
+	var ok bool
+
+	switch whType {
+	case domain.WhTypeMutation:
+		wh, ok = raw.(*domain.Mutation)
+	case domain.WhTypeSpell:
+		wh, ok = raw.(*domain.Spell)
+	default:
+		ok = false
+	}
+	if !ok {
+		return nil, fmt.Errorf("could not populate wh from raw %v", raw)
+	} else {
+		return wh, nil
+	}
+
+}
+
+type WhDbService struct {
+	Db     *memdb.MemDB
+	WhType int
+}
+
+func NewWhDbService(whType int) *WhDbService {
+	table := whTypeToTable(whType)
+	db, err := createNewWhMemDb(table)
 	if err != nil {
 		panic(err)
 	}
 
-	return &WhDbService{Db: db}
+	return &WhDbService{Db: db, WhType: whType}
 }
 
-func createNewWhMemDb() (*memdb.MemDB, error) {
+func createNewWhMemDb(table string) (*memdb.MemDB, error) {
 	schema := &memdb.DBSchema{
 		Tables: map[string]*memdb.TableSchema{
-			"mutation": {
-				Name: "mutation",
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "Id"},
-					},
-				},
-			},
-			"spell": {
-				Name: "spell",
+			table: {
+				Name: table,
 				Indexes: map[string]*memdb.IndexSchema{
 					"id": {
 						Name:    "id",
@@ -48,26 +73,45 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func getOneWh[W domain.WhType](db *memdb.MemDB, table string, fieldName string, fieldValue string) (*W, *domain.DbError) {
-	txn := db.Txn(false)
-	whRaw, err := txn.First(table, fieldName, fieldValue)
-	if err != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+func (s *WhDbService) Retrieve(ctx context.Context, whId string, users []string, sharedUsers []string) (domain.Warhammer, *domain.DbError) {
+	txn := s.Db.Txn(false)
+	table := whTypeToTable(s.WhType)
+	whRaw, err1 := txn.First(table, "id", whId)
+	if err1 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1}
 	}
 
 	if whRaw == nil {
-		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("user not found")}
-	}
-	whTyped := whRaw.(*W)
-
-	var wh W
-	if err := domain.WhCopy(whTyped, &wh); err != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("wh not found")}
 	}
 
-	return &wh, nil
+	wh, err2 := whFromRaw(whRaw, s.WhType)
+	if err2 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+	}
+
+	whFields := wh.GetCommonFields()
+
+	if slices.Contains(users, whFields.OwnerId) {
+		return wh, nil
+	}
+
+	if slices.Contains(sharedUsers, whFields.OwnerId) && whFields.Shared {
+		return wh, nil
+	}
+
+	return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("wh not found")}
+
 }
 
-func (s *WhDbService) Create(ctx context.Context, whWrite *domain.W, c *domain.Claims) (*domain.W, *domain.WhError) {
+func (s *WhDbService) Create(ctx context.Context, w domain.Warhammer) (domain.Warhammer, *domain.DbError) {
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	table := whTypeToTable(s.WhType)
+	if err2 := txn.Insert(table, w); err2 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+	}
+	txn.Commit()
 
+	return w.Copy(), nil
 }

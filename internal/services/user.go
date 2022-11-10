@@ -52,7 +52,7 @@ func (s *UserService) SeedUsers(ctx context.Context, su []*config.UserSeed) {
 }
 
 func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*domain.User, *domain.UserError) {
-	if !(id == c.Id || c.Admin) {
+	if c.Id == "anonymous" || !(id == c.Id || c.Admin) {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
@@ -152,7 +152,7 @@ func (s *UserService) Create(ctx context.Context, uwc *domain.UserWriteCredentia
 }
 
 func (s *UserService) Update(ctx context.Context, c *domain.Claims, id string, uw *domain.UserWrite) (*domain.User, *domain.UserError) {
-	if id != c.Id {
+	if c.Id == "anonymous" || id != c.Id {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
@@ -160,9 +160,14 @@ func (s *UserService) Update(ctx context.Context, c *domain.Claims, id string, u
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
+	sharedAccounts := make([]string, 0)
+	if uw.SharedAccounts != nil {
+		sharedAccounts = uw.SharedAccounts
+	}
+
 	userUpdate := domain.UserDb{
 		Id:             id,
-		SharedAccounts: uw.SharedAccounts,
+		SharedAccounts: sharedAccounts,
 	}
 
 	userDb, err := s.UserDbService.Update(ctx, &userUpdate)
@@ -180,7 +185,7 @@ func (s *UserService) Update(ctx context.Context, c *domain.Claims, id string, u
 }
 
 func (s *UserService) UpdateCredentials(ctx context.Context, c *domain.Claims, id string, currentPasswd string, uwc *domain.UserWriteCredentials) (*domain.User, *domain.UserError) {
-	if id != c.Id {
+	if c.Id == "anonymous" || id != c.Id {
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
@@ -226,7 +231,7 @@ func (s *UserService) UpdateClaims(ctx context.Context, c *domain.Claims, id str
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	userUpdate := domain.UserDb{Id: id, Admin: uwc.Admin}
+	userUpdate := domain.UserDb{Id: id, Admin: &uwc.Admin}
 	userDb, err := s.UserDbService.Update(ctx, &userUpdate)
 	if err != nil {
 		switch err.Type {
@@ -241,7 +246,7 @@ func (s *UserService) UpdateClaims(ctx context.Context, c *domain.Claims, id str
 }
 
 func (s *UserService) Delete(ctx context.Context, c *domain.Claims, id string) *domain.UserError {
-	if id != c.Id {
+	if c.Id == "anonymous" || id != c.Id {
 		return &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 

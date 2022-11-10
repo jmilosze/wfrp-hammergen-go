@@ -13,6 +13,7 @@ require (
 	github.com/vearne/gin-timeout v0.1.3
 	go.mongodb.org/mongo-driver v1.11.0
 	golang.org/x/crypto v0.1.0
+	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
 )
 
 require (

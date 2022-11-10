@@ -49,18 +49,18 @@ func RequireJwt(js domain.JwtService) gin.HandlerFunc {
 
 		token, err := parseAuthHeader(authHeader)
 		if err != nil {
-			unauthorized(c)
+			setAnonymous(c)
 			return
 		}
 
 		claims, err := js.ParseToken(token)
 		if err != nil {
-			unauthorized(c)
+			setAnonymous(c)
 			return
 		}
 
 		if claims.ResetPassword {
-			unauthorized(c)
+			setAnonymous(c)
 			return
 		}
 
@@ -70,9 +70,10 @@ func RequireJwt(js domain.JwtService) gin.HandlerFunc {
 	}
 }
 
-func unauthorized(c *gin.Context) {
-	c.Abort()
-	c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+func setAnonymous(c *gin.Context) {
+	c.Set("ClaimsId", "anonymous")
+	c.Set("ClaimsAdmin", false)
+	c.Set("ClaimsSharedAccounts", []string{})
 }
 
 func parseAuthHeader(authHeader string) (string, error) {

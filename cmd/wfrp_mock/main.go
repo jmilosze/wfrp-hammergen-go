@@ -28,14 +28,15 @@ func run() error {
 	cfg := config.NewConfig()
 
 	val := validator.New()
+
 	jwtService := golangjwt.NewHmacService(cfg.Jwt.HmacSecret, cfg.Jwt.AccessExpiry, cfg.Jwt.ResetExpiry)
 	emailService := mockemail.NewEmailService(cfg.Email.FromAddress)
 	captchaService := mockcaptcha.NewCaptchaService()
 	userDbService := memdb.NewUserDbService()
-
 	userService := services.NewUserService(cfg.UserService, userDbService, emailService, jwtService, val)
 
-	mutationService := services.NewWhService[domain.Mutation](val)
+	whDbMutationService := memdb.NewWhDbService(domain.WhTypeMutation)
+	whMutationService := services.NewWhService(val, whDbMutationService, domain.WhTypeMutation)
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.RequestTimeout)
 	defer cancel()
@@ -48,7 +49,7 @@ func run() error {
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
 	gin.RegisterAuthRoutes(router, userService, jwtService)
-	gin.RegisterMutationRoutes(router, mutationService, jwtService)
+	gin.RegisterMutationRoutes(router, whMutationService, jwtService)
 
 	server := http.NewServer(cfg.Server, router)
 

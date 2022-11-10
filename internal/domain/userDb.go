@@ -32,7 +32,7 @@ func NewUserDb() *UserDb {
 }
 
 func (u *UserDb) ToUser() *User {
-	var isAdmin bool
+	isAdmin := false
 	if u.Admin != nil {
 		isAdmin = *u.Admin
 	}

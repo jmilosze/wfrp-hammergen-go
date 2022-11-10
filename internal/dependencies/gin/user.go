@@ -14,8 +14,8 @@ func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.Jwt
 	router.GET("api/user/list", RequireJwt(js), userListHandler(us))
 	router.PUT("api/user/:userId", RequireJwt(js), userUpdateHandler(us))
 	router.PUT("api/user/credentials/:userId", RequireJwt(js), userUpdateCredentialsHandler(us))
-	router.PUT("api/user/claims/:userId", RequireJwt(js), updateClaims(us))
-	router.DELETE("api/user/:userId", RequireJwt(js), deleteHandler(us))
+	router.PUT("api/user/claims/:userId", RequireJwt(js), userUpdateClaimsHandler(us))
+	router.DELETE("api/user/:userId", RequireJwt(js), userDeleteHandler(us))
 	router.POST("api/user/send_reset_password", resetSendPasswordHandler(us, cs))
 	router.POST("api/user/reset_password", resetPasswordHandler(us))
 }
@@ -131,7 +131,7 @@ func userListHandler(us domain.UserService) func(*gin.Context) {
 		if err != nil {
 			switch err.Type {
 			case domain.UserUnauthorizedError:
-				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "setAnonymous"})
 			default:
 				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			}
@@ -161,7 +161,7 @@ func userUpdateHandler(users domain.UserService) func(*gin.Context) {
 			case domain.UserInvalidArgumentsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserUnauthorizedError:
-				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "setAnonymous"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
@@ -201,7 +201,7 @@ func userUpdateCredentialsHandler(us domain.UserService) func(*gin.Context) {
 			case domain.UserIncorrectPasswordError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "incorrect password"})
 			case domain.UserUnauthorizedError:
-				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "setAnonymous"})
 			default:
 				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			}
@@ -212,7 +212,7 @@ func userUpdateCredentialsHandler(us domain.UserService) func(*gin.Context) {
 	}
 }
 
-func updateClaims(us domain.UserService) func(*gin.Context) {
+func userUpdateClaimsHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		claims := getUserClaims(c)
@@ -231,7 +231,7 @@ func updateClaims(us domain.UserService) func(*gin.Context) {
 			case domain.UserInvalidArgumentsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			case domain.UserUnauthorizedError:
-				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "setAnonymous"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
@@ -242,7 +242,7 @@ func updateClaims(us domain.UserService) func(*gin.Context) {
 	}
 }
 
-func deleteHandler(us domain.UserService) func(*gin.Context) {
+func userDeleteHandler(us domain.UserService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		userId := c.Param("userId")
 		claims := getUserClaims(c)
@@ -250,7 +250,7 @@ func deleteHandler(us domain.UserService) func(*gin.Context) {
 		if err := us.Delete(c.Request.Context(), claims, userId); err != nil {
 			switch err.Type {
 			case domain.UserUnauthorizedError:
-				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "setAnonymous"})
 			default:
 				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "internal server error"})
 			}

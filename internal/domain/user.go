@@ -26,7 +26,7 @@ type UserWriteCredentials struct {
 }
 
 type UserWriteClaims struct {
-	Admin *bool `json:"admin" validate:"omitempty"`
+	Admin bool `json:"admin" validate:"omitempty"`
 }
 
 type User struct {
