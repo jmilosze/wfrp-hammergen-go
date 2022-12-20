@@ -17,7 +17,7 @@ const (
 )
 
 type UserWrite struct {
-	SharedAccounts []string `json:"shared_accounts" validate:"omitempty,dive,email,required"`
+	SharedAccounts []string `json:"sharedAccounts" validate:"omitempty,dive,email,required"`
 }
 
 type UserWriteCredentials struct {

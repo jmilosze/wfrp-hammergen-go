@@ -83,13 +83,13 @@ func (s *UserService) Exists(ctx context.Context, username string) (bool, *domai
 }
 
 func (s *UserService) Authenticate(ctx context.Context, username string, password string) (*domain.User, *domain.UserError) {
-	userDb, err := s.UserDbService.Retrieve(ctx, "username", username)
-	if err != nil {
-		switch err.Type {
+	userDb, err1 := s.UserDbService.Retrieve(ctx, "username", username)
+	if err1 != nil {
+		switch err1.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err1}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
 		}
 	}
 
@@ -97,12 +97,12 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 		return nil, &domain.UserError{Type: domain.UserIncorrectPasswordError, Err: errors.New("incorrect password")}
 	}
 
-	if _, err := s.UserDbService.Update(ctx, &domain.UserDb{Id: userDb.Id, LastAuthOn: time.Now()}); err != nil {
-		switch err.Type {
+	if _, err2 := s.UserDbService.Update(ctx, &domain.UserDb{Id: userDb.Id, LastAuthOn: time.Now()}); err2 != nil {
+		switch err2.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
 		}
 	}
 

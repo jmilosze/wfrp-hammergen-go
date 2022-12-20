@@ -23,7 +23,7 @@ func RegisterUserRoutes(router *gin.Engine, us domain.UserService, js domain.Jwt
 type UserCreate struct {
 	Username       string   `json:"username"`
 	Password       string   `json:"password"`
-	SharedAccounts []string `json:"shared_accounts"`
+	SharedAccounts []string `json:"sharedAccounts"`
 	Captcha        string   `json:"captcha"`
 }
 
@@ -175,7 +175,7 @@ func userUpdateHandler(users domain.UserService) func(*gin.Context) {
 type UserCredentials struct {
 	Username        string `json:"username"`
 	Password        string `json:"password"`
-	CurrentPassword string `json:"current_password"`
+	CurrentPassword string `json:"currentPassword"`
 }
 
 func userUpdateCredentialsHandler(us domain.UserService) func(*gin.Context) {

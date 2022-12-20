@@ -239,27 +239,32 @@ func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domai
 		return nil, err1
 	}
 
-	updateUserDb(userDb, user)
-
-	linkedUsers, err2 := getManyUsers(s.Db, "username", userDb.SharedAccounts)
+	linkedUsers1, err2 := getManyUsers(s.Db, "id", userDb.SharedAccounts)
 	if err2 != nil {
 		return nil, err2
 	}
+	userDb.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers1)
+
+	updateUserDb(userDb, user)
+
+	linkedUsers2, err3 := getManyUsers(s.Db, "username", userDb.SharedAccounts)
+	if err3 != nil {
+		return nil, err3
+	}
 
 	if userDb.SharedAccounts != nil {
-		userDb.SharedAccounts = usernamesToIds(userDb.SharedAccounts, linkedUsers)
-
+		userDb.SharedAccounts = usernamesToIds(userDb.SharedAccounts, linkedUsers2)
 	}
 
 	txn := s.Db.Txn(true)
 	defer txn.Abort()
-	if err3 := txn.Insert("user", userDb); err3 != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err3}
+	if err4 := txn.Insert("user", userDb); err4 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err4}
 	}
 	txn.Commit()
 
 	userDbRet := userDb.Copy()
-	userDbRet.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers)
+	userDbRet.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers2)
 
 	return userDbRet, nil
 }

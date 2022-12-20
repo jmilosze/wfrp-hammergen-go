@@ -9,18 +9,18 @@ import (
 
 func RegisterMutationRoutes(router *gin.Engine, ms domain.WhService, js domain.JwtService) {
 	router.POST("api/wh/mutation", RequireJwt(js), whCreateHandler(ms, domain.WhTypeMutation))
-	router.GET("api/wh/mutation/:whId", RequireJwt(js), whGetHandler(ms))
+	router.GET("api/wh/mutation/:whId", RequireJwt(js), whGetHandler(ms, domain.WhTypeMutation))
 }
 
 func whCreateHandler(s domain.WhService, whType int) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var whWrite domain.Warhammer
+		var whWrite domain.Wh
 
 		switch whType {
 		case domain.WhTypeMutation:
-			whWrite = &domain.Mutation{}
+			whWrite.Object = &domain.WhMutation{}
 		case domain.WhTypeSpell:
-			whWrite = &domain.Spell{}
+			whWrite.Object = &domain.WhSpell{}
 		}
 
 		reqData, err1 := c.GetRawData()
@@ -29,17 +29,19 @@ func whCreateHandler(s domain.WhService, whType int) func(*gin.Context) {
 			return
 		}
 
-		if err := whWrite.PopulateFromJson(reqData); err != nil {
+		if err := json.Unmarshal(reqData, &whWrite); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err.Error()})
 			return
 		}
 
 		claims := getUserClaims(c)
-		whRead, err2 := s.Create(c.Request.Context(), whWrite, claims)
+		whRead, err2 := s.Create(c.Request.Context(), whType, &whWrite, claims)
 		if err2 != nil {
-			switch err2.WhType {
+			switch err2.ErrType {
 			case domain.WhInvalidArgumentsError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": err2.Error()})
+			case domain.WhUnauthorizedError:
+				c.JSON(http.StatusUnauthorized, gin.H{"code": http.StatusUnauthorized, "message": "unauthorized"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
 			}
@@ -69,12 +71,12 @@ func structToMap(m any) (map[string]any, error) {
 	return res, nil
 }
 
-func whGetHandler(s domain.WhService) func(*gin.Context) {
+func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
 	return func(c *gin.Context) {
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, err1 := s.Get(c.Request.Context(), whId, claims)
+		wh, err1 := s.Get(c.Request.Context(), whType, whId, claims)
 
 		if err1 != nil {
 			switch err1.ErrType {

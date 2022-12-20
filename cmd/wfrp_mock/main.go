@@ -9,7 +9,6 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/memdb"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mockcaptcha"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/dependencies/mockemail"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/http"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/services"
 	"log"
@@ -35,8 +34,8 @@ func run() error {
 	userDbService := memdb.NewUserDbService()
 	userService := services.NewUserService(cfg.UserService, userDbService, emailService, jwtService, val)
 
-	whDbMutationService := memdb.NewWhDbService(domain.WhTypeMutation)
-	whMutationService := services.NewWhService(val, whDbMutationService, domain.WhTypeMutation)
+	whDbService := memdb.NewWhDbService()
+	whService := services.NewWhService(val, whDbService)
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.RequestTimeout)
 	defer cancel()
@@ -49,7 +48,7 @@ func run() error {
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
 	gin.RegisterAuthRoutes(router, userService, jwtService)
-	gin.RegisterMutationRoutes(router, whMutationService, jwtService)
+	gin.RegisterMutationRoutes(router, whService, jwtService)
 
 	server := http.NewServer(cfg.Server, router)
 
