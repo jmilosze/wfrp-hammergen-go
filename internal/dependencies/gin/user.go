@@ -42,7 +42,7 @@ func userCreateHandler(us domain.UserService, cs domain.CaptchaService) func(*gi
 		}
 
 		userWriteCredentials := domain.UserWriteCredentials{Username: userData.Username, Password: userData.Password}
-		userWrite := domain.UserWrite{SharedAccounts: userData.SharedAccounts}
+		userWrite := domain.UserWrite{SharedAccountNames: userData.SharedAccounts}
 
 		userRead, err := us.Create(c.Request.Context(), &userWriteCredentials, &userWrite)
 		if err != nil {
@@ -65,7 +65,7 @@ func userToMap(user *domain.User) map[string]interface{} {
 	return gin.H{
 		"id":             user.Id,
 		"username":       user.Username,
-		"sharedAccounts": user.SharedAccounts,
+		"sharedAccounts": user.SharedAccountNames,
 		"admin":          user.Admin,
 		"createdOn":      user.CreatedOn,
 		"lastAuthOn":     user.LastAuthOn,

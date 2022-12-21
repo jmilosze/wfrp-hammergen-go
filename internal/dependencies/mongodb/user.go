@@ -44,7 +44,7 @@ func fromUserDb(u *domain.UserDb, linkedUsers []*UserMongoDb) (*UserMongoDb, err
 		Username:       u.Username,
 		PasswordHash:   u.PasswordHash,
 		Admin:          u.Admin,
-		SharedAccounts: usernamesToIds(u.SharedAccounts, linkedUsers),
+		SharedAccounts: usernamesToIds(u.SharedAccountNames, linkedUsers),
 		CreatedOn:      u.CreatedOn,
 		LastAuthOn:     u.LastAuthOn,
 	}
@@ -79,13 +79,13 @@ func toUserDb(u *UserMongoDb, linkedUsers []*UserMongoDb) *domain.UserDb {
 	}
 
 	userMongoDb := domain.UserDb{
-		Id:             u.Id.Hex(),
-		Username:       u.Username,
-		PasswordHash:   u.PasswordHash,
-		Admin:          u.Admin,
-		SharedAccounts: idsToUsernames(u.SharedAccounts, linkedUsers),
-		CreatedOn:      u.CreatedOn,
-		LastAuthOn:     u.LastAuthOn,
+		Id:                 u.Id.Hex(),
+		Username:           u.Username,
+		PasswordHash:       u.PasswordHash,
+		Admin:              u.Admin,
+		SharedAccountNames: idsToUsernames(u.SharedAccounts, linkedUsers),
+		CreatedOn:          u.CreatedOn,
+		LastAuthOn:         u.LastAuthOn,
 	}
 	return &userMongoDb
 }
@@ -247,7 +247,7 @@ func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *dom
 }
 
 func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	linkedUsers, err1 := getLinkedUsers(ctx, s.Collection, user.SharedAccounts)
+	linkedUsers, err1 := getLinkedUsers(ctx, s.Collection, user.SharedAccountNames)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -279,7 +279,7 @@ func getLinkedUsers(ctx context.Context, col *mongo.Collection, sharedAccounts [
 }
 
 func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	linkedUsers, err1 := getLinkedUsers(ctx, s.Collection, user.SharedAccounts)
+	linkedUsers, err1 := getLinkedUsers(ctx, s.Collection, user.SharedAccountNames)
 	if err1 != nil {
 		return nil, err1
 	}

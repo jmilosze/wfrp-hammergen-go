@@ -17,7 +17,7 @@ const (
 )
 
 type UserWrite struct {
-	SharedAccounts []string `json:"sharedAccounts" validate:"omitempty,dive,email,required"`
+	SharedAccountNames []string `json:"sharedAccountNames" validate:"omitempty,dive,email,required"`
 }
 
 type UserWriteCredentials struct {
@@ -30,12 +30,12 @@ type UserWriteClaims struct {
 }
 
 type User struct {
-	Id             string
-	Username       string
-	Admin          bool
-	SharedAccounts []string
-	CreatedOn      time.Time
-	LastAuthOn     time.Time
+	Id                 string
+	Username           string
+	Admin              bool
+	SharedAccountNames []string
+	CreatedOn          time.Time
+	LastAuthOn         time.Time
 }
 
 type UserService interface {
@@ -47,7 +47,7 @@ type UserService interface {
 	UpdateClaims(ctx context.Context, c *Claims, id string, uwc *UserWriteClaims) (*User, *UserError)
 	Delete(ctx context.Context, c *Claims, id string) *UserError
 	List(ctx context.Context, c *Claims) ([]*User, *UserError)
-	Authenticate(ctx context.Context, username string, password string) (*User, *UserError)
+	Authenticate(ctx context.Context, username string, password string) (u *User, sharedAccountIds []string, ue *UserError)
 	SendResetPassword(ctx context.Context, username string) *UserError
 	ResetPassword(ctx context.Context, token string, newPassword string) *UserError
 }

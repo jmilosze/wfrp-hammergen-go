@@ -55,12 +55,12 @@ func (s *UserDbService) Retrieve(ctx context.Context, fieldName string, fieldVal
 		return nil, err1
 	}
 
-	linkedUsers, err2 := getManyUsers(s.Db, "id", user.SharedAccounts)
+	linkedUsers, err2 := getManyUsers(s.Db, "id", user.SharedAccountIds)
 	if err2 != nil {
 		return nil, err2
 	}
 
-	user.SharedAccounts = idsToUsernames(user.SharedAccounts, linkedUsers)
+	user.SharedAccountNames = idsToUsernames(user.SharedAccountIds, linkedUsers)
 
 	return user, nil
 }
@@ -145,7 +145,7 @@ func (s *UserDbService) RetrieveAll(ctx context.Context) ([]*domain.UserDb, *dom
 	}
 
 	for _, u := range users {
-		u.SharedAccounts = idsToUsernames(u.SharedAccounts, users)
+		u.SharedAccountNames = idsToUsernames(u.SharedAccountIds, users)
 	}
 
 	return users, nil
@@ -160,15 +160,16 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domai
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1.Unwrap()}
 	}
 
-	linkedUsers := make([]*domain.UserDb, 0)
 	userDbCreate := user.Copy()
-	if user.SharedAccounts != nil {
+
+	if user.SharedAccountNames != nil {
+		linkedUsers := make([]*domain.UserDb, 0)
 		var err2 *domain.DbError
-		linkedUsers, err2 = getManyUsers(s.Db, "username", user.SharedAccounts)
+		linkedUsers, err2 = getManyUsers(s.Db, "username", userDbCreate.SharedAccountNames)
 		if err2 != nil {
 			return nil, err2
 		}
-		userDbCreate.SharedAccounts = usernamesToIds(userDbCreate.SharedAccounts, linkedUsers)
+		userDbCreate.SharedAccountIds = usernamesToIds(userDbCreate.SharedAccountNames, linkedUsers)
 	}
 
 	txn := s.Db.Txn(true)
@@ -178,10 +179,7 @@ func (s *UserDbService) Create(ctx context.Context, user *domain.UserDb) (*domai
 	}
 	txn.Commit()
 
-	userDbRet := userDbCreate.Copy()
-	userDbRet.SharedAccounts = idsToUsernames(userDbCreate.SharedAccounts, linkedUsers)
-
-	return userDbRet, nil
+	return userDbCreate.Copy(), nil
 }
 
 func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
@@ -197,6 +195,38 @@ func usernamesToIds(usernames []string, userDbs []*domain.UserDb) []string {
 		}
 	}
 	return ids
+}
+
+func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
+	userDb, err1 := getOneUser(s.Db, "id", user.Id)
+	if err1 != nil {
+		return nil, err1
+	}
+
+	updateUserDb(userDb, user)
+
+	if user.SharedAccountNames != nil {
+		userDb.SharedAccountNames = make([]string, len(user.SharedAccountNames))
+		for i, v := range user.SharedAccountNames {
+			userDb.SharedAccountNames[i] = v
+		}
+
+		linkedUsers, err3 := getManyUsers(s.Db, "username", userDb.SharedAccountNames)
+		if err3 != nil {
+			return nil, err3
+		}
+
+		userDb.SharedAccountIds = usernamesToIds(userDb.SharedAccountNames, linkedUsers)
+	}
+
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if err4 := txn.Insert("user", userDb); err4 != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err4}
+	}
+	txn.Commit()
+
+	return userDb.Copy(), nil
 }
 
 func updateUserDb(to *domain.UserDb, from *domain.UserDb) *domain.UserDb {
@@ -223,50 +253,7 @@ func updateUserDb(to *domain.UserDb, from *domain.UserDb) *domain.UserDb {
 		to.CreatedOn = from.CreatedOn.UTC()
 	}
 
-	if from.SharedAccounts != nil {
-		to.SharedAccounts = make([]string, len(from.SharedAccounts))
-		for i, s := range from.SharedAccounts {
-			to.SharedAccounts[i] = s
-		}
-	}
-
 	return to
-}
-
-func (s *UserDbService) Update(ctx context.Context, user *domain.UserDb) (*domain.UserDb, *domain.DbError) {
-	userDb, err1 := getOneUser(s.Db, "id", user.Id)
-	if err1 != nil {
-		return nil, err1
-	}
-
-	linkedUsers1, err2 := getManyUsers(s.Db, "id", userDb.SharedAccounts)
-	if err2 != nil {
-		return nil, err2
-	}
-	userDb.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers1)
-
-	updateUserDb(userDb, user)
-
-	linkedUsers2, err3 := getManyUsers(s.Db, "username", userDb.SharedAccounts)
-	if err3 != nil {
-		return nil, err3
-	}
-
-	if userDb.SharedAccounts != nil {
-		userDb.SharedAccounts = usernamesToIds(userDb.SharedAccounts, linkedUsers2)
-	}
-
-	txn := s.Db.Txn(true)
-	defer txn.Abort()
-	if err4 := txn.Insert("user", userDb); err4 != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err4}
-	}
-	txn.Commit()
-
-	userDbRet := userDb.Copy()
-	userDbRet.SharedAccounts = idsToUsernames(userDb.SharedAccounts, linkedUsers2)
-
-	return userDbRet, nil
 }
 
 func (s *UserDbService) Delete(ctx context.Context, id string) *domain.DbError {

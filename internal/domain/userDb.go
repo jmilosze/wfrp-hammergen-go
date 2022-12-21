@@ -8,26 +8,28 @@ import (
 )
 
 type UserDb struct {
-	Id             string
-	Username       string
-	PasswordHash   []byte
-	Admin          *bool
-	SharedAccounts []string
-	CreatedOn      time.Time
-	LastAuthOn     time.Time
+	Id                 string
+	Username           string
+	PasswordHash       []byte
+	Admin              *bool
+	SharedAccountNames []string
+	SharedAccountIds   []string
+	CreatedOn          time.Time
+	LastAuthOn         time.Time
 }
 
 func NewUserDb() *UserDb {
 	newId := xid.New().String()
 	admin := false
 	return &UserDb{
-		Id:             newId,
-		Username:       "",
-		PasswordHash:   []byte{},
-		Admin:          &admin,
-		SharedAccounts: []string{},
-		CreatedOn:      time.Now(),
-		LastAuthOn:     time.Time{},
+		Id:                 newId,
+		Username:           "",
+		PasswordHash:       []byte{},
+		Admin:              &admin,
+		SharedAccountNames: []string{},
+		SharedAccountIds:   []string{},
+		CreatedOn:          time.Now(),
+		LastAuthOn:         time.Time{},
 	}
 }
 
@@ -38,12 +40,12 @@ func (u *UserDb) ToUser() *User {
 	}
 
 	return &User{
-		Id:             u.Id,
-		Admin:          isAdmin,
-		Username:       u.Username,
-		SharedAccounts: u.SharedAccounts,
-		CreatedOn:      u.CreatedOn,
-		LastAuthOn:     u.LastAuthOn,
+		Id:                 u.Id,
+		Admin:              isAdmin,
+		Username:           u.Username,
+		SharedAccountNames: u.SharedAccountNames,
+		CreatedOn:          u.CreatedOn,
+		LastAuthOn:         u.LastAuthOn,
 	}
 }
 
@@ -55,9 +57,13 @@ func (u *UserDb) Copy() *UserDb {
 	uCopy.Username = strings.Clone(u.Username)
 	uCopy.PasswordHash = make([]byte, len(u.PasswordHash))
 	copy(uCopy.PasswordHash, u.PasswordHash)
-	uCopy.SharedAccounts = make([]string, len(u.SharedAccounts))
-	for i, s := range u.SharedAccounts {
-		uCopy.SharedAccounts[i] = strings.Clone(s)
+	uCopy.SharedAccountNames = make([]string, len(u.SharedAccountNames))
+	for i, s := range u.SharedAccountNames {
+		uCopy.SharedAccountNames[i] = strings.Clone(s)
+	}
+	uCopy.SharedAccountIds = make([]string, len(u.SharedAccountIds))
+	for i, s := range u.SharedAccountIds {
+		uCopy.SharedAccountIds[i] = strings.Clone(s)
 	}
 
 	uCopy.LastAuthOn = u.LastAuthOn.UTC()
