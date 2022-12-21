@@ -43,6 +43,22 @@ func (s *WhService) Create(ctx context.Context, whType int, w *domain.Wh, c *dom
 	return createdWh, nil
 }
 
+func canEdit(ownerId string, isAdmin bool, userId string, sharedAccounts []string) bool {
+	if (ownerId != userId) && slices.Contains(sharedAccounts, ownerId) {
+		return false
+	}
+
+	if isAdmin {
+		return true
+	}
+
+	if ownerId == userId {
+		return true
+	}
+
+	return false
+}
+
 func (s *WhService) Get(ctx context.Context, whType int, whId string, c *domain.Claims) (*domain.Wh, *domain.WhError) {
 	users := []string{"admin", c.Id}
 	wh, err := s.WhDbService.Retrieve(ctx, whType, whId, users, c.SharedAccounts)
@@ -58,21 +74,52 @@ func (s *WhService) Get(ctx context.Context, whType int, whId string, c *domain.
 
 	wh.CanEdit = canEdit(wh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
 	return wh, nil
-
 }
 
-func canEdit(ownerId string, isAdmin bool, userId string, sharedAccounts []string) bool {
-	if (ownerId != userId) && slices.Contains(sharedAccounts, ownerId) {
-		return false
+func (s *WhService) Update(ctx context.Context, whType int, w *domain.Wh, c *domain.Claims) (*domain.Wh, *domain.WhError) {
+	if c.Id == "anonymous" {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if isAdmin {
-		return true
+	if err1 := s.Validator.Struct(w); err1 != nil {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.WhInvalidArgumentsError, Err: err1}
 	}
 
-	if ownerId == userId {
-		return true
+	users := []string{"admin", c.Id}
+	_, err2 := s.WhDbService.Retrieve(ctx, whType, w.Id, users, c.SharedAccounts)
+	if err2 != nil {
+		switch err2.Type {
+		case domain.DbNotFoundError:
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: err2}
+		default:
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: err2}
+		}
 	}
 
-	return false
+	if c.Admin {
+		w.OwnerId = "admin"
+	} else {
+		w.OwnerId = c.Id
+	}
+
+	updatedWh, err2 := s.WhDbService.Update(ctx, whType, w)
+	if err2 != nil {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.UserInternalError, Err: err2}
+	}
+
+	updatedWh.CanEdit = canEdit(updatedWh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
+	return updatedWh, nil
+}
+
+func (s *WhService) Delete(ctx context.Context, whType int, whId string, c *domain.Claims) *domain.WhError {
+	if c.Id == "anonymous" {
+		return &domain.WhError{WhType: whType, ErrType: domain.WhUnauthorizedError, Err: errors.New("unauthorized")}
+	}
+
+	if err := s.WhDbService.Delete(ctx, whType, whId); err != nil {
+		return &domain.WhError{WhType: whType, ErrType: domain.WhInternalError, Err: err}
+
+	} else {
+		return nil
+	}
 }

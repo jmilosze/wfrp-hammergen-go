@@ -9,17 +9,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func whTypeToTable(whType int) string {
-	switch whType {
-	case domain.WhTypeMutation:
-		return "mutation"
-	case domain.WhTypeSpell:
-		return "spell"
-	default:
-		panic("invalid whType")
-	}
-}
-
 type WhDbService struct {
 	Db *memdb.MemDB
 }
@@ -71,21 +60,39 @@ func (s *WhDbService) Retrieve(ctx context.Context, whType int, whId string, use
 		return wh, nil
 	}
 
-	if slices.Contains(sharedUsers, wh.OwnerId) && wh.Shared {
+	if slices.Contains(sharedUsers, wh.OwnerId) && wh.IsShared() {
 		return wh, nil
 	}
 
 	return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("wh not found")}
 
 }
-
 func (s *WhDbService) Create(ctx context.Context, whType int, w *domain.Wh) (*domain.Wh, *domain.DbError) {
-	txn := s.Db.Txn(true)
+	return upsertWh(s.Db, w)
+}
+
+func (s *WhDbService) Update(ctx context.Context, whType int, w *domain.Wh) (*domain.Wh, *domain.DbError) {
+	return upsertWh(s.Db, w)
+}
+
+func upsertWh(db *memdb.MemDB, w *domain.Wh) (*domain.Wh, *domain.DbError) {
+	txn := db.Txn(true)
 	defer txn.Abort()
-	if err2 := txn.Insert("wh", w); err2 != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err2}
+	if err := txn.Insert("wh", w); err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 	txn.Commit()
 
 	return w.Copy(), nil
+}
+
+func (s WhDbService) Delete(ctx context.Context, whType int, whId string) *domain.DbError {
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if _, err := txn.DeleteAll("wh", "id", whId); err != nil {
+		return &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+	txn.Commit()
+
+	return nil
 }

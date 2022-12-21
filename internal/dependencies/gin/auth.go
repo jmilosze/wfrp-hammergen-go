@@ -17,7 +17,7 @@ func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		user, sharedAccountIds, err := us.Authenticate(c.Request.Context(), username, password)
+		user, err := us.Authenticate(c.Request.Context(), username, password)
 
 		if err != nil {
 			switch err.Type {
@@ -31,7 +31,7 @@ func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context
 			return
 		}
 
-		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: sharedAccountIds, ResetPassword: false}
+		claims := domain.Claims{Id: user.Id, Admin: user.Admin, SharedAccounts: user.SharedAccountIds, ResetPassword: false}
 		token, tokenErr := js.GenerateAccessToken(&claims)
 
 		if tokenErr != nil {
