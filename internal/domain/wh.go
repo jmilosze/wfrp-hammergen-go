@@ -9,9 +9,6 @@ import (
 const (
 	WhTypeMutation = 1
 	WhTypeSpell    = 2
-
-	MutationPhysical = 0
-	MutationMental   = 1
 )
 
 const (
@@ -81,18 +78,20 @@ type WhObject interface {
 type WhModifiers struct {
 	Size       int `json:"size" validate:"min=-3,max=3"`
 	Movement   int `json:"movement" validate:"min=-3,max=3"`
-	Attributes struct {
-		WS  int `json:"WS" validate:"min=-99,max=99"`
-		BS  int `json:"BS" validate:"min=-99,max=99"`
-		S   int `json:"S" validate:"min=-99,max=99"`
-		T   int `json:"T" validate:"min=-99,max=99"`
-		I   int `json:"I" validate:"min=-99,max=99"`
-		Ag  int `json:"Ag" validate:"min=-99,max=99"`
-		Dex int `json:"Dex" validate:"min=-99,max=99"`
-		Int int `json:"Int" validate:"min=-99,max=99"`
-		WP  int `json:"WP" validate:"min=-99,max=99"`
-		Fel int `json:"Fel" validate:"min=-99,max=99"`
-	}
+	Attributes WHAttributes
+}
+
+type WHAttributes struct {
+	WS  int `json:"WS" validate:"min=-99,max=99"`
+	BS  int `json:"BS" validate:"min=-99,max=99"`
+	S   int `json:"S" validate:"min=-99,max=99"`
+	T   int `json:"T" validate:"min=-99,max=99"`
+	I   int `json:"I" validate:"min=-99,max=99"`
+	Ag  int `json:"Ag" validate:"min=-99,max=99"`
+	Dex int `json:"Dex" validate:"min=-99,max=99"`
+	Int int `json:"Int" validate:"min=-99,max=99"`
+	WP  int `json:"WP" validate:"min=-99,max=99"`
+	Fel int `json:"Fel" validate:"min=-99,max=99"`
 }
 
 type WhMutation struct {

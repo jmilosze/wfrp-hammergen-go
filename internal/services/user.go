@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/config"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
+	mock "github.com/jmilosze/wfrp-hammergen-go/test/mock_data"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -36,7 +37,7 @@ func NewUserService(cfg *config.UserService, db domain.UserDbService, email doma
 
 }
 
-func (s *UserService) SeedUsers(ctx context.Context, us []*config.UserSeed) {
+func (s *UserService) SeedUsers(ctx context.Context, us []*mock.UserSeed) {
 	for _, u := range us {
 		user := domain.EmptyUser()
 

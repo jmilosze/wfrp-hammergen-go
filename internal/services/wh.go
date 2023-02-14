@@ -7,6 +7,7 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/rs/xid"
 	"golang.org/x/exp/slices"
+	"log"
 )
 
 type WhService struct {
@@ -16,6 +17,14 @@ type WhService struct {
 
 func NewWhService(v *validator.Validate, db domain.WhDbService) *WhService {
 	return &WhService{Validator: v, WhDbService: db}
+}
+
+func (s *WhService) SeedWh(ctx context.Context, whType int, whs []*domain.Wh) {
+	for _, wh := range whs {
+		if _, err := s.WhDbService.Create(ctx, whType, wh); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 func (s *WhService) Create(ctx context.Context, whType int, w *domain.Wh, c *domain.Claims) (*domain.Wh, *domain.WhError) {
