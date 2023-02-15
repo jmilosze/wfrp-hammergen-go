@@ -12,6 +12,7 @@ func RegisterMutationRoutes(router *gin.Engine, ms domain.WhService, js domain.J
 	router.GET("api/wh/mutation/:whId", RequireJwt(js), whGetHandler(ms, domain.WhTypeMutation))
 	router.PUT("api/wh/mutation/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, domain.WhTypeMutation))
 	router.DELETE("api/wh/mutation/:whId", RequireJwt(js), whDeleteHandler(ms, domain.WhTypeMutation))
+	router.GET("api/wh/list", RequireJwt(js), whListHandler(ms, domain.WhTypeMutation))
 }
 
 func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func(*gin.Context) {
@@ -103,7 +104,7 @@ func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
 			case domain.WhNotFoundError:
 				c.JSON(NotFoundErrResp(""))
 			default:
-				c.JSON(ServerErrResp(""))
+
 			}
 			return
 		}
@@ -116,6 +117,20 @@ func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
 
 		c.JSON(OkResp(returnData))
 	}
+}
+
+func whListToListMap(whs []*domain.Wh) ([]map[string]any, error) {
+	list := make([]map[string]any, len(whs))
+
+	var err error
+	for i, v := range whs {
+		list[i], err = whToMap(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return list, nil
 }
 
 func whDeleteHandler(s domain.WhService, whType int) func(*gin.Context) {
@@ -136,5 +151,26 @@ func whDeleteHandler(s domain.WhService, whType int) func(*gin.Context) {
 		}
 
 		c.JSON(OkResp(""))
+	}
+}
+
+func whListHandler(s domain.WhService, whType int) func(*gin.Context) {
+	return func(c *gin.Context) {
+		claims := getUserClaims(c)
+
+		whs, err := s.List(c.Request.Context(), whType, claims)
+
+		if err != nil {
+			c.JSON(ServerErrResp(""))
+			return
+		}
+
+		returnData, err := whListToListMap(whs)
+		if err != nil {
+			c.JSON(ServerErrResp(""))
+			return
+		}
+
+		c.JSON(OkResp(returnData))
 	}
 }
