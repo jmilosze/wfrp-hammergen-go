@@ -81,6 +81,14 @@ type WhModifiers struct {
 	Attributes WHAttributes
 }
 
+func (m WhModifiers) Copy() WhModifiers {
+	return WhModifiers{
+		Size:       m.Size,
+		Movement:   m.Movement,
+		Attributes: m.Attributes.Copy(),
+	}
+}
+
 type WHAttributes struct {
 	WS  int `json:"WS" validate:"min=-99,max=99"`
 	BS  int `json:"BS" validate:"min=-99,max=99"`
@@ -92,6 +100,21 @@ type WHAttributes struct {
 	Int int `json:"Int" validate:"min=-99,max=99"`
 	WP  int `json:"WP" validate:"min=-99,max=99"`
 	Fel int `json:"Fel" validate:"min=-99,max=99"`
+}
+
+func (a WHAttributes) Copy() WHAttributes {
+	return WHAttributes{
+		WS:  a.WS,
+		BS:  a.BS,
+		S:   a.S,
+		T:   a.T,
+		I:   a.I,
+		Ag:  a.Ag,
+		Dex: a.Dex,
+		Int: a.Int,
+		WP:  a.WP,
+		Fel: a.Fel,
+	}
 }
 
 type WhMutation struct {
@@ -112,6 +135,7 @@ func (m WhMutation) Copy() WhObject {
 		Description: strings.Clone(m.Description),
 		Type:        m.Type,
 		Shared:      m.Shared,
+		Modifiers:   m.Modifiers.Copy(),
 	}
 }
 
@@ -146,4 +170,5 @@ type WhService interface {
 	Get(ctx context.Context, whType int, whId string, c *Claims) (*Wh, *WhError)
 	Update(ctx context.Context, whType int, w *Wh, c *Claims) (*Wh, *WhError)
 	Delete(ctx context.Context, whType int, whId string, c *Claims) *WhError
+	List(ctx context.Context, whType int, c *Claims) ([]*Wh, *WhError)
 }

@@ -132,3 +132,23 @@ func (s *WhService) Delete(ctx context.Context, whType int, whId string, c *doma
 		return nil
 	}
 }
+
+func (s *WhService) List(ctx context.Context, whType int, c *domain.Claims) ([]*domain.Wh, *domain.WhError) {
+	users := []string{"admin", c.Id}
+	whs, err := s.WhDbService.RetrieveAll(ctx, whType, users, c.SharedAccounts)
+
+	if err != nil {
+		switch err.Type {
+		case domain.DbNotFoundError:
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: err}
+		default:
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: err}
+		}
+	}
+
+	for _, v := range whs {
+		v.CanEdit = canEdit(v.OwnerId, c.Admin, c.Id, c.SharedAccounts)
+	}
+
+	return whs, nil
+}

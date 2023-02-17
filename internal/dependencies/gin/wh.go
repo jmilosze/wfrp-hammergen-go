@@ -12,7 +12,7 @@ func RegisterMutationRoutes(router *gin.Engine, ms domain.WhService, js domain.J
 	router.GET("api/wh/mutation/:whId", RequireJwt(js), whGetHandler(ms, domain.WhTypeMutation))
 	router.PUT("api/wh/mutation/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, domain.WhTypeMutation))
 	router.DELETE("api/wh/mutation/:whId", RequireJwt(js), whDeleteHandler(ms, domain.WhTypeMutation))
-	router.GET("api/wh/list", RequireJwt(js), whListHandler(ms, domain.WhTypeMutation))
+	router.GET("api/wh/mutation", RequireJwt(js), whListHandler(ms, domain.WhTypeMutation))
 }
 
 func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func(*gin.Context) {
@@ -165,8 +165,8 @@ func whListHandler(s domain.WhService, whType int) func(*gin.Context) {
 			return
 		}
 
-		returnData, err := whListToListMap(whs)
-		if err != nil {
+		returnData, err1 := whListToListMap(whs)
+		if err1 != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
