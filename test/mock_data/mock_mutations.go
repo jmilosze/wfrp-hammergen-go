@@ -36,7 +36,7 @@ var mutation1 = domain.Wh{
 	Id:      "100000000000000000000001",
 	OwnerId: "admin",
 	Object: domain.WhMutation{
-		Name:        "mutation 2",
+		Name:        "mutation 1",
 		Description: "owned by admin shared",
 		Shared:      true,
 	},

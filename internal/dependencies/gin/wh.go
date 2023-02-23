@@ -15,9 +15,17 @@ func RegisterMutationRoutes(router *gin.Engine, ms domain.WhService, js domain.J
 	router.GET("api/wh/mutation", RequireJwt(js), whListHandler(ms, domain.WhTypeMutation))
 }
 
-func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func(*gin.Context) {
+func RegisterSpellRoutes(router *gin.Engine, ms domain.WhService, js domain.JwtService) {
+	router.POST("api/wh/spell", RequireJwt(js), whCreateOrUpdateHandler(true, ms, domain.WhTypeSpell))
+	router.GET("api/wh/spell/:whId", RequireJwt(js), whGetHandler(ms, domain.WhTypeSpell))
+	router.PUT("api/wh/spell/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, domain.WhTypeSpell))
+	router.DELETE("api/wh/spell/:whId", RequireJwt(js), whDeleteHandler(ms, domain.WhTypeSpell))
+	router.GET("api/wh/spell", RequireJwt(js), whListHandler(ms, domain.WhTypeSpell))
+}
+
+func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, t domain.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
-		whWrite, err := domain.NewWh(whType)
+		whWrite, err := domain.NewWh(t)
 		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return
@@ -39,10 +47,10 @@ func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func
 		var whRead *domain.Wh
 		var whErr *domain.WhError
 		if isCreate {
-			whRead, whErr = s.Create(c.Request.Context(), whType, &whWrite, claims)
+			whRead, whErr = s.Create(c.Request.Context(), t, &whWrite, claims)
 		} else {
 			whWrite.Id = c.Param("whId")
-			whRead, whErr = s.Update(c.Request.Context(), whType, &whWrite, claims)
+			whRead, whErr = s.Update(c.Request.Context(), t, &whWrite, claims)
 		}
 
 		if whErr != nil {
@@ -92,12 +100,12 @@ func structToMap(m any) (map[string]any, error) {
 	return res, nil
 }
 
-func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
+func whGetHandler(s domain.WhService, t domain.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, whErr := s.Get(c.Request.Context(), whType, whId, claims)
+		wh, whErr := s.Get(c.Request.Context(), t, whId, claims)
 
 		if whErr != nil {
 			switch whErr.ErrType {
@@ -133,12 +141,12 @@ func whListToListMap(whs []*domain.Wh) ([]map[string]any, error) {
 	return list, nil
 }
 
-func whDeleteHandler(s domain.WhService, whType int) func(*gin.Context) {
+func whDeleteHandler(s domain.WhService, t domain.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		whErr := s.Delete(c.Request.Context(), whType, whId, claims)
+		whErr := s.Delete(c.Request.Context(), t, whId, claims)
 
 		if whErr != nil {
 			switch whErr.ErrType {
@@ -154,11 +162,11 @@ func whDeleteHandler(s domain.WhService, whType int) func(*gin.Context) {
 	}
 }
 
-func whListHandler(s domain.WhService, whType int) func(*gin.Context) {
+func whListHandler(s domain.WhService, t domain.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
 		claims := getUserClaims(c)
 
-		whs, whErr := s.List(c.Request.Context(), whType, claims)
+		whs, whErr := s.List(c.Request.Context(), t, claims)
 
 		if whErr != nil {
 			c.JSON(ServerErrResp(""))
