@@ -47,8 +47,8 @@ func (s *UserService) SeedUsers(ctx context.Context, us []*mock.UserSeed) {
 		user.SharedAccountNames = u.SharedAccounts
 		user.Admin = u.Admin
 
-		if _, err := s.UserDbService.Create(ctx, user); err != nil {
-			log.Fatal(err)
+		if _, dbErr := s.UserDbService.Create(ctx, user); dbErr != nil {
+			log.Fatal(dbErr)
 		}
 	}
 }
@@ -58,13 +58,13 @@ func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*do
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	user, err := s.UserDbService.Retrieve(ctx, "id", id)
-	if err != nil {
-		switch err.Type {
+	user, dbErr := s.UserDbService.Retrieve(ctx, "id", id)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -72,26 +72,26 @@ func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*do
 }
 
 func (s *UserService) Exists(ctx context.Context, username string) (bool, *domain.UserError) {
-	_, err := s.UserDbService.Retrieve(ctx, "username", username)
-	if err != nil {
-		switch err.Type {
+	_, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
 			return false, nil
 		default:
-			return false, &domain.UserError{Type: domain.UserInternalError, Err: err}
+			return false, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 	return true, nil
 }
 
 func (s *UserService) Authenticate(ctx context.Context, username string, password string) (u *domain.User, ue *domain.UserError) {
-	user, err1 := s.UserDbService.Retrieve(ctx, "username", username)
-	if err1 != nil {
-		switch err1.Type {
+	user, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -101,12 +101,12 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 
 	user.LastAuthOn = time.Now()
 
-	if _, err2 := s.UserDbService.Update(ctx, user); err2 != nil {
-		switch err2.Type {
+	if _, dbErr = s.UserDbService.Update(ctx, user); dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -129,21 +129,21 @@ func (s *UserService) Create(ctx context.Context, u *domain.User) (*domain.User,
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	passwordHash, err1 := bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
-	if err1 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
+	if err != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 	u.PasswordHash = passwordHash
 	u.Id = xid.New().String()
 	u.CreatedOn = time.Now()
 
-	createdUser, err2 := s.UserDbService.Create(ctx, u)
-	if err2 != nil {
-		switch err2.Type {
+	createdUser, dbErr := s.UserDbService.Create(ctx, u)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbAlreadyExistsError:
-			return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserAlreadyExistsError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -172,27 +172,27 @@ func (s *UserService) Update(ctx context.Context, c *domain.Claims, u *domain.Us
 		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	currentUser, err1 := s.UserDbService.Retrieve(ctx, "id", u.Id)
-	if err1 != nil {
-		switch err1.Type {
+	currentUser, dbErr := s.UserDbService.Retrieve(ctx, "id", u.Id)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
 	currentUser.SharedAccountNames = make([]string, len(u.SharedAccountNames))
 	copy(currentUser.SharedAccountNames, u.SharedAccountNames)
 
-	updatedUser, err2 := s.UserDbService.Update(ctx, currentUser)
+	updatedUser, dbErr := s.UserDbService.Update(ctx, currentUser)
 
-	if err2 != nil {
-		switch err2.Type {
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -211,17 +211,17 @@ func (s *UserService) UpdateCredentials(ctx context.Context, c *domain.Claims, c
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err1 := validateUpdateCredentials(s.Validator, u); err1 != nil {
-		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err1}
+	if err := validateUpdateCredentials(s.Validator, u); err != nil {
+		return nil, &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: err}
 	}
 
-	currentUser, err2 := s.UserDbService.Retrieve(ctx, "id", u.Id)
-	if err2 != nil {
-		switch err2.Type {
+	currentUser, dbErr := s.UserDbService.Retrieve(ctx, "id", u.Id)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -232,13 +232,13 @@ func (s *UserService) UpdateCredentials(ctx context.Context, c *domain.Claims, c
 	currentUser.Username = u.Username
 	currentUser.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
 
-	updatedUser, err3 := s.UserDbService.Update(ctx, currentUser)
-	if err3 != nil {
-		switch err3.Type {
+	updatedUser, dbErr := s.UserDbService.Update(ctx, currentUser)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err3}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err3}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -260,25 +260,25 @@ func (s *UserService) UpdateClaims(ctx context.Context, c *domain.Claims, u *dom
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	currentUser, err1 := s.UserDbService.Retrieve(ctx, "id", u.Id)
-	if err1 != nil {
-		switch err1.Type {
+	currentUser, dbErr := s.UserDbService.Retrieve(ctx, "id", u.Id)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
 	currentUser.Admin = u.Admin
 
-	updatedUser, err2 := s.UserDbService.Update(ctx, currentUser)
-	if err2 != nil {
-		switch err2.Type {
+	updatedUser, dbErr := s.UserDbService.Update(ctx, currentUser)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return nil, &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -290,8 +290,8 @@ func (s *UserService) Delete(ctx context.Context, c *domain.Claims, id string) *
 		return &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err := s.UserDbService.Delete(ctx, id); err != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+	if dbErr := s.UserDbService.Delete(ctx, id); dbErr != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 
 	} else {
 		return nil
@@ -303,9 +303,9 @@ func (s *UserService) List(ctx context.Context, c *domain.Claims) ([]*domain.Use
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	users, err1 := s.UserDbService.RetrieveAll(ctx)
-	if err1 != nil {
-		return nil, &domain.UserError{Type: domain.UserInternalError, Err: err1}
+	users, dbErr := s.UserDbService.RetrieveAll(ctx)
+	if dbErr != nil {
+		return nil, &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 	}
 
 	return users, nil

@@ -21,8 +21,8 @@ func NewWhService(v *validator.Validate, db domain.WhDbService) *WhService {
 
 func (s *WhService) SeedWh(ctx context.Context, whType int, whs []*domain.Wh) {
 	for _, wh := range whs {
-		if _, err := s.WhDbService.Create(ctx, whType, wh); err != nil {
-			log.Fatal(err)
+		if _, dbErr := s.WhDbService.Create(ctx, whType, wh); dbErr != nil {
+			log.Fatal(dbErr)
 		}
 	}
 }
@@ -43,9 +43,9 @@ func (s *WhService) Create(ctx context.Context, whType int, w *domain.Wh, c *dom
 	}
 	w.Id = xid.New().String()
 
-	createdWh, err := s.WhDbService.Create(ctx, whType, w)
-	if err != nil {
-		return nil, &domain.WhError{WhType: whType, ErrType: domain.UserInternalError, Err: err}
+	createdWh, dbErr := s.WhDbService.Create(ctx, whType, w)
+	if dbErr != nil {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.UserInternalError, Err: dbErr}
 	}
 
 	createdWh.CanEdit = canEdit(createdWh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
@@ -70,14 +70,14 @@ func canEdit(ownerId string, isAdmin bool, userId string, sharedAccounts []strin
 
 func (s *WhService) Get(ctx context.Context, whType int, whId string, c *domain.Claims) (*domain.Wh, *domain.WhError) {
 	users := []string{"admin", c.Id}
-	wh, err := s.WhDbService.Retrieve(ctx, whType, whId, users, c.SharedAccounts)
+	wh, dbErr := s.WhDbService.Retrieve(ctx, whType, whId, users, c.SharedAccounts)
 
-	if err != nil {
-		switch err.Type {
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: err}
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: dbErr}
 		default:
-			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: err}
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: dbErr}
 		}
 	}
 
@@ -90,18 +90,18 @@ func (s *WhService) Update(ctx context.Context, whType int, w *domain.Wh, c *dom
 		return nil, &domain.WhError{WhType: whType, ErrType: domain.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err1 := s.Validator.Struct(w); err1 != nil {
-		return nil, &domain.WhError{WhType: whType, ErrType: domain.WhInvalidArgumentsError, Err: err1}
+	if err := s.Validator.Struct(w); err != nil {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.WhInvalidArgumentsError, Err: err}
 	}
 
 	users := []string{"admin", c.Id}
-	_, err2 := s.WhDbService.Retrieve(ctx, whType, w.Id, users, c.SharedAccounts)
-	if err2 != nil {
-		switch err2.Type {
+	_, dbErr := s.WhDbService.Retrieve(ctx, whType, w.Id, users, c.SharedAccounts)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: err2}
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: dbErr}
 		default:
-			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: err2}
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: dbErr}
 		}
 	}
 
@@ -111,9 +111,9 @@ func (s *WhService) Update(ctx context.Context, whType int, w *domain.Wh, c *dom
 		w.OwnerId = c.Id
 	}
 
-	updatedWh, err2 := s.WhDbService.Update(ctx, whType, w)
-	if err2 != nil {
-		return nil, &domain.WhError{WhType: whType, ErrType: domain.UserInternalError, Err: err2}
+	updatedWh, dbErr := s.WhDbService.Update(ctx, whType, w)
+	if dbErr != nil {
+		return nil, &domain.WhError{WhType: whType, ErrType: domain.UserInternalError, Err: dbErr}
 	}
 
 	updatedWh.CanEdit = canEdit(updatedWh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
@@ -125,8 +125,8 @@ func (s *WhService) Delete(ctx context.Context, whType int, whId string, c *doma
 		return &domain.WhError{WhType: whType, ErrType: domain.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	if err := s.WhDbService.Delete(ctx, whType, whId); err != nil {
-		return &domain.WhError{WhType: whType, ErrType: domain.WhInternalError, Err: err}
+	if dbErr := s.WhDbService.Delete(ctx, whType, whId); dbErr != nil {
+		return &domain.WhError{WhType: whType, ErrType: domain.WhInternalError, Err: dbErr}
 
 	} else {
 		return nil
@@ -135,14 +135,14 @@ func (s *WhService) Delete(ctx context.Context, whType int, whId string, c *doma
 
 func (s *WhService) List(ctx context.Context, whType int, c *domain.Claims) ([]*domain.Wh, *domain.WhError) {
 	users := []string{"admin", c.Id}
-	whs, err := s.WhDbService.RetrieveAll(ctx, whType, users, c.SharedAccounts)
+	whs, dbErr := s.WhDbService.RetrieveAll(ctx, whType, users, c.SharedAccounts)
 
-	if err != nil {
-		switch err.Type {
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: err}
+			return nil, &domain.WhError{ErrType: domain.WhNotFoundError, WhType: whType, Err: dbErr}
 		default:
-			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: err}
+			return nil, &domain.WhError{ErrType: domain.WhInternalError, WhType: whType, Err: dbErr}
 		}
 	}
 

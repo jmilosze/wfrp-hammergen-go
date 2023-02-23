@@ -42,9 +42,9 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 
 func (s *WhDbService) Retrieve(ctx context.Context, whType int, whId string, users []string, sharedUsers []string) (*domain.Wh, *domain.DbError) {
 	txn := s.Db.Txn(false)
-	whRaw, err1 := txn.First("wh", "id", whId)
-	if err1 != nil {
-		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err1}
+	whRaw, err := txn.First("wh", "id", whId)
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}
 
 	if whRaw == nil {

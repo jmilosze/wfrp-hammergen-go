@@ -17,38 +17,38 @@ func RegisterMutationRoutes(router *gin.Engine, ms domain.WhService, js domain.J
 
 func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func(*gin.Context) {
 	return func(c *gin.Context) {
-		whWrite, err1 := domain.NewWh(whType)
-		if err1 != nil {
+		whWrite, err := domain.NewWh(whType)
+		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
 
-		reqData, err2 := c.GetRawData()
-		if err2 != nil {
-			c.JSON(BadRequestErrResp(err2.Error()))
+		reqData, err := c.GetRawData()
+		if err != nil {
+			c.JSON(BadRequestErrResp(err.Error()))
 			return
 		}
 
-		if err3 := json.Unmarshal(reqData, &whWrite.Object); err3 != nil {
-			c.JSON(BadRequestErrResp(err3.Error()))
+		if err = json.Unmarshal(reqData, &whWrite.Object); err != nil {
+			c.JSON(BadRequestErrResp(err.Error()))
 			return
 		}
 
 		claims := getUserClaims(c)
 
 		var whRead *domain.Wh
-		var err4 *domain.WhError
+		var whErr *domain.WhError
 		if isCreate {
-			whRead, err4 = s.Create(c.Request.Context(), whType, &whWrite, claims)
+			whRead, whErr = s.Create(c.Request.Context(), whType, &whWrite, claims)
 		} else {
 			whWrite.Id = c.Param("whId")
-			whRead, err4 = s.Update(c.Request.Context(), whType, &whWrite, claims)
+			whRead, whErr = s.Update(c.Request.Context(), whType, &whWrite, claims)
 		}
 
-		if err4 != nil {
-			switch err4.ErrType {
+		if whErr != nil {
+			switch whErr.ErrType {
 			case domain.WhInvalidArgumentsError:
-				c.JSON(BadRequestErrResp(err4.Error()))
+				c.JSON(BadRequestErrResp(whErr.Error()))
 			case domain.WhUnauthorizedError:
 				c.JSON(UnauthorizedErrResp(""))
 			default:
@@ -57,8 +57,8 @@ func whCreateOrUpdateHandler(isCreate bool, s domain.WhService, whType int) func
 			return
 		}
 
-		returnData, err5 := whToMap(whRead)
-		if err5 != nil {
+		returnData, err := whToMap(whRead)
+		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
@@ -97,10 +97,10 @@ func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, err1 := s.Get(c.Request.Context(), whType, whId, claims)
+		wh, whErr := s.Get(c.Request.Context(), whType, whId, claims)
 
-		if err1 != nil {
-			switch err1.ErrType {
+		if whErr != nil {
+			switch whErr.ErrType {
 			case domain.WhNotFoundError:
 				c.JSON(NotFoundErrResp(""))
 			default:
@@ -109,8 +109,8 @@ func whGetHandler(s domain.WhService, whType int) func(*gin.Context) {
 			return
 		}
 
-		returnData, err2 := whToMap(wh)
-		if err2 != nil {
+		returnData, err := whToMap(wh)
+		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
@@ -138,10 +138,10 @@ func whDeleteHandler(s domain.WhService, whType int) func(*gin.Context) {
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		err := s.Delete(c.Request.Context(), whType, whId, claims)
+		whErr := s.Delete(c.Request.Context(), whType, whId, claims)
 
-		if err != nil {
-			switch err.ErrType {
+		if whErr != nil {
+			switch whErr.ErrType {
 			case domain.WhUnauthorizedError:
 				c.JSON(UnauthorizedErrResp(""))
 			default:
@@ -158,15 +158,15 @@ func whListHandler(s domain.WhService, whType int) func(*gin.Context) {
 	return func(c *gin.Context) {
 		claims := getUserClaims(c)
 
-		whs, err := s.List(c.Request.Context(), whType, claims)
+		whs, whErr := s.List(c.Request.Context(), whType, claims)
 
-		if err != nil {
+		if whErr != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
 
-		returnData, err1 := whListToListMap(whs)
-		if err1 != nil {
+		returnData, err := whListToListMap(whs)
+		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return
 		}
