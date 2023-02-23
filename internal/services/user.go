@@ -316,13 +316,13 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 		return &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("missing username")}
 	}
 
-	user, err1 := s.UserDbService.Retrieve(ctx, "username", username)
-	if err1 != nil {
-		switch err1.Type {
+	user, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return &domain.UserError{Type: domain.UserNotFoundError, Err: err1}
+			return &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return &domain.UserError{Type: domain.UserInternalError, Err: err1}
+			return &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
@@ -331,13 +331,17 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 	}
 
 	claims := domain.Claims{Id: user.Id, Admin: false, SharedAccounts: []string{}, ResetPassword: true}
-	resetToken, err2 := s.JwtService.GenerateResetPasswordToken(&claims)
+	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
 
-	if err2 != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err2}
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	clickUrl := s.FrontEndUrl
+	clickUrl, err := url.ParseRequestURI(s.FrontEndUrl.String())
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
+	}
+
 	resetTokenPath := fmt.Sprintf("/resetPassword/%s", resetToken)
 	clickUrl.Path = path.Join(clickUrl.Path, resetTokenPath)
 
@@ -348,8 +352,8 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 		Content:   emailMessage,
 	}
 
-	if err3 := s.EmailService.Send(ctx, &email); err3 != nil {
-		return &domain.UserError{Type: domain.UserSendEmailError, Err: err3}
+	if err := s.EmailService.Send(ctx, &email); err != nil {
+		return &domain.UserError{Type: domain.UserSendEmailError, Err: err}
 	}
 
 	return nil
@@ -360,8 +364,8 @@ func (s *UserService) ResetPassword(ctx context.Context, token string, newPasswo
 		return &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("missing token or username")}
 	}
 
-	claims, err1 := s.JwtService.ParseToken(token)
-	if err1 != nil {
+	claims, err := s.JwtService.ParseToken(token)
+	if err != nil {
 		return &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("invalid token")}
 	}
 
@@ -369,29 +373,28 @@ func (s *UserService) ResetPassword(ctx context.Context, token string, newPasswo
 		return &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("invalid token")}
 	}
 
-	currentUser, err2 := s.UserDbService.Retrieve(ctx, "id", claims.Id)
-	if err2 != nil {
-		switch err2.Type {
+	currentUser, dbErr := s.UserDbService.Retrieve(ctx, "id", claims.Id)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return &domain.UserError{Type: domain.UserNotFoundError, Err: err2}
+			return &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return &domain.UserError{Type: domain.UserInternalError, Err: err2}
+			return &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
-	var err3 error
-	currentUser.PasswordHash, err3 = bcrypt.GenerateFromPassword([]byte(newPassword), s.BcryptCost)
-	if err3 != nil {
-		return &domain.UserError{Type: domain.UserInternalError, Err: err3}
+	currentUser.PasswordHash, err = bcrypt.GenerateFromPassword([]byte(newPassword), s.BcryptCost)
+	if err != nil {
+		return &domain.UserError{Type: domain.UserInternalError, Err: err}
 	}
 
-	_, err4 := s.UserDbService.Update(ctx, currentUser)
-	if err4 != nil {
-		switch err4.Type {
+	_, dbErr = s.UserDbService.Update(ctx, currentUser)
+	if dbErr != nil {
+		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return &domain.UserError{Type: domain.UserNotFoundError, Err: err4}
+			return &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
 		default:
-			return &domain.UserError{Type: domain.UserInternalError, Err: err4}
+			return &domain.UserError{Type: domain.UserInternalError, Err: dbErr}
 		}
 	}
 
