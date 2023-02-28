@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
@@ -41,7 +42,7 @@ func (s *WhService) Create(ctx context.Context, t domain.WhType, w *domain.Wh, c
 	} else {
 		w.OwnerId = c.Id
 	}
-	w.Id = xid.New().String()
+	w.Id = hex.EncodeToString(xid.New().Bytes())
 
 	createdWh, dbErr := s.WhDbService.Create(ctx, t, w)
 	if dbErr != nil {
