@@ -287,7 +287,7 @@ func (s *UserService) UpdateClaims(ctx context.Context, c *domain.Claims, u *dom
 }
 
 func (s *UserService) Delete(ctx context.Context, c *domain.Claims, id string) *domain.UserError {
-	if c.Id == "anonymous" || id != c.Id {
+	if id != c.Id {
 		return &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
