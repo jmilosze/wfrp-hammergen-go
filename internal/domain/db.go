@@ -7,6 +7,7 @@ const (
 	DbAlreadyExistsError
 	DbInternalError
 	DbInvalidUserFieldError
+	DbNotImplemented
 )
 
 type DbError struct {

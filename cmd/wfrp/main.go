@@ -32,12 +32,14 @@ func run() error {
 	jwtService := golangjwt.NewHmacService(cfg.Jwt.HmacSecret, cfg.Jwt.AccessExpiry, cfg.Jwt.ResetExpiry)
 	emailService := mailjet.NewEmailService(cfg.Email.FromAddress, cfg.Email.PublicApiKey, cfg.Email.PrivateApiKey)
 	captchaService := mockcaptcha.NewCaptchaService()
-
 	mongoDbService := mongodb.NewDbService(cfg.MongoDb.Uri, cfg.MongoDb.DbName)
 	defer mongoDbService.Disconnect()
-	userDbService := mongodb.NewUserDbService(mongoDbService, cfg.MongoDb.UserCollection, cfg.MongoDb.CreateIndexes)
 
+	userDbService := mongodb.NewUserDbService(mongoDbService, cfg.MongoDb.CreateUserIndexes)
 	userService := services.NewUserService(&cfg.UserService, userDbService, emailService, jwtService, val)
+
+	whDbService := mongodb.NewWhDbService(mongoDbService)
+	whService := services.NewWhService(val, whDbService)
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.RequestTimeout)
 	defer cancel()
@@ -50,6 +52,8 @@ func run() error {
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
 	gin.RegisterUserRoutes(router, userService, jwtService, captchaService)
 	gin.RegisterAuthRoutes(router, userService, jwtService)
+	gin.RegisterMutationRoutes(router, whService, jwtService)
+	gin.RegisterSpellRoutes(router, whService, jwtService)
 
 	server := http.NewServer(&cfg.Server, router)
 

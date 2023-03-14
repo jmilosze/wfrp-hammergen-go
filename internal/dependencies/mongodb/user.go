@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const userCollectionName = "user"
+
 type Mongo struct {
 	Id                 primitive.ObjectID   `bson:"_id"`
 	Username           string               `bson:"username"`
@@ -29,8 +31,8 @@ type UserDbService struct {
 	Collection *mongo.Collection
 }
 
-func NewUserDbService(db *DbService, userCollection string, createIndex bool) *UserDbService {
-	coll := db.Client.Database(db.DbName).Collection(userCollection)
+func NewUserDbService(db *DbService, createIndex bool) *UserDbService {
+	coll := db.Client.Database(db.DbName).Collection(userCollectionName)
 
 	if createIndex {
 		unique := true
