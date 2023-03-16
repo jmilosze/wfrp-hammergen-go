@@ -72,7 +72,7 @@ func allAllowedOwnersQuery(userIds []string, sharedUserIds []string) bson.M {
 		for _, v := range sharedUserIds {
 			sharedOwners = append(sharedOwners, bson.M{"ownerid": v})
 		}
-		owners = append(owners, bson.M{"$and": bson.A{bson.M{"shared": true}, sharedOwners}})
+		owners = append(owners, bson.M{"$and": bson.A{bson.M{"shared": true}, bson.M{"$or": sharedOwners}}})
 	}
 	return bson.M{"$or": owners}
 }
@@ -126,6 +126,12 @@ func (s *WhDbService) Create(ctx context.Context, t domain.WhType, w *domain.Wh)
 
 	_, err = s.Collections[t].InsertOne(ctx, whBsonM)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return nil, &domain.DbError{
+				Type: domain.DbAlreadyExistsError,
+				Err:  err,
+			}
+		}
 		return nil, &domain.DbError{
 			Type: domain.DbWriteToDbError,
 			Err:  err,
