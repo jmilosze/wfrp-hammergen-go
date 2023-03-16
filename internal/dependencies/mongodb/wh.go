@@ -24,10 +24,95 @@ func NewWhDbService(db *DbService) *WhDbService {
 }
 
 func (s *WhDbService) Retrieve(ctx context.Context, t domain.WhType, whId string, userIds []string, sharedUserIds []string) (*domain.Wh, *domain.DbError) {
-	return nil, &domain.DbError{
-		Type: domain.DbNotImplementedError,
-		Err:  errors.New("not implemented"),
+	id, err := primitive.ObjectIDFromHex(whId)
+	if err != nil {
+		return nil, &domain.DbError{
+			Type: domain.DbInternalError,
+			Err:  err,
+		}
 	}
+
+	filter := bson.M{"$and": bson.A{bson.M{"_id": id}, allAllowedOwnersQuery(userIds, sharedUserIds)}}
+	var whMap bson.M
+
+	err = s.Collections[t].FindOne(ctx, filter).Decode(&whMap)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, &domain.DbError{
+				Type: domain.DbNotFoundError,
+				Err:  err,
+			}
+		} else {
+			return nil, &domain.DbError{
+				Type: domain.DbInternalError,
+				Err:  err,
+			}
+		}
+	}
+
+	wh, err := bsonMToWh(whMap, t)
+	if err != nil {
+		return nil, &domain.DbError{
+			Type: domain.DbInternalError,
+			Err:  err,
+		}
+	}
+
+	return wh, nil
+}
+
+func allAllowedOwnersQuery(userIds []string, sharedUserIds []string) bson.M {
+	owners := bson.A{}
+	for _, v := range userIds {
+		owners = append(owners, bson.M{"ownerid": v})
+	}
+
+	if sharedUserIds != nil && len(sharedUserIds) > 0 {
+		sharedOwners := bson.A{}
+		for _, v := range sharedUserIds {
+			sharedOwners = append(sharedOwners, bson.M{"ownerid": v})
+		}
+		owners = append(owners, bson.M{"$and": bson.A{bson.M{"shared": true}, sharedOwners}})
+	}
+	return bson.M{"$or": owners}
+}
+
+func bsonMToWh(whMap bson.M, t domain.WhType) (*domain.Wh, error) {
+	id, ok := whMap["_id"].(primitive.ObjectID)
+	if !ok {
+		return nil, errors.New("invalid object id")
+	}
+
+	ownerId, ok := whMap["ownerid"].(string)
+	if !ok {
+		return nil, errors.New("invalid owner id")
+	}
+
+	wh := domain.Wh{
+		Id:      id.Hex(),
+		OwnerId: ownerId,
+		CanEdit: false,
+	}
+
+	switch t {
+	case domain.WhTypeMutation:
+		wh.Object = &domain.WhMutation{}
+	case domain.WhTypeSpell:
+		wh.Object = &domain.WhSpell{}
+	default:
+		errors.New("unknown wh type")
+	}
+
+	bsonRaw, err := bson.Marshal(whMap["object"])
+	if err != nil {
+		errors.New("error marshaling object")
+	}
+
+	if err = bson.Unmarshal(bsonRaw, wh.Object); err != nil {
+		errors.New("error unmarshalling object")
+	}
+
+	return &wh, nil
 }
 
 func (s *WhDbService) Create(ctx context.Context, t domain.WhType, w *domain.Wh) (*domain.Wh, *domain.DbError) {
