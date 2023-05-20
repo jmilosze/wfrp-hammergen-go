@@ -145,7 +145,6 @@ func whToBsonM(w *d.Wh) (bson.M, error) {
 }
 
 func (s *WhDbService) Update(ctx context.Context, t d.WhType, w *d.Wh, userId string) (*d.Wh, *d.DbError) {
-	//return nil, d.CreateDbError(d.DbNotImplementedError, errors.New("not implemented"))
 	id, err := primitive.ObjectIDFromHex(w.Id)
 	if err != nil {
 		return nil, d.CreateDbError(d.DbInternalError, err)
@@ -157,9 +156,17 @@ func (s *WhDbService) Update(ctx context.Context, t d.WhType, w *d.Wh, userId st
 	}
 
 	findByIdQuery := bson.M{"$and": bson.A{bson.M{"_id": id}, bson.M{"ownerid": userId}}}
-	//findByIdQuery := bson.A{bson.M{"_id": id}, bson.M{"ownerid": userId}}
-	//
+
 	result, err := s.Collections[t].UpdateOne(ctx, findByIdQuery, bson.M{"$set": whBsonM})
+	if err != nil {
+		return nil, d.CreateDbError(d.DbInternalError, err)
+	}
+
+	if result.MatchedCount == 0 {
+		return nil, d.CreateDbError(d.DbNotFoundError, err)
+	}
+
+	return w, nil
 }
 
 func (s *WhDbService) Delete(ctx context.Context, t d.WhType, whId string, userId string) *d.DbError {
