@@ -40,15 +40,15 @@ func NewUserService(cfg *config.UserService, db domain.UserDbService, email doma
 
 func (s *UserService) SeedUsers(ctx context.Context, us []*mock.UserSeed) {
 	for _, u := range us {
-		user := domain.EmptyUser()
+		newUser := domain.EmptyUser()
 
-		user.Id = u.Id
-		user.Username = u.Username
-		user.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
-		user.SharedAccountNames = u.SharedAccounts
-		user.Admin = u.Admin
+		newUser.Id = u.Id
+		newUser.Username = u.Username
+		newUser.PasswordHash, _ = bcrypt.GenerateFromPassword([]byte(u.Password), s.BcryptCost)
+		newUser.SharedAccountNames = u.SharedAccounts
+		newUser.Admin = u.Admin
 
-		if _, dbErr := s.UserDbService.Create(ctx, user); dbErr != nil {
+		if _, dbErr := s.UserDbService.Create(ctx, newUser); dbErr != nil {
 			log.Fatal(dbErr)
 		}
 	}
@@ -59,7 +59,7 @@ func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*do
 		return nil, &domain.UserError{Type: domain.UserUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
-	user, dbErr := s.UserDbService.Retrieve(ctx, "id", id)
+	u, dbErr := s.UserDbService.Retrieve(ctx, "id", id)
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
@@ -69,7 +69,7 @@ func (s *UserService) Get(ctx context.Context, c *domain.Claims, id string) (*do
 		}
 	}
 
-	return user, nil
+	return u, nil
 }
 
 func (s *UserService) Exists(ctx context.Context, username string) (bool, *domain.UserError) {
@@ -85,8 +85,8 @@ func (s *UserService) Exists(ctx context.Context, username string) (bool, *domai
 	return true, nil
 }
 
-func (s *UserService) Authenticate(ctx context.Context, username string, password string) (u *domain.User, ue *domain.UserError) {
-	user, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
+func (s *UserService) Authenticate(ctx context.Context, username string, password string) (*domain.User, *domain.UserError) {
+	u, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
@@ -96,13 +96,13 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 		}
 	}
 
-	if !authenticate(user, password) {
+	if !authenticate(u, password) {
 		return nil, &domain.UserError{Type: domain.UserIncorrectPasswordError, Err: errors.New("incorrect password")}
 	}
 
-	user.LastAuthOn = time.Now()
+	u.LastAuthOn = time.Now()
 
-	if _, dbErr = s.UserDbService.Update(ctx, user); dbErr != nil {
+	if _, dbErr = s.UserDbService.Update(ctx, u); dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
 			return nil, &domain.UserError{Type: domain.UserNotFoundError, Err: dbErr}
@@ -111,11 +111,11 @@ func (s *UserService) Authenticate(ctx context.Context, username string, passwor
 		}
 	}
 
-	return user, nil
+	return u, nil
 }
 
-func authenticate(user *domain.User, password string) (success bool) {
-	if bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)) == nil {
+func authenticate(u *domain.User, password string) (success bool) {
+	if bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)) == nil {
 		return true
 	}
 	return false
@@ -317,7 +317,7 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 		return &domain.UserError{Type: domain.UserInvalidArgumentsError, Err: errors.New("missing username")}
 	}
 
-	user, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
+	u, dbErr := s.UserDbService.Retrieve(ctx, "username", username)
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
@@ -327,11 +327,11 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 		}
 	}
 
-	if user == nil {
+	if u == nil {
 		return &domain.UserError{Type: domain.UserNotFoundError, Err: errors.New("user not found")}
 	}
 
-	claims := domain.Claims{Id: user.Id, Admin: false, SharedAccounts: []string{}, ResetPassword: true}
+	claims := domain.Claims{Id: u.Id, Admin: false, SharedAccounts: []string{}, ResetPassword: true}
 	resetToken, err := s.JwtService.GenerateResetPasswordToken(&claims)
 
 	if err != nil {
@@ -348,7 +348,7 @@ func (s *UserService) SendResetPassword(ctx context.Context, username string) *d
 
 	emailMessage := fmt.Sprintf("Please reset your password by <a href=%s>clicking here</a>", clickUrl.String())
 	email := domain.Email{
-		ToAddress: user.Username,
+		ToAddress: u.Username,
 		Subject:   "Reset password",
 		Content:   emailMessage,
 	}

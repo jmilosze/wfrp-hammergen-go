@@ -41,14 +41,14 @@ func userCreateHandler(us domain.UserService, cs domain.CaptchaService) func(*gi
 			return
 		}
 
-		user := domain.EmptyUser()
-		user.Username = userData.Username
-		user.Password = userData.Password
-		user.SharedAccountNames = userData.SharedAccounts
-		user.CreatedOn = time.Time{}
-		user.LastAuthOn = time.Time{}
+		u := domain.EmptyUser()
+		u.Username = userData.Username
+		u.Password = userData.Password
+		u.SharedAccountNames = userData.SharedAccounts
+		u.CreatedOn = time.Time{}
+		u.LastAuthOn = time.Time{}
 
-		userRead, uErr := us.Create(c.Request.Context(), user)
+		userRead, uErr := us.Create(c.Request.Context(), u)
 		if uErr != nil {
 			switch uErr.Type {
 			case domain.UserAlreadyExistsError:
@@ -65,14 +65,14 @@ func userCreateHandler(us domain.UserService, cs domain.CaptchaService) func(*gi
 	}
 }
 
-func userToMap(user *domain.User) map[string]any {
+func userToMap(u *domain.User) map[string]any {
 	return map[string]any{
-		"id":             user.Id,
-		"username":       user.Username,
-		"sharedAccounts": user.SharedAccountNames,
-		"admin":          user.Admin,
-		"createdOn":      user.CreatedOn,
-		"lastAuthOn":     user.LastAuthOn,
+		"id":             u.Id,
+		"username":       u.Username,
+		"sharedAccounts": u.SharedAccountNames,
+		"admin":          u.Admin,
+		"createdOn":      u.CreatedOn,
+		"lastAuthOn":     u.LastAuthOn,
 	}
 }
 
@@ -85,7 +85,7 @@ func userGetHandler(us domain.UserService) func(*gin.Context) {
 			userId = claims.Id
 		}
 
-		user, uErr := us.Get(c.Request.Context(), claims, userId)
+		u, uErr := us.Get(c.Request.Context(), claims, userId)
 
 		if uErr != nil {
 			switch uErr.Type {
@@ -99,7 +99,7 @@ func userGetHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		c.JSON(OkResp(userToMap(user)))
+		c.JSON(OkResp(userToMap(u)))
 	}
 }
 
@@ -178,11 +178,11 @@ func userUpdateHandler(users domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user := domain.EmptyUser()
-		user.Id = userId
-		user.SharedAccountNames = userData.SharedAccounts
+		u := domain.EmptyUser()
+		u.Id = userId
+		u.SharedAccountNames = userData.SharedAccounts
 
-		userRead, uErr := users.Update(c.Request.Context(), claims, user)
+		userRead, uErr := users.Update(c.Request.Context(), claims, u)
 		if uErr != nil {
 			switch uErr.Type {
 			case domain.UserNotFoundError:
@@ -218,12 +218,12 @@ func userUpdateCredentialsHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user := domain.EmptyUser()
-		user.Id = userId
-		user.Username = userData.Username
-		user.Password = userData.Password
+		u := domain.EmptyUser()
+		u.Id = userId
+		u.Username = userData.Username
+		u.Password = userData.Password
 
-		userRead, uErr := us.UpdateCredentials(c.Request.Context(), claims, userData.CurrentPassword, user)
+		userRead, uErr := us.UpdateCredentials(c.Request.Context(), claims, userData.CurrentPassword, u)
 		if uErr != nil {
 			switch uErr.Type {
 			case domain.UserNotFoundError:
@@ -259,11 +259,11 @@ func userUpdateClaimsHandler(us domain.UserService) func(*gin.Context) {
 			return
 		}
 
-		user := domain.EmptyUser()
-		user.Id = userId
-		user.Admin = userData.Admin
+		u := domain.EmptyUser()
+		u.Id = userId
+		u.Admin = userData.Admin
 
-		userRead, uErr := us.UpdateClaims(c.Request.Context(), claims, user)
+		userRead, uErr := us.UpdateClaims(c.Request.Context(), claims, u)
 		if uErr != nil {
 			switch uErr.Type {
 			case domain.UserNotFoundError:
