@@ -26,5 +26,6 @@ func (s WhSpell) Copy() WhObject {
 		Target:      strings.Clone(s.Target),
 		Duration:    strings.Clone(s.Duration),
 		Shared:      s.Shared,
+		Source:      s.Source.Copy(),
 	}
 }
