@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
+	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/user"
 	"net/http"
 	"strings"
 )
 
-func RegisterAuthRoutes(router *gin.Engine, us domain.UserService, js domain.JwtService) {
+func RegisterAuthRoutes(router *gin.Engine, us user.UserService, js domain.JwtService) {
 	router.POST("api/token", tokenHandler(us, js))
 }
 
-func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context) {
+func tokenHandler(us user.UserService, js domain.JwtService) func(*gin.Context) {
 	return func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
@@ -21,9 +22,9 @@ func tokenHandler(us domain.UserService, js domain.JwtService) func(*gin.Context
 
 		if uErr != nil {
 			switch uErr.Type {
-			case domain.UserNotFoundError:
+			case user.UserNotFoundError:
 				c.JSON(http.StatusNotFound, gin.H{"code": http.StatusNotFound, "message": "user not found"})
-			case domain.UserIncorrectPasswordError:
+			case user.UserIncorrectPasswordError:
 				c.JSON(http.StatusBadRequest, gin.H{"code": http.StatusBadRequest, "message": "invalid password"})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"code": http.StatusInternalServerError, "message": "internal server error"})
