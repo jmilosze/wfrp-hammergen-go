@@ -1,10 +1,5 @@
 package warhammer
 
-import (
-	"strconv"
-	"strings"
-)
-
 type WhItemType int
 
 func (input WhItemType) Copy() WhItemType {
@@ -12,7 +7,7 @@ func (input WhItemType) Copy() WhItemType {
 }
 
 func getAllowedItemType() string {
-	var list = map[string]WhItemType{
+	var list = map[string]int{
 		"melee":      0,
 		"ranged":     1,
 		"ammunition": 2,
@@ -22,9 +17,58 @@ func getAllowedItemType() string {
 		"grimoire":   6,
 	}
 
-	values := make([]string, 0, len(list))
-	for _, v := range list {
-		values = append(values, strconv.Itoa(int(v)))
+	return formatAllowedIntTypes(list)
+}
+
+type WhItemHands int
+
+func (input WhItemHands) Copy() WhItemHands {
+	return input
+}
+
+func getAllowedItemHands() string {
+	var list = map[string]int{
+		"one": 1,
+		"two": 2,
 	}
-	return strings.Join(values, " ")
+	return formatAllowedIntTypes(list)
+}
+
+type WhItemMeleeReach int
+
+func (input WhItemMeleeReach) Copy() WhItemMeleeReach {
+	return input
+}
+
+func getAllowedItemMeleeReach() string {
+	var list = map[string]int{
+		"personal":   0,
+		"very_short": 1,
+		"short":      2,
+		"average":    3,
+		"long":       4,
+		"very_long":  5,
+		"massive":    6,
+	}
+	return formatAllowedIntTypes(list)
+}
+
+type WhItemMeleeGroup int
+
+func (input WhItemMeleeGroup) Copy() WhItemMeleeGroup {
+	return input
+}
+
+func getAllowedItemMeleeGroup() string {
+	var list = map[string]int{
+		"basic":      0,
+		"cavalry":    1,
+		"fencing":    2,
+		"brawling":   3,
+		"flail":      4,
+		"parry":      5,
+		"polearm":    6,
+		"two_handed": 7,
+	}
+	return formatAllowedIntTypes(list)
 }

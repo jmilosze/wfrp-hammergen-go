@@ -1,7 +1,6 @@
 package warhammer
 
 import (
-	"strconv"
 	"strings"
 )
 
@@ -36,14 +35,9 @@ func (input WhMutationType) Copy() WhMutationType {
 }
 
 func getAllowedMutationType() string {
-	var list = map[string]WhItemType{
+	var list = map[string]int{
 		"physical": 0,
 		"mental":   1,
 	}
-
-	values := make([]string, 0, len(list))
-	for _, v := range list {
-		values = append(values, strconv.Itoa(int(v)))
-	}
-	return strings.Join(values, " ")
+	return formatAllowedIntTypes(list)
 }

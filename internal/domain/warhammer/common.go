@@ -1,6 +1,9 @@
 package warhammer
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 const (
 	WhTypeMutation = "mutation"
@@ -41,6 +44,14 @@ func getAllowedSourceType() string {
 	values := make([]string, 0, len(list))
 	for _, v := range list {
 		values = append(values, string(v))
+	}
+	return strings.Join(values, " ")
+}
+
+func formatAllowedIntTypes(list map[string]int) string {
+	values := make([]string, 0, len(list))
+	for _, v := range list {
+		values = append(values, strconv.Itoa(int(v)))
 	}
 	return strings.Join(values, " ")
 }

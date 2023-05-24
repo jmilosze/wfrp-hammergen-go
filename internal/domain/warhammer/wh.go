@@ -20,6 +20,8 @@ func NewWh(t WhType) (Wh, error) {
 		wh.Object = &WhMutation{}
 	case WhTypeSpell:
 		wh.Object = &WhSpell{}
+	case WhTypeProperty:
+		wh.Object = &WhProperty{}
 	default:
 		return wh, fmt.Errorf("invalid Wh type %s", t)
 	}
