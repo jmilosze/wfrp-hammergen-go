@@ -50,8 +50,10 @@ func run() error {
 	if cfg.WhService.CreateMocks {
 		mockMutations := mock.NewMockMutations()
 		mockSpells := mock.NewMockSpells()
+		mockProperties := mock.NewMockProperties()
 		whService.SeedWh(ctx, warhammer.WhTypeMutation, mockMutations)
 		whService.SeedWh(ctx, warhammer.WhTypeSpell, mockSpells)
+		whService.SeedWh(ctx, warhammer.WhTypeProperty, mockProperties)
 	}
 
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
@@ -59,6 +61,7 @@ func run() error {
 	gin.RegisterAuthRoutes(router, userService, jwtService)
 	gin.RegisterMutationRoutes(router, whService, jwtService)
 	gin.RegisterSpellRoutes(router, whService, jwtService)
+	gin.RegisterPropertyRoutes(router, whService, jwtService)
 
 	server := http.NewServer(&cfg.Server, router)
 

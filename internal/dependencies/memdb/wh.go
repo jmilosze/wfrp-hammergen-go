@@ -46,6 +46,16 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 					},
 				},
 			},
+			warhammer.WhTypeProperty: {
+				Name: warhammer.WhTypeProperty,
+				Indexes: map[string]*memdb.IndexSchema{
+					"id": {
+						Name:    "id",
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "Id"},
+					},
+				},
+			},
 		},
 	}
 	return memdb.NewMemDB(schema)

@@ -24,6 +24,14 @@ func RegisterSpellRoutes(router *gin.Engine, ms warhammer.WhService, js domain.J
 	router.GET("api/wh/spell", RequireJwt(js), whListHandler(ms, warhammer.WhTypeSpell))
 }
 
+func RegisterPropertyRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
+	router.POST("api/wh/property", RequireJwt(js), whCreateOrUpdateHandler(true, ms, warhammer.WhTypeProperty))
+	router.GET("api/wh/property/:whId", RequireJwt(js), whGetHandler(ms, warhammer.WhTypeProperty))
+	router.PUT("api/wh/property/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, warhammer.WhTypeProperty))
+	router.DELETE("api/wh/property/:whId", RequireJwt(js), whDeleteHandler(ms, warhammer.WhTypeProperty))
+	router.GET("api/wh/property", RequireJwt(js), whListHandler(ms, warhammer.WhTypeProperty))
+}
+
 func whCreateOrUpdateHandler(isCreate bool, s warhammer.WhService, t warhammer.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
 		whWrite, err := warhammer.NewWh(t)

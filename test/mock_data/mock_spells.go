@@ -16,29 +16,23 @@ var spell0 = warhammer.Wh{
 		Target:      "2",
 		Duration:    "5",
 		Shared:      false,
+		Source: map[warhammer.WhSourceType]string{
+			"3": "d",
+			"4": "e",
+		},
 	},
 }
 
 var spell1 = warhammer.Wh{
 	Id:      "200000000000000000000001",
-	OwnerId: "admin",
-	Object: warhammer.WhSpell{
-		Name:        "spell 1",
-		Description: "owned by admin shared",
-		Shared:      true,
-	},
-}
-
-var spell2 = warhammer.Wh{
-	Id:      "200000000000000000000002",
 	OwnerId: user1.Id,
 	Object: warhammer.WhSpell{
-		Name:        "spell 2",
+		Name:        "spell 1",
 		Description: fmt.Sprintf("owned by %s", user1.Username),
 		Shared:      false,
 	},
 }
 
 func NewMockSpells() []*warhammer.Wh {
-	return []*warhammer.Wh{&spell0, &spell1, &spell2}
+	return []*warhammer.Wh{&spell0, &spell1}
 }

@@ -29,6 +29,10 @@ var mutation0 = warhammer.Wh{
 			},
 		},
 		Shared: false,
+		Source: map[warhammer.WhSourceType]string{
+			"0": "a",
+			"1": "b",
+		},
 	},
 }
 

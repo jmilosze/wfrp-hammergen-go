@@ -19,6 +19,7 @@ func NewWhDbService(db *DbService) *WhDbService {
 	collections := map[warhammer.WhType]*mongo.Collection{
 		warhammer.WhTypeMutation: db.Client.Database(db.DbName).Collection(warhammer.WhTypeMutation),
 		warhammer.WhTypeSpell:    db.Client.Database(db.DbName).Collection(warhammer.WhTypeSpell),
+		warhammer.WhTypeProperty: db.Client.Database(db.DbName).Collection(warhammer.WhTypeProperty),
 	}
 
 	return &WhDbService{Db: db, Collections: collections}
@@ -88,6 +89,8 @@ func bsonMToWh(whMap bson.M, t warhammer.WhType) (*warhammer.Wh, error) {
 		wh.Object = &warhammer.WhMutation{}
 	case warhammer.WhTypeSpell:
 		wh.Object = &warhammer.WhSpell{}
+	case warhammer.WhTypeProperty:
+		wh.Object = &warhammer.WhProperty{}
 	default:
 		return nil, errors.New("unknown wh type")
 	}
