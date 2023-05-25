@@ -1,6 +1,7 @@
 package warhammer
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -35,9 +36,14 @@ func (input WhMutationType) Copy() WhMutationType {
 }
 
 func getAllowedMutationType() string {
-	var list = map[string]int{
+	return formatAllowedIntTypes(map[string]int{
 		"physical": 0,
 		"mental":   1,
+	})
+}
+
+func GetWhMutationValidationAliases() map[string]string {
+	return map[string]string{
+		"mutation_type_valid": fmt.Sprintf("oneof=%s", getAllowedMutationType()),
 	}
-	return formatAllowedIntTypes(list)
 }

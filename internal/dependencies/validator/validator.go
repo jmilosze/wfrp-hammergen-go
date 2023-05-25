@@ -12,7 +12,16 @@ func NewValidator() *v.Validate {
 }
 
 func configure(v *v.Validate) {
-	for k, r := range warhammer.GetValidationAliases() {
+	for k, r := range warhammer.GetWhCommonValidationAliases() {
+		v.RegisterAlias(k, r)
+	}
+	for k, r := range warhammer.GetWhMutationValidationAliases() {
+		v.RegisterAlias(k, r)
+	}
+	for k, r := range warhammer.GetWhPropertyValidationAliases() {
+		v.RegisterAlias(k, r)
+	}
+	for k, r := range warhammer.GetWhItemValidationAliases() {
 		v.RegisterAlias(k, r)
 	}
 }

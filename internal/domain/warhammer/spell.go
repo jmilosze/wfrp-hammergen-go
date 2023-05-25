@@ -1,6 +1,8 @@
 package warhammer
 
-import "strings"
+import (
+	"strings"
+)
 
 type WhSpell struct {
 	Name        string   `json:"name" validate:"name_valid"`

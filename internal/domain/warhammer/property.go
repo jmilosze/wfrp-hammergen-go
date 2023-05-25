@@ -1,7 +1,7 @@
 package warhammer
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 )
 
@@ -44,14 +44,14 @@ func (input WhPropertyType) Copy() WhPropertyType {
 }
 
 func getAllowedPropertyType() string {
-	var list = map[string]WhItemType{
+	return formatAllowedIntTypes(map[string]int{
 		"quality": 0,
 		"flaw":    1,
-	}
+	})
+}
 
-	values := make([]string, 0, len(list))
-	for _, v := range list {
-		values = append(values, strconv.Itoa(int(v)))
+func GetWhPropertyValidationAliases() map[string]string {
+	return map[string]string{
+		"property_type_valid": fmt.Sprintf("oneof=%s", getAllowedPropertyType()),
 	}
-	return strings.Join(values, " ")
 }
