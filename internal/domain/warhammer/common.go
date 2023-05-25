@@ -13,6 +13,8 @@ const (
 
 type WhType string
 
+var WhTypes = []WhType{WhTypeMutation, WhTypeSpell, WhTypeProperty}
+
 type WhSourceType string
 
 type WhSource map[WhSourceType]string

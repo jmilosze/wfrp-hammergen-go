@@ -16,12 +16,11 @@ type WhDbService struct {
 }
 
 func NewWhDbService(db *DbService) *WhDbService {
-	collections := map[warhammer.WhType]*mongo.Collection{
-		warhammer.WhTypeMutation: db.Client.Database(db.DbName).Collection(warhammer.WhTypeMutation),
-		warhammer.WhTypeSpell:    db.Client.Database(db.DbName).Collection(warhammer.WhTypeSpell),
-		warhammer.WhTypeProperty: db.Client.Database(db.DbName).Collection(warhammer.WhTypeProperty),
-	}
+	collections := map[warhammer.WhType]*mongo.Collection{}
 
+	for _, whType := range warhammer.WhTypes {
+		collections[whType] = db.Client.Database(db.DbName).Collection(string(whType))
+	}
 	return &WhDbService{Db: db, Collections: collections}
 }
 
@@ -78,22 +77,14 @@ func bsonMToWh(whMap bson.M, t warhammer.WhType) (*warhammer.Wh, error) {
 		return nil, errors.New("invalid owner id")
 	}
 
-	wh := warhammer.Wh{
-		Id:      id.Hex(),
-		OwnerId: ownerId,
-		CanEdit: false,
+	wh, err := warhammer.NewWh(t)
+	if err != nil {
+		return nil, err
 	}
 
-	switch t {
-	case warhammer.WhTypeMutation:
-		wh.Object = &warhammer.WhMutation{}
-	case warhammer.WhTypeSpell:
-		wh.Object = &warhammer.WhSpell{}
-	case warhammer.WhTypeProperty:
-		wh.Object = &warhammer.WhProperty{}
-	default:
-		return nil, errors.New("unknown wh type")
-	}
+	wh.Id = id.Hex()
+	wh.OwnerId = ownerId
+	wh.CanEdit = false
 
 	bsonRaw, err := bson.Marshal(whMap["object"])
 	if err != nil {

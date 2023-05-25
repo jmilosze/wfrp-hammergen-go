@@ -25,39 +25,22 @@ func NewWhDbService() *WhDbService {
 
 func createNewWhMemDb() (*memdb.MemDB, error) {
 	schema := &memdb.DBSchema{
-		Tables: map[string]*memdb.TableSchema{
-			warhammer.WhTypeMutation: {
-				Name: warhammer.WhTypeMutation,
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "Id"},
-					},
-				},
-			},
-			warhammer.WhTypeSpell: {
-				Name: warhammer.WhTypeSpell,
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "Id"},
-					},
-				},
-			},
-			warhammer.WhTypeProperty: {
-				Name: warhammer.WhTypeProperty,
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "Id"},
-					},
-				},
-			},
-		},
+		Tables: map[string]*memdb.TableSchema{},
 	}
+
+	for _, whType := range warhammer.WhTypes {
+		schema.Tables[string(whType)] = &memdb.TableSchema{
+			Name: string(whType),
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "Id"},
+				},
+			},
+		}
+	}
+
 	return memdb.NewMemDB(schema)
 }
 
