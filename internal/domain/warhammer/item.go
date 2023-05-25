@@ -168,6 +168,26 @@ func (input WhItemMelee) Copy() WhItemMelee {
 	}
 }
 
+type WhItemRanged struct {
+	Type      WhItemHands       `json:"hands" validate:"item_hands_valid"`
+	Dmg       int               `json:"dmg" validate:"gte=100,lte=-100"`
+	DmgSbMult float64           `json:"dmgSbMult" validate:"gte=10,lte=0"`
+	Rng       int               `json:"rng" validate:"gte=10000,lte=-10000"`
+	RngSbMult float64           `json:"rngSbMult" validate:"gte=10,lte=0"`
+	Group     WhItemRangedGroup `json:"group" validate:"item_melee_group_valid"`
+}
+
+func (input WhItemRanged) Copy() WhItemRanged {
+	return WhItemRanged{
+		Type:      input.Type.Copy(),
+		Dmg:       input.Dmg,
+		DmgSbMult: input.DmgSbMult,
+		Rng:       input.Rng,
+		RngSbMult: input.RngSbMult,
+		Group:     input.Group.Copy(),
+	}
+}
+
 type WhItem struct {
 	Name        string     `json:"name" validate:"name_valid"`
 	Description string     `json:"description" validate:"desc_valid"`
@@ -177,4 +197,7 @@ type WhItem struct {
 	Type        WhItemType `json:"type" validate:"item_type_valid"`
 	Shared      bool       `json:"shared" validate:"shared_valid"`
 	Source      WhSource   `json:"source" validate:"source_valid"`
+
+	Melee  WhItemMelee  `json:"melee"`
+	Ranged WhItemRanged `json:"ranged"`
 }
