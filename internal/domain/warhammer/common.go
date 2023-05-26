@@ -51,14 +51,6 @@ func getAllowedSourceType() string {
 	return strings.Join(values, " ")
 }
 
-func formatAllowedIntTypes(list map[string]int) string {
-	values := make([]string, len(list))
-	for _, v := range list {
-		values = append(values, strconv.Itoa(v))
-	}
-	return strings.Join(values, " ")
-}
-
 func GetWhCommonValidationAliases() map[string]string {
 	return map[string]string{
 		"name_valid":          "min=0,max=200,excludesall=<>",
@@ -68,4 +60,20 @@ func GetWhCommonValidationAliases() map[string]string {
 		"source_valid":        fmt.Sprintf("dive,keys,oneof=%s,endkeys,min=0,max=15,excludesall=<>", getAllowedSourceType()),
 		"id_valid":            "hexadecimal,len=24",
 	}
+}
+
+func formatAllowedIntTypes(list map[string]int) string {
+	values := make([]string, len(list))
+	for _, v := range list {
+		values = append(values, strconv.Itoa(v))
+	}
+	return strings.Join(values, " ")
+}
+
+func copyStringArray(input []string) []string {
+	output := make([]string, len(input))
+	for i, v := range input {
+		output[i] = strings.Clone(v)
+	}
+	return output
 }

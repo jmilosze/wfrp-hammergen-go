@@ -137,6 +137,20 @@ func getAllowedItemArmourLocation() string {
 	})
 }
 
+type WhItemCarryType int
+
+func (input WhItemCarryType) Copy() WhItemCarryType {
+	return input
+}
+
+func getAllowedItemWhItemCarryType() string {
+	return formatAllowedIntTypes(map[string]int{
+		"carriable_and_wearable":         0,
+		"carriable_and_not_wearable":     1,
+		"not_carriable_and_not_wearable": 2,
+	})
+}
+
 func GetWhItemValidationAliases() map[string]string {
 	return map[string]string{
 		"item_type_valid":             fmt.Sprintf("oneof=%s", getAllowedItemType()),
@@ -147,11 +161,12 @@ func GetWhItemValidationAliases() map[string]string {
 		"item_ammunition_group_valid": fmt.Sprintf("oneof=%s", getAllowedItemAmmunitionGroup()),
 		"item_armour_group_valid":     fmt.Sprintf("oneof=%s", getAllowedItemArmourGroup()),
 		"item_armour_location_valid":  fmt.Sprintf("oneof=%s", getAllowedItemArmourLocation()),
+		"item_carry_type_valid":       fmt.Sprintf("oneof=%s", getAllowedItemWhItemCarryType()),
 	}
 }
 
 type WhItemMelee struct {
-	Type      WhItemHands      `json:"hands" validate:"item_hands_valid"`
+	Hands     WhItemHands      `json:"hands" validate:"item_hands_valid"`
 	Dmg       int              `json:"dmg" validate:"gte=100,lte=-100"`
 	DmgSbMult float64          `json:"dmgSbMult" validate:"gte=10,lte=0"`
 	Reach     WhItemMeleeReach `json:"reach" validate:"item_melee_reach_valid"`
@@ -160,7 +175,7 @@ type WhItemMelee struct {
 
 func (input WhItemMelee) Copy() WhItemMelee {
 	return WhItemMelee{
-		Type:      input.Type.Copy(),
+		Hands:     input.Hands.Copy(),
 		Dmg:       input.Dmg,
 		DmgSbMult: input.DmgSbMult,
 		Reach:     input.Reach.Copy(),
@@ -169,22 +184,84 @@ func (input WhItemMelee) Copy() WhItemMelee {
 }
 
 type WhItemRanged struct {
-	Type      WhItemHands       `json:"hands" validate:"item_hands_valid"`
+	Hands     WhItemHands       `json:"hands" validate:"item_hands_valid"`
 	Dmg       int               `json:"dmg" validate:"gte=100,lte=-100"`
 	DmgSbMult float64           `json:"dmgSbMult" validate:"gte=10,lte=0"`
 	Rng       int               `json:"rng" validate:"gte=10000,lte=-10000"`
 	RngSbMult float64           `json:"rngSbMult" validate:"gte=10,lte=0"`
-	Group     WhItemRangedGroup `json:"group" validate:"item_melee_group_valid"`
+	Group     WhItemRangedGroup `json:"group" validate:"item_ranged_group_valid"`
 }
 
 func (input WhItemRanged) Copy() WhItemRanged {
 	return WhItemRanged{
-		Type:      input.Type.Copy(),
+		Hands:     input.Hands.Copy(),
 		Dmg:       input.Dmg,
 		DmgSbMult: input.DmgSbMult,
 		Rng:       input.Rng,
 		RngSbMult: input.RngSbMult,
 		Group:     input.Group.Copy(),
+	}
+}
+
+type WhItemAmmunition struct {
+	Dmg     int                   `json:"dmg" validate:"gte=100,lte=-100"`
+	Rng     int                   `json:"rng" validate:"gte=10000,lte=-10000"`
+	RngMult float64               `json:"rngMult" validate:"gte=10,lte=0"`
+	Group   WhItemAmmunitionGroup `json:"group" validate:"item_ammunition_group_valid"`
+}
+
+func (input WhItemAmmunition) Copy() WhItemAmmunition {
+	return WhItemAmmunition{
+		Dmg:     input.Dmg,
+		Rng:     input.Rng,
+		RngMult: input.RngMult,
+		Group:   input.Group.Copy(),
+	}
+}
+
+type WhItemArmour struct {
+	Points   int               `json:"points" validate:"gte=100,lte=0"`
+	Location int               `json:"location" validate:"item_armour_location_valid"`
+	Group    WhItemArmourGroup `json:"group" validate:"item_armour_group_valid"`
+}
+
+func (input WhItemArmour) Copy() WhItemArmour {
+	return WhItemArmour{
+		Points:   input.Points,
+		Location: input.Location,
+		Group:    input.Group.Copy(),
+	}
+}
+
+type WhItemContainer struct {
+	Capacity  int             `json:"capacity" validate:"gte=1000,lte=0"`
+	CarryType WhItemCarryType `json:"carryType" validate:"item_carry_type_valid"`
+}
+
+func (input WhItemContainer) Copy() WhItemContainer {
+	return WhItemContainer{
+		Capacity:  input.Capacity,
+		CarryType: input.CarryType.Copy(),
+	}
+}
+
+type WhItemGrimoire struct {
+	Spells []string `json:"spells" validate:"dive,id_valid"`
+}
+
+func (input WhItemGrimoire) Copy() WhItemGrimoire {
+	return WhItemGrimoire{
+		Spells: copyStringArray(input.Spells),
+	}
+}
+
+type WhItemOther struct {
+	CarryType WhItemCarryType `json:"carryType" validate:"item_carry_type_valid"`
+}
+
+func (input WhItemOther) Copy() WhItemOther {
+	return WhItemOther{
+		CarryType: input.CarryType.Copy(),
 	}
 }
 
@@ -198,6 +275,11 @@ type WhItem struct {
 	Shared      bool       `json:"shared" validate:"shared_valid"`
 	Source      WhSource   `json:"source" validate:"source_valid"`
 
-	Melee  WhItemMelee  `json:"melee"`
-	Ranged WhItemRanged `json:"ranged"`
+	Melee      WhItemMelee      `json:"melee"`
+	Ranged     WhItemRanged     `json:"ranged"`
+	Ammunition WhItemAmmunition `json:"ammunition"`
+	Armour     WhItemArmour     `json:"armour"`
+	Container  WhItemContainer  `json:"container"`
+	Grimoire   WhItemGrimoire   `json:"grimoire"`
+	Other      WhItemOther      `json:"other"`
 }
