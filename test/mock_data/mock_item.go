@@ -14,7 +14,7 @@ var itemMelee = warhammer.Wh{
 		Price:       2.31,
 		Enc:         1.5,
 		Properties:  []string{property0.Id, property1.Id},
-		Type:        0,
+		Type:        warhammer.WhItemTypeMelee,
 		Shared:      true,
 		Source: map[warhammer.WhSource]string{
 			warhammer.WhSourceArchivesOfTheEmpireVolI: "g",
@@ -22,11 +22,11 @@ var itemMelee = warhammer.Wh{
 		},
 
 		Melee: warhammer.WhItemMelee{
-			Hands:     1,
+			Hands:     warhammer.WhItemHandsOne,
 			Dmg:       5,
 			DmgSbMult: 1.0,
-			Reach:     3,
-			Group:     0,
+			Reach:     warhammer.WhItemMeleeReachAverage,
+			Group:     warhammer.WhItemMeleeGroupBasic,
 		},
 	},
 }

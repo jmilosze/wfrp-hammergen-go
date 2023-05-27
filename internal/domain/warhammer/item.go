@@ -110,83 +110,124 @@ func (input WhItemMeleeGroup) Copy() WhItemMeleeGroup {
 
 type WhItemRangedGroup int
 
+const (
+	WhItemRangedGroupBlackpowder = 0
+	WhItemRangedGroupBow         = 1
+	WhItemRangedGroupCrossbow    = 2
+	WhItemRangedGroupEngineering = 3
+	WhItemRangedGroupEntangling  = 4
+	WhItemRangedGroupExplosives  = 5
+	WhItemRangedGroupSling       = 6
+	WhItemRangedGroupThrowing    = 7
+)
+
+func ItemRangedGroupValues() string {
+	return formatIntegerValues([]WhItemRangedGroup{
+		WhItemRangedGroupBlackpowder,
+		WhItemRangedGroupBow,
+		WhItemRangedGroupCrossbow,
+		WhItemRangedGroupEngineering,
+		WhItemRangedGroupEntangling,
+		WhItemRangedGroupExplosives,
+		WhItemRangedGroupSling,
+		WhItemRangedGroupThrowing,
+	})
+}
+
 func (input WhItemRangedGroup) Copy() WhItemRangedGroup {
 	return input
 }
 
-func getAllowedItemRangedGroup() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"blackpowder": 0,
-		"bow":         1,
-		"crossbow":    2,
-		"engineering": 3,
-		"entangling":  4,
-		"explosives":  5,
-		"sling":       6,
-		"throwing":    7,
+type WhItemAmmunitionGroup int
+
+const (
+	WhItemAmmunitionGroupBlackpowderAndEngineering = 0
+	WhItemAmmunitionGroupBow                       = 1
+	WhItemAmmunitionGroupCrossbow                  = 2
+	WhItemAmmunitionGroupSling                     = 3
+	WhItemAmmunitionGroupEntangling                = 4
+)
+
+func itemAmmunitionGroupValues() string {
+	return formatIntegerValues([]WhItemAmmunitionGroup{
+		WhItemAmmunitionGroupBlackpowderAndEngineering,
+		WhItemAmmunitionGroupBow,
+		WhItemAmmunitionGroupCrossbow,
+		WhItemAmmunitionGroupSling,
+		WhItemAmmunitionGroupEntangling,
 	})
 }
-
-type WhItemAmmunitionGroup int
 
 func (input WhItemAmmunitionGroup) Copy() WhItemAmmunitionGroup {
 	return input
 }
 
-func getAllowedItemAmmunitionGroup() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"blackpowder_and_engineering": 0,
-		"bow":                         1,
-		"crossbow":                    2,
-		"sling":                       3,
-		"entangling":                  4,
+type WhItemArmourGroup int
+
+const (
+	WhItemArmourGroupSoftLeather   = 0
+	WhItemArmourGroupBoiledLeather = 1
+	WhItemArmourGroupMail          = 2
+	WhItemArmourGroupPlate         = 3
+	WhItemArmourGroupSoftKit       = 4
+	WhItemArmourGroupBrigandine    = 5
+)
+
+func itemArmourGroupValues() string {
+	return formatIntegerValues([]WhItemArmourGroup{
+		WhItemArmourGroupSoftLeather,
+		WhItemArmourGroupBoiledLeather,
+		WhItemArmourGroupMail,
+		WhItemArmourGroupPlate,
+		WhItemArmourGroupSoftKit,
+		WhItemArmourGroupBrigandine,
 	})
 }
-
-type WhItemArmourGroup int
 
 func (input WhItemArmourGroup) Copy() WhItemArmourGroup {
 	return input
 }
 
-func getAllowedItemArmourGroup() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"soft_leather":   0,
-		"boiled_leather": 1,
-		"mail":           2,
-		"plate":          3,
-		"soft_kit":       4,
-		"brigandine":     4,
+type WhItemArmourLocation int
+
+const (
+	WhItemArmourLocationArms = 0
+	WhItemArmourLocationBody = 1
+	WhItemArmourLocationLegs = 2
+	WhItemArmourLocationHead = 3
+)
+
+func itemArmourLocationValues() string {
+	return formatIntegerValues([]WhItemArmourLocation{
+		WhItemArmourLocationArms,
+		WhItemArmourLocationBody,
+		WhItemArmourLocationLegs,
+		WhItemArmourLocationHead,
 	})
 }
-
-type WhItemArmourLocation int
 
 func (input WhItemArmourLocation) Copy() WhItemArmourLocation {
 	return input
 }
 
-func getAllowedItemArmourLocation() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"arms": 0,
-		"body": 1,
-		"legs": 2,
-		"head": 3,
+type WhItemCarryType int
+
+const (
+	WhItemCarryTypeCarriableAndWearable       = 0
+	WhItemCarryTypeCarriableAndNotWearable    = 1
+	WhItemCarryTypeNotCarriableAndNotWearable = 2
+)
+
+func itemCarryTypeValues() string {
+	return formatIntegerValues([]WhItemCarryType{
+		WhItemCarryTypeCarriableAndWearable,
+		WhItemCarryTypeCarriableAndNotWearable,
+		WhItemCarryTypeNotCarriableAndNotWearable,
 	})
 }
-
-type WhItemCarryType int
 
 func (input WhItemCarryType) Copy() WhItemCarryType {
 	return input
-}
-
-func getAllowedItemWhItemCarryType() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"carriable_and_wearable":         0,
-		"carriable_and_not_wearable":     1,
-		"not_carriable_and_not_wearable": 2,
-	})
 }
 
 func GetWhItemValidationAliases() map[string]string {
@@ -195,11 +236,11 @@ func GetWhItemValidationAliases() map[string]string {
 		"item_hands_valid":            fmt.Sprintf("oneof=%s", itemHandsValues()),
 		"item_melee_reach_valid":      fmt.Sprintf("oneof=%s", itemMeleeReachValues()),
 		"item_melee_group_valid":      fmt.Sprintf("oneof=%s", itemMeleeGroupValues()),
-		"item_ranged_group_valid":     fmt.Sprintf("oneof=%s", getAllowedItemRangedGroup()),
-		"item_ammunition_group_valid": fmt.Sprintf("oneof=%s", getAllowedItemAmmunitionGroup()),
-		"item_armour_group_valid":     fmt.Sprintf("oneof=%s", getAllowedItemArmourGroup()),
-		"item_armour_location_valid":  fmt.Sprintf("oneof=%s", getAllowedItemArmourLocation()),
-		"item_carry_type_valid":       fmt.Sprintf("oneof=%s", getAllowedItemWhItemCarryType()),
+		"item_ranged_group_valid":     fmt.Sprintf("oneof=%s", ItemRangedGroupValues()),
+		"item_ammunition_group_valid": fmt.Sprintf("oneof=%s", itemAmmunitionGroupValues()),
+		"item_armour_group_valid":     fmt.Sprintf("oneof=%s", itemArmourGroupValues()),
+		"item_armour_location_valid":  fmt.Sprintf("oneof=%s", itemArmourLocationValues()),
+		"item_carry_type_valid":       fmt.Sprintf("oneof=%s", itemCarryTypeValues()),
 	}
 }
 
