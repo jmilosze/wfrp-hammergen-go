@@ -1,6 +1,9 @@
 package warhammer
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type WhItemType int
 
@@ -9,7 +12,7 @@ func (input WhItemType) Copy() WhItemType {
 }
 
 func getAllowedItemType() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"melee":      0,
 		"ranged":     1,
 		"ammunition": 2,
@@ -27,7 +30,7 @@ func (input WhItemHands) Copy() WhItemHands {
 }
 
 func getAllowedItemHands() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"one": 1,
 		"two": 2,
 	})
@@ -40,7 +43,7 @@ func (input WhItemMeleeReach) Copy() WhItemMeleeReach {
 }
 
 func getAllowedItemMeleeReach() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"personal":   0,
 		"very_short": 1,
 		"short":      2,
@@ -58,7 +61,7 @@ func (input WhItemMeleeGroup) Copy() WhItemMeleeGroup {
 }
 
 func getAllowedItemMeleeGroup() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"basic":      0,
 		"cavalry":    1,
 		"fencing":    2,
@@ -77,7 +80,7 @@ func (input WhItemRangedGroup) Copy() WhItemRangedGroup {
 }
 
 func getAllowedItemRangedGroup() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"blackpowder": 0,
 		"bow":         1,
 		"crossbow":    2,
@@ -96,7 +99,7 @@ func (input WhItemAmmunitionGroup) Copy() WhItemAmmunitionGroup {
 }
 
 func getAllowedItemAmmunitionGroup() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"blackpowder_and_engineering": 0,
 		"bow":                         1,
 		"crossbow":                    2,
@@ -112,7 +115,7 @@ func (input WhItemArmourGroup) Copy() WhItemArmourGroup {
 }
 
 func getAllowedItemArmourGroup() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"soft_leather":   0,
 		"boiled_leather": 1,
 		"mail":           2,
@@ -129,7 +132,7 @@ func (input WhItemArmourLocation) Copy() WhItemArmourLocation {
 }
 
 func getAllowedItemArmourLocation() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"arms": 0,
 		"body": 1,
 		"legs": 2,
@@ -144,7 +147,7 @@ func (input WhItemCarryType) Copy() WhItemCarryType {
 }
 
 func getAllowedItemWhItemCarryType() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"carriable_and_wearable":         0,
 		"carriable_and_not_wearable":     1,
 		"not_carriable_and_not_wearable": 2,
@@ -266,14 +269,14 @@ func (input WhItemOther) Copy() WhItemOther {
 }
 
 type WhItem struct {
-	Name        string     `json:"name" validate:"name_valid"`
-	Description string     `json:"description" validate:"desc_valid"`
-	Price       float64    `json:"price" validate:"gte=0,lte=1000000000"`
-	Enc         float64    `json:"enc" validate:"gte=0,lte=1000"`
-	Properties  []string   `json:"properties" validate:"dive,id_valid"`
-	Type        WhItemType `json:"type" validate:"item_type_valid"`
-	Shared      bool       `json:"shared" validate:"shared_valid"`
-	Source      WhSource   `json:"source" validate:"source_valid"`
+	Name        string      `json:"name" validate:"name_valid"`
+	Description string      `json:"description" validate:"desc_valid"`
+	Price       float64     `json:"price" validate:"gte=0,lte=1000000000"`
+	Enc         float64     `json:"enc" validate:"gte=0,lte=1000"`
+	Properties  []string    `json:"properties" validate:"dive,id_valid"`
+	Type        WhItemType  `json:"type" validate:"item_type_valid"`
+	Shared      bool        `json:"shared" validate:"shared_valid"`
+	Source      WhSourceMap `json:"source" validate:"source_valid"`
 
 	Melee      WhItemMelee      `json:"melee"`
 	Ranged     WhItemRanged     `json:"ranged"`
@@ -282,4 +285,29 @@ type WhItem struct {
 	Container  WhItemContainer  `json:"container"`
 	Grimoire   WhItemGrimoire   `json:"grimoire"`
 	Other      WhItemOther      `json:"other"`
+}
+
+func (i WhItem) IsShared() bool {
+	return i.Shared
+}
+
+func (i WhItem) Copy() WhObject {
+	return WhItem{
+		Name:        strings.Clone(i.Name),
+		Description: strings.Clone(i.Description),
+		Price:       i.Price,
+		Enc:         i.Enc,
+		Properties:  copyStringArray(i.Properties),
+		Type:        i.Type.Copy(),
+		Shared:      i.Shared,
+		Source:      i.Source.Copy(),
+
+		Melee:      i.Melee.Copy(),
+		Ranged:     i.Ranged.Copy(),
+		Ammunition: i.Ammunition.Copy(),
+		Armour:     i.Armour.Copy(),
+		Container:  i.Container.Copy(),
+		Grimoire:   i.Grimoire.Copy(),
+		Other:      i.Other.Copy(),
+	}
 }

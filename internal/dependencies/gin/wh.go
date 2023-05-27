@@ -8,28 +8,14 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
 )
 
-func RegisterMutationRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
-	router.POST("api/wh/mutation", RequireJwt(js), whCreateOrUpdateHandler(true, ms, warhammer.WhTypeMutation))
-	router.GET("api/wh/mutation/:whId", RequireJwt(js), whGetHandler(ms, warhammer.WhTypeMutation))
-	router.PUT("api/wh/mutation/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, warhammer.WhTypeMutation))
-	router.DELETE("api/wh/mutation/:whId", RequireJwt(js), whDeleteHandler(ms, warhammer.WhTypeMutation))
-	router.GET("api/wh/mutation", RequireJwt(js), whListHandler(ms, warhammer.WhTypeMutation))
-}
-
-func RegisterSpellRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
-	router.POST("api/wh/spell", RequireJwt(js), whCreateOrUpdateHandler(true, ms, warhammer.WhTypeSpell))
-	router.GET("api/wh/spell/:whId", RequireJwt(js), whGetHandler(ms, warhammer.WhTypeSpell))
-	router.PUT("api/wh/spell/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, warhammer.WhTypeSpell))
-	router.DELETE("api/wh/spell/:whId", RequireJwt(js), whDeleteHandler(ms, warhammer.WhTypeSpell))
-	router.GET("api/wh/spell", RequireJwt(js), whListHandler(ms, warhammer.WhTypeSpell))
-}
-
-func RegisterPropertyRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
-	router.POST("api/wh/property", RequireJwt(js), whCreateOrUpdateHandler(true, ms, warhammer.WhTypeProperty))
-	router.GET("api/wh/property/:whId", RequireJwt(js), whGetHandler(ms, warhammer.WhTypeProperty))
-	router.PUT("api/wh/property/:whId", RequireJwt(js), whCreateOrUpdateHandler(false, ms, warhammer.WhTypeProperty))
-	router.DELETE("api/wh/property/:whId", RequireJwt(js), whDeleteHandler(ms, warhammer.WhTypeProperty))
-	router.GET("api/wh/property", RequireJwt(js), whListHandler(ms, warhammer.WhTypeProperty))
+func RegisterWhRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
+	for _, v := range warhammer.WhTypes {
+		router.POST(fmt.Sprintf("api/wh/%s", v), RequireJwt(js), whCreateOrUpdateHandler(true, ms, v))
+		router.GET(fmt.Sprintf("api/wh/%s/:whId", v), RequireJwt(js), whGetHandler(ms, v))
+		router.PUT(fmt.Sprintf("api/wh/%s/:whId", v), RequireJwt(js), whCreateOrUpdateHandler(false, ms, v))
+		router.DELETE(fmt.Sprintf("api/wh/%s/:whId", v), RequireJwt(js), whDeleteHandler(ms, v))
+		router.GET(fmt.Sprintf("api/wh/%s", v), RequireJwt(js), whListHandler(ms, v))
+	}
 }
 
 func whCreateOrUpdateHandler(isCreate bool, s warhammer.WhService, t warhammer.WhType) func(*gin.Context) {

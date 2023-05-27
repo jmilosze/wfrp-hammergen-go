@@ -11,7 +11,7 @@ type WhMutation struct {
 	Type        WhMutationType `json:"type" validate:"mutation_type_valid"`
 	Modifiers   WhModifiers    `json:"modifiers"`
 	Shared      bool           `json:"shared" validate:"shared_valid"`
-	Source      WhSource       `json:"source" validate:"source_valid"`
+	Source      WhSourceMap    `json:"source" validate:"source_valid"`
 }
 
 func (m WhMutation) IsShared() bool {
@@ -31,19 +31,21 @@ func (m WhMutation) Copy() WhObject {
 
 type WhMutationType int
 
+const (
+	WhMutationTypePhysical = 0
+	WhMutationTypeMental   = 1
+)
+
+func mutationTypeValues() string {
+	return formatIntegerValues([]WhMutationType{WhMutationTypePhysical, WhMutationTypeMental})
+}
+
 func (input WhMutationType) Copy() WhMutationType {
 	return input
 }
 
-func getAllowedMutationType() string {
-	return formatAllowedIntTypes(map[string]int{
-		"physical": 0,
-		"mental":   1,
-	})
-}
-
 func GetWhMutationValidationAliases() map[string]string {
 	return map[string]string{
-		"mutation_type_valid": fmt.Sprintf("oneof=%s", getAllowedMutationType()),
+		"mutation_type_valid": fmt.Sprintf("oneof=%s", mutationTypeValues()),
 	}
 }

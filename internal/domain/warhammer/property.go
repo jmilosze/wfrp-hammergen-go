@@ -9,9 +9,9 @@ type WhProperty struct {
 	Name         string         `json:"name" validate:"name_valid"`
 	Description  string         `json:"description" validate:"desc_valid"`
 	Type         WhPropertyType `json:"type" validate:"property_type_valid"`
-	ApplicableTo []WhItemType   `json:"applicableTo" validate:"property_applicable_to_valid"`
+	ApplicableTo []WhItemType   `json:"applicableTo" validate:"dive,item_type_valid"`
 	Shared       bool           `json:"shared" validate:"shared_valid"`
-	Source       WhSource       `json:"source" validate:"source_valid"`
+	Source       WhSourceMap    `json:"source" validate:"source_valid"`
 }
 
 func (p WhProperty) IsShared() bool {
@@ -44,7 +44,7 @@ func (input WhPropertyType) Copy() WhPropertyType {
 }
 
 func getAllowedPropertyType() string {
-	return formatAllowedIntTypes(map[string]int{
+	return formatAllowedIntTypesFromMap(map[string]int{
 		"quality": 0,
 		"flaw":    1,
 	})

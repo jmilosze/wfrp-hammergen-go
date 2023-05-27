@@ -11,7 +11,7 @@ var mutation0 = warhammer.Wh{
 	Object: warhammer.WhMutation{
 		Name:        "mutation 0",
 		Description: "owned by admin",
-		Type:        1,
+		Type:        warhammer.WhMutationTypeMental,
 		Modifiers: warhammer.WhModifiers{
 			Size:     1,
 			Movement: 1,
@@ -29,9 +29,9 @@ var mutation0 = warhammer.Wh{
 			},
 		},
 		Shared: false,
-		Source: map[warhammer.WhSourceType]string{
-			"0": "a",
-			"1": "b",
+		Source: map[warhammer.WhSource]string{
+			warhammer.WhSourceCustom: "a",
+			warhammer.WhSourceWFRP:   "b",
 		},
 	},
 }

@@ -16,9 +16,9 @@ var spell0 = warhammer.Wh{
 		Target:      "2",
 		Duration:    "5",
 		Shared:      false,
-		Source: map[warhammer.WhSourceType]string{
-			"3": "d",
-			"4": "e",
+		Source: map[warhammer.WhSource]string{
+			warhammer.WhSourceArchivesOfTheEmpireVolI: "d",
+			warhammer.WhSourceSeaOfClaws:              "e",
 		},
 	},
 }

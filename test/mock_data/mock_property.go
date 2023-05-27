@@ -14,9 +14,9 @@ var property0 = warhammer.Wh{
 		Type:         0,
 		ApplicableTo: []warhammer.WhItemType{0, 1, 2},
 		Shared:       false,
-		Source: map[warhammer.WhSourceType]string{
-			"3": "d",
-			"4": "e",
+		Source: map[warhammer.WhSource]string{
+			warhammer.WhSourceArchivesOfTheEmpireVolI: "d",
+			warhammer.WhSourceSeaOfClaws:              "e",
 		},
 	},
 }
