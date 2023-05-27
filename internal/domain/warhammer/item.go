@@ -7,70 +7,105 @@ import (
 
 type WhItemType int
 
+const (
+	WhItemTypeMelee      = 0
+	WhItemTypeRanged     = 1
+	WhItemTypeAmmunition = 2
+	WhItemTypeArmour     = 3
+	WhItemTypeContainer  = 4
+	WhItemTypeGrimoire   = 6
+	WhItemTypeOther      = 5
+)
+
+func itemTypeValues() string {
+	return formatIntegerValues([]WhItemType{
+		WhItemTypeMelee,
+		WhItemTypeRanged,
+		WhItemTypeAmmunition,
+		WhItemTypeArmour,
+		WhItemTypeContainer,
+		WhItemTypeGrimoire,
+		WhItemTypeOther,
+	})
+}
 func (input WhItemType) Copy() WhItemType {
 	return input
 }
 
-func getAllowedItemType() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"melee":      0,
-		"ranged":     1,
-		"ammunition": 2,
-		"armour":     3,
-		"container":  4,
-		"other":      5,
-		"grimoire":   6,
+type WhItemHands int
+
+const (
+	WhItemHandsOne = 1
+	WhItemHandsTwo = 2
+)
+
+func itemHandsValues() string {
+	return formatIntegerValues([]WhItemHands{
+		WhItemHandsOne,
+		WhItemHandsTwo,
 	})
 }
-
-type WhItemHands int
 
 func (input WhItemHands) Copy() WhItemHands {
 	return input
 }
 
-func getAllowedItemHands() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"one": 1,
-		"two": 2,
+type WhItemMeleeReach int
+
+const (
+	WhItemMeleeReachPersonal  = 0
+	WhItemMeleeReachVeryShort = 1
+	WhItemMeleeReachShort     = 2
+	WhItemMeleeReachAverage   = 3
+	WhItemMeleeReachLong      = 4
+	WhItemMeleeReachVeryLong  = 5
+	WhItemMeleeReachMassive   = 6
+)
+
+func itemMeleeReachValues() string {
+	return formatIntegerValues([]WhItemMeleeReach{
+		WhItemMeleeReachPersonal,
+		WhItemMeleeReachVeryShort,
+		WhItemMeleeReachShort,
+		WhItemMeleeReachAverage,
+		WhItemMeleeReachLong,
+		WhItemMeleeReachVeryLong,
+		WhItemMeleeReachMassive,
 	})
 }
-
-type WhItemMeleeReach int
 
 func (input WhItemMeleeReach) Copy() WhItemMeleeReach {
 	return input
 }
 
-func getAllowedItemMeleeReach() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"personal":   0,
-		"very_short": 1,
-		"short":      2,
-		"average":    3,
-		"long":       4,
-		"very_long":  5,
-		"massive":    6,
+type WhItemMeleeGroup int
+
+const (
+	WhItemMeleeGroupBasic     = 0
+	WhItemMeleeGroupCavalry   = 1
+	WhItemMeleeGroupFencing   = 2
+	WhItemMeleeGroupBrawling  = 3
+	WhItemMeleeGroupFlail     = 4
+	WhItemMeleeGroupParry     = 5
+	WhItemMeleeGroupPolearm   = 6
+	WhItemMeleeGroupTwoHanded = 7
+)
+
+func itemMeleeGroupValues() string {
+	return formatIntegerValues([]WhItemMeleeGroup{
+		WhItemMeleeGroupBasic,
+		WhItemMeleeGroupCavalry,
+		WhItemMeleeGroupFencing,
+		WhItemMeleeGroupBrawling,
+		WhItemMeleeGroupFlail,
+		WhItemMeleeGroupParry,
+		WhItemMeleeGroupPolearm,
+		WhItemMeleeGroupTwoHanded,
 	})
 }
-
-type WhItemMeleeGroup int
 
 func (input WhItemMeleeGroup) Copy() WhItemMeleeGroup {
 	return input
-}
-
-func getAllowedItemMeleeGroup() string {
-	return formatAllowedIntTypesFromMap(map[string]int{
-		"basic":      0,
-		"cavalry":    1,
-		"fencing":    2,
-		"brawling":   3,
-		"flail":      4,
-		"parry":      5,
-		"polearm":    6,
-		"two_handed": 7,
-	})
 }
 
 type WhItemRangedGroup int
@@ -156,10 +191,10 @@ func getAllowedItemWhItemCarryType() string {
 
 func GetWhItemValidationAliases() map[string]string {
 	return map[string]string{
-		"item_type_valid":             fmt.Sprintf("oneof=%s", getAllowedItemType()),
-		"item_hands_valid":            fmt.Sprintf("oneof=%s", getAllowedItemHands()),
-		"item_melee_reach_valid":      fmt.Sprintf("oneof=%s", getAllowedItemMeleeReach()),
-		"item_melee_group_valid":      fmt.Sprintf("oneof=%s", getAllowedItemMeleeGroup()),
+		"item_type_valid":             fmt.Sprintf("oneof=%s", itemTypeValues()),
+		"item_hands_valid":            fmt.Sprintf("oneof=%s", itemHandsValues()),
+		"item_melee_reach_valid":      fmt.Sprintf("oneof=%s", itemMeleeReachValues()),
+		"item_melee_group_valid":      fmt.Sprintf("oneof=%s", itemMeleeGroupValues()),
 		"item_ranged_group_valid":     fmt.Sprintf("oneof=%s", getAllowedItemRangedGroup()),
 		"item_ammunition_group_valid": fmt.Sprintf("oneof=%s", getAllowedItemAmmunitionGroup()),
 		"item_armour_group_valid":     fmt.Sprintf("oneof=%s", getAllowedItemArmourGroup()),

@@ -23,16 +23,6 @@ const (
 	WhSourceLustria                   = "11"
 )
 
-type WhSourceMap map[WhSource]string
-
-func (input WhSourceMap) Copy() WhSourceMap {
-	output := make(WhSourceMap, len(input))
-	for key, value := range input {
-		output[key] = value
-	}
-	return output
-}
-
 func sourceValues() string {
 	return formatStringValues([]WhSource{
 		WhSourceCustom,
@@ -48,6 +38,16 @@ func sourceValues() string {
 		WhSourceSeaOfClaws,
 		WhSourceLustria,
 	})
+}
+
+type WhSourceMap map[WhSource]string
+
+func (input WhSourceMap) Copy() WhSourceMap {
+	output := make(WhSourceMap, len(input))
+	for key, value := range input {
+		output[key] = value
+	}
+	return output
 }
 
 func GetWhCommonValidationAliases() map[string]string {
