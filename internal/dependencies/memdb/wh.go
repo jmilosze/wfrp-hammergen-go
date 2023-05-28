@@ -72,7 +72,7 @@ func getOne(db *memdb.MemDB, t warhammer.WhType, whId string) (*warhammer.Wh, *d
 	if !ok {
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate wh from raw %v", whRaw)}
 	}
-	return wh.Copy(), nil
+	return wh.InitAndCopy(), nil
 }
 
 func (s *WhDbService) Create(ctx context.Context, t warhammer.WhType, w *warhammer.Wh) (*warhammer.Wh, *domain.DbError) {
@@ -100,7 +100,7 @@ func upsertWh(db *memdb.MemDB, t warhammer.WhType, w *warhammer.Wh) (*warhammer.
 	}
 	txn.Commit()
 
-	return w.Copy(), nil
+	return w.InitAndCopy(), nil
 }
 
 func (s *WhDbService) Delete(ctx context.Context, t warhammer.WhType, whId string, userId string) *domain.DbError {
@@ -142,7 +142,7 @@ func (s *WhDbService) RetrieveAll(ctx context.Context, t warhammer.WhType, users
 			return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate wh from raw %v", obj)}
 		}
 		if slices.Contains(users, wh.OwnerId) || slices.Contains(sharedUsers, wh.OwnerId) && wh.IsShared() {
-			whs = append(whs, wh.Copy())
+			whs = append(whs, wh.InitAndCopy())
 		}
 	}
 

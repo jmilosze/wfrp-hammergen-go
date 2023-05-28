@@ -31,6 +31,28 @@ var itemMelee = warhammer.Wh{
 	},
 }
 
+var itemRanged = warhammer.Wh{
+	Id:      "400000000000000000000001",
+	OwnerId: user1.Id,
+	Object: warhammer.WhItem{
+		Name:        "ranged item",
+		Description: fmt.Sprintf("owned by %s", user1.Username),
+		Price:       5,
+		Enc:         8,
+		Type:        warhammer.WhItemTypeRanged,
+		Shared:      true,
+
+		Ranged: warhammer.WhItemRanged{
+			Hands:     warhammer.WhItemHandsOne,
+			Dmg:       2,
+			DmgSbMult: 2.0,
+			Rng:       100,
+			RngSbMult: 0,
+			Group:     warhammer.WhItemRangedGroupCrossbow,
+		},
+	},
+}
+
 func NewMockItems() []*warhammer.Wh {
-	return []*warhammer.Wh{&itemMelee}
+	return []*warhammer.Wh{&itemMelee, &itemRanged}
 }

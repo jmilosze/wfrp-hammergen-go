@@ -18,28 +18,28 @@ func (p WhProperty) IsShared() bool {
 	return p.Shared
 }
 
-func (p WhProperty) Copy() WhObject {
+func (p WhProperty) InitAndCopy() WhObject {
 	return WhProperty{
 		Name:         strings.Clone(p.Name),
 		Description:  strings.Clone(p.Description),
-		Type:         p.Type.Copy(),
+		Type:         p.Type.InitAndCopy(),
 		ApplicableTo: copyApplicableTo(p.ApplicableTo),
 		Shared:       p.Shared,
-		Source:       p.Source.Copy(),
+		Source:       p.Source.InitAndCopy(),
 	}
 }
 
-func copyApplicableTo(at []WhItemType) []WhItemType {
-	r := make([]WhItemType, len(at))
-	for i, v := range at {
-		r[i] = v.Copy()
+func copyApplicableTo(input []WhItemType) []WhItemType {
+	output := make([]WhItemType, len(input))
+	for i, v := range input {
+		output[i] = v.InitAndCopy()
 	}
-	return r
+	return output
 }
 
 type WhPropertyType int
 
-func (input WhPropertyType) Copy() WhPropertyType {
+func (input WhPropertyType) InitAndCopy() WhPropertyType {
 	return input
 }
 

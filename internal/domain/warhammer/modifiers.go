@@ -6,11 +6,11 @@ type WhModifiers struct {
 	Attributes WHAttributes
 }
 
-func (m WhModifiers) Copy() WhModifiers {
+func (m WhModifiers) InitAndCopy() WhModifiers {
 	return WhModifiers{
 		Size:       m.Size,
 		Movement:   m.Movement,
-		Attributes: m.Attributes.Copy(),
+		Attributes: m.Attributes.InitAndCopy(),
 	}
 }
 
@@ -27,7 +27,7 @@ type WHAttributes struct {
 	Fel int `json:"Fel" validate:"min=-99,max=99"`
 }
 
-func (a WHAttributes) Copy() WHAttributes {
+func (a WHAttributes) InitAndCopy() WHAttributes {
 	return WHAttributes{
 		WS:  a.WS,
 		BS:  a.BS,

@@ -28,7 +28,7 @@ func itemTypeValues() string {
 		WhItemTypeOther,
 	})
 }
-func (input WhItemType) Copy() WhItemType {
+func (input WhItemType) InitAndCopy() WhItemType {
 	return input
 }
 
@@ -46,7 +46,7 @@ func itemHandsValues() string {
 	})
 }
 
-func (input WhItemHands) Copy() WhItemHands {
+func (input WhItemHands) InitAndCopy() WhItemHands {
 	return input
 }
 
@@ -74,7 +74,7 @@ func itemMeleeReachValues() string {
 	})
 }
 
-func (input WhItemMeleeReach) Copy() WhItemMeleeReach {
+func (input WhItemMeleeReach) InitAndCopy() WhItemMeleeReach {
 	return input
 }
 
@@ -104,7 +104,7 @@ func itemMeleeGroupValues() string {
 	})
 }
 
-func (input WhItemMeleeGroup) Copy() WhItemMeleeGroup {
+func (input WhItemMeleeGroup) InitAndCopy() WhItemMeleeGroup {
 	return input
 }
 
@@ -134,7 +134,7 @@ func ItemRangedGroupValues() string {
 	})
 }
 
-func (input WhItemRangedGroup) Copy() WhItemRangedGroup {
+func (input WhItemRangedGroup) InitAndCopy() WhItemRangedGroup {
 	return input
 }
 
@@ -158,7 +158,7 @@ func itemAmmunitionGroupValues() string {
 	})
 }
 
-func (input WhItemAmmunitionGroup) Copy() WhItemAmmunitionGroup {
+func (input WhItemAmmunitionGroup) InitAndCopy() WhItemAmmunitionGroup {
 	return input
 }
 
@@ -184,7 +184,7 @@ func itemArmourGroupValues() string {
 	})
 }
 
-func (input WhItemArmourGroup) Copy() WhItemArmourGroup {
+func (input WhItemArmourGroup) InitAndCopy() WhItemArmourGroup {
 	return input
 }
 
@@ -206,7 +206,7 @@ func itemArmourLocationValues() string {
 	})
 }
 
-func (input WhItemArmourLocation) Copy() WhItemArmourLocation {
+func (input WhItemArmourLocation) InitAndCopy() WhItemArmourLocation {
 	return input
 }
 
@@ -226,7 +226,7 @@ func itemCarryTypeValues() string {
 	})
 }
 
-func (input WhItemCarryType) Copy() WhItemCarryType {
+func (input WhItemCarryType) InitAndCopy() WhItemCarryType {
 	return input
 }
 
@@ -252,13 +252,13 @@ type WhItemMelee struct {
 	Group     WhItemMeleeGroup `json:"group" validate:"item_melee_group_valid"`
 }
 
-func (input WhItemMelee) Copy() WhItemMelee {
+func (input WhItemMelee) InitAndCopy() WhItemMelee {
 	return WhItemMelee{
-		Hands:     input.Hands.Copy(),
+		Hands:     input.Hands.InitAndCopy(),
 		Dmg:       input.Dmg,
 		DmgSbMult: input.DmgSbMult,
-		Reach:     input.Reach.Copy(),
-		Group:     input.Group.Copy(),
+		Reach:     input.Reach.InitAndCopy(),
+		Group:     input.Group.InitAndCopy(),
 	}
 }
 
@@ -271,14 +271,14 @@ type WhItemRanged struct {
 	Group     WhItemRangedGroup `json:"group" validate:"item_ranged_group_valid"`
 }
 
-func (input WhItemRanged) Copy() WhItemRanged {
+func (input WhItemRanged) InitAndCopy() WhItemRanged {
 	return WhItemRanged{
-		Hands:     input.Hands.Copy(),
+		Hands:     input.Hands.InitAndCopy(),
 		Dmg:       input.Dmg,
 		DmgSbMult: input.DmgSbMult,
 		Rng:       input.Rng,
 		RngSbMult: input.RngSbMult,
-		Group:     input.Group.Copy(),
+		Group:     input.Group.InitAndCopy(),
 	}
 }
 
@@ -289,26 +289,26 @@ type WhItemAmmunition struct {
 	Group   WhItemAmmunitionGroup `json:"group" validate:"item_ammunition_group_valid"`
 }
 
-func (input WhItemAmmunition) Copy() WhItemAmmunition {
+func (input WhItemAmmunition) InitAndCopy() WhItemAmmunition {
 	return WhItemAmmunition{
 		Dmg:     input.Dmg,
 		Rng:     input.Rng,
 		RngMult: input.RngMult,
-		Group:   input.Group.Copy(),
+		Group:   input.Group.InitAndCopy(),
 	}
 }
 
 type WhItemArmour struct {
-	Points   int               `json:"points" validate:"gte=100,lte=0"`
-	Location int               `json:"location" validate:"item_armour_location_valid"`
-	Group    WhItemArmourGroup `json:"group" validate:"item_armour_group_valid"`
+	Points   int                  `json:"points" validate:"gte=100,lte=0"`
+	Location WhItemArmourLocation `json:"location" validate:"item_armour_location_valid"`
+	Group    WhItemArmourGroup    `json:"group" validate:"item_armour_group_valid"`
 }
 
-func (input WhItemArmour) Copy() WhItemArmour {
+func (input WhItemArmour) InitAndCopy() WhItemArmour {
 	return WhItemArmour{
 		Points:   input.Points,
-		Location: input.Location,
-		Group:    input.Group.Copy(),
+		Location: input.Location.InitAndCopy(),
+		Group:    input.Group.InitAndCopy(),
 	}
 }
 
@@ -317,10 +317,10 @@ type WhItemContainer struct {
 	CarryType WhItemCarryType `json:"carryType" validate:"item_carry_type_valid"`
 }
 
-func (input WhItemContainer) Copy() WhItemContainer {
+func (input WhItemContainer) InitAndCopy() WhItemContainer {
 	return WhItemContainer{
 		Capacity:  input.Capacity,
-		CarryType: input.CarryType.Copy(),
+		CarryType: input.CarryType.InitAndCopy(),
 	}
 }
 
@@ -328,7 +328,7 @@ type WhItemGrimoire struct {
 	Spells []string `json:"spells" validate:"dive,id_valid"`
 }
 
-func (input WhItemGrimoire) Copy() WhItemGrimoire {
+func (input WhItemGrimoire) InitAndCopy() WhItemGrimoire {
 	return WhItemGrimoire{
 		Spells: copyStringArray(input.Spells),
 	}
@@ -338,9 +338,9 @@ type WhItemOther struct {
 	CarryType WhItemCarryType `json:"carryType" validate:"item_carry_type_valid"`
 }
 
-func (input WhItemOther) Copy() WhItemOther {
+func (input WhItemOther) InitAndCopy() WhItemOther {
 	return WhItemOther{
-		CarryType: input.CarryType.Copy(),
+		CarryType: input.CarryType.InitAndCopy(),
 	}
 }
 
@@ -367,23 +367,23 @@ func (i WhItem) IsShared() bool {
 	return i.Shared
 }
 
-func (i WhItem) Copy() WhObject {
+func (i WhItem) InitAndCopy() WhObject {
 	return WhItem{
 		Name:        strings.Clone(i.Name),
 		Description: strings.Clone(i.Description),
 		Price:       i.Price,
 		Enc:         i.Enc,
 		Properties:  copyStringArray(i.Properties),
-		Type:        i.Type.Copy(),
+		Type:        i.Type.InitAndCopy(),
 		Shared:      i.Shared,
-		Source:      i.Source.Copy(),
+		Source:      i.Source.InitAndCopy(),
 
-		Melee:      i.Melee.Copy(),
-		Ranged:     i.Ranged.Copy(),
-		Ammunition: i.Ammunition.Copy(),
-		Armour:     i.Armour.Copy(),
-		Container:  i.Container.Copy(),
-		Grimoire:   i.Grimoire.Copy(),
-		Other:      i.Other.Copy(),
+		Melee:      i.Melee.InitAndCopy(),
+		Ranged:     i.Ranged.InitAndCopy(),
+		Ammunition: i.Ammunition.InitAndCopy(),
+		Armour:     i.Armour.InitAndCopy(),
+		Container:  i.Container.InitAndCopy(),
+		Grimoire:   i.Grimoire.InitAndCopy(),
+		Other:      i.Other.InitAndCopy(),
 	}
 }

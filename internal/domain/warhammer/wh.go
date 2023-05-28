@@ -42,7 +42,7 @@ func NewWh(t WhType) (Wh, error) {
 	return wh, nil
 }
 
-func (w *Wh) Copy() *Wh {
+func (w *Wh) InitAndCopy() *Wh {
 	if w == nil {
 		return nil
 	}
@@ -50,7 +50,7 @@ func (w *Wh) Copy() *Wh {
 	return &Wh{
 		Id:      strings.Clone(w.Id),
 		OwnerId: strings.Clone(w.OwnerId),
-		Object:  w.Object.Copy(),
+		Object:  w.Object.InitAndCopy(),
 	}
 }
 
@@ -59,6 +59,6 @@ func (w *Wh) IsShared() bool {
 }
 
 type WhObject interface {
-	Copy() WhObject
+	InitAndCopy() WhObject
 	IsShared() bool
 }

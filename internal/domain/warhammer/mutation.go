@@ -18,14 +18,14 @@ func (m WhMutation) IsShared() bool {
 	return m.Shared
 }
 
-func (m WhMutation) Copy() WhObject {
+func (m WhMutation) InitAndCopy() WhObject {
 	return WhMutation{
 		Name:        strings.Clone(m.Name),
 		Description: strings.Clone(m.Description),
-		Type:        m.Type.Copy(),
-		Modifiers:   m.Modifiers.Copy(),
+		Type:        m.Type.InitAndCopy(),
+		Modifiers:   m.Modifiers.InitAndCopy(),
 		Shared:      m.Shared,
-		Source:      m.Source.Copy(),
+		Source:      m.Source.InitAndCopy(),
 	}
 }
 
@@ -40,7 +40,7 @@ func mutationTypeValues() string {
 	return formatIntegerValues([]WhMutationType{WhMutationTypePhysical, WhMutationTypeMental})
 }
 
-func (input WhMutationType) Copy() WhMutationType {
+func (input WhMutationType) InitAndCopy() WhMutationType {
 	return input
 }
 
