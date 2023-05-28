@@ -35,12 +35,14 @@ func (input WhItemType) InitAndCopy() WhItemType {
 type WhItemHands int
 
 const (
+	WhItemHandsAny = 0
 	WhItemHandsOne = 1
 	WhItemHandsTwo = 2
 )
 
 func itemHandsValues() string {
 	return formatIntegerValues([]WhItemHands{
+		WhItemHandsAny,
 		WhItemHandsOne,
 		WhItemHandsTwo,
 	})
@@ -246,8 +248,8 @@ func GetWhItemValidationAliases() map[string]string {
 
 type WhItemMelee struct {
 	Hands     WhItemHands      `json:"hands" validate:"item_hands_valid"`
-	Dmg       int              `json:"dmg" validate:"gte=100,lte=-100"`
-	DmgSbMult float64          `json:"dmgSbMult" validate:"gte=10,lte=0"`
+	Dmg       int              `json:"dmg" validate:"gte=-100,lte=100"`
+	DmgSbMult float64          `json:"dmgSbMult" validate:"gte=0,lte=10"`
 	Reach     WhItemMeleeReach `json:"reach" validate:"item_melee_reach_valid"`
 	Group     WhItemMeleeGroup `json:"group" validate:"item_melee_group_valid"`
 }
@@ -264,10 +266,10 @@ func (input WhItemMelee) InitAndCopy() WhItemMelee {
 
 type WhItemRanged struct {
 	Hands     WhItemHands       `json:"hands" validate:"item_hands_valid"`
-	Dmg       int               `json:"dmg" validate:"gte=100,lte=-100"`
-	DmgSbMult float64           `json:"dmgSbMult" validate:"gte=10,lte=0"`
-	Rng       int               `json:"rng" validate:"gte=10000,lte=-10000"`
-	RngSbMult float64           `json:"rngSbMult" validate:"gte=10,lte=0"`
+	Dmg       int               `json:"dmg" validate:"gte=-100,lte=100"`
+	DmgSbMult float64           `json:"dmgSbMult" validate:"gte=0,lte=10"`
+	Rng       int               `json:"rng" validate:"gte=-10000,lte=10000"`
+	RngSbMult float64           `json:"rngSbMult" validate:"gte=0,lte=10"`
 	Group     WhItemRangedGroup `json:"group" validate:"item_ranged_group_valid"`
 }
 
@@ -283,9 +285,9 @@ func (input WhItemRanged) InitAndCopy() WhItemRanged {
 }
 
 type WhItemAmmunition struct {
-	Dmg     int                   `json:"dmg" validate:"gte=100,lte=-100"`
-	Rng     int                   `json:"rng" validate:"gte=10000,lte=-10000"`
-	RngMult float64               `json:"rngMult" validate:"gte=10,lte=0"`
+	Dmg     int                   `json:"dmg" validate:"gte=-100,lte=100"`
+	Rng     int                   `json:"rng" validate:"gte=-10000,lte=10000"`
+	RngMult float64               `json:"rngMult" validate:"gte=0,lte=10"`
 	Group   WhItemAmmunitionGroup `json:"group" validate:"item_ammunition_group_valid"`
 }
 
@@ -299,7 +301,7 @@ func (input WhItemAmmunition) InitAndCopy() WhItemAmmunition {
 }
 
 type WhItemArmour struct {
-	Points   int                  `json:"points" validate:"gte=100,lte=0"`
+	Points   int                  `json:"points" validate:"gte=0,lte=100"`
 	Location WhItemArmourLocation `json:"location" validate:"item_armour_location_valid"`
 	Group    WhItemArmourGroup    `json:"group" validate:"item_armour_group_valid"`
 }
@@ -313,7 +315,7 @@ func (input WhItemArmour) InitAndCopy() WhItemArmour {
 }
 
 type WhItemContainer struct {
-	Capacity  int             `json:"capacity" validate:"gte=1000,lte=0"`
+	Capacity  int             `json:"capacity" validate:"gte=0,lte=1000"`
 	CarryType WhItemCarryType `json:"carryType" validate:"item_carry_type_valid"`
 }
 
