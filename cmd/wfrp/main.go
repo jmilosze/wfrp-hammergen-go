@@ -55,10 +55,12 @@ func run() error {
 		mockSpells := mock.NewMockSpells()
 		mockProperties := mock.NewMockProperties()
 		mockItems := mock.NewMockItems()
+		mockTalents := mock.NewMockTalents()
 		whService.SeedWh(ctx, warhammer.WhTypeMutation, mockMutations)
 		whService.SeedWh(ctx, warhammer.WhTypeSpell, mockSpells)
 		whService.SeedWh(ctx, warhammer.WhTypeProperty, mockProperties)
 		whService.SeedWh(ctx, warhammer.WhTypeItem, mockItems)
+		whService.SeedWh(ctx, warhammer.WhTypeTalent, mockTalents)
 	}
 
 	router := gin.NewRouter(cfg.Server.RequestTimeout)
