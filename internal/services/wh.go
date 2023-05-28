@@ -48,7 +48,7 @@ func (s *WhService) Create(ctx context.Context, t warhammer.WhType, w *warhammer
 	}
 	w.Id = hex.EncodeToString(xid.New().Bytes())
 
-	createdWh, dbErr := s.WhDbService.Create(ctx, t, w)
+	createdWh, dbErr := s.WhDbService.Create(ctx, t, w.InitAndCopy())
 	if dbErr != nil {
 		return nil, &warhammer.WhError{WhType: t, ErrType: user.UserInternalError, Err: dbErr}
 	}
@@ -105,7 +105,7 @@ func (s *WhService) Update(ctx context.Context, t warhammer.WhType, w *warhammer
 		w.OwnerId = c.Id
 	}
 
-	updatedWh, dbErr := s.WhDbService.Update(ctx, t, w, c.Id)
+	updatedWh, dbErr := s.WhDbService.Update(ctx, t, w.InitAndCopy(), c.Id)
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
