@@ -6,12 +6,20 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
 )
 
-func InitUser(ctx context.Context, s user.UserService) {
+type CanSeedUsers interface {
+	SeedUsers(ctx context.Context, us []*user.User)
+}
+
+func InitUser(ctx context.Context, s CanSeedUsers) {
 	s.SeedUsers(ctx, NewMockUsers())
 
 }
 
-func InitWh(ctx context.Context, s warhammer.WhService) {
+type CanSeedWh interface {
+	SeedWh(ctx context.Context, t warhammer.WhType, whs []*warhammer.Wh)
+}
+
+func InitWh(ctx context.Context, s CanSeedWh) {
 	s.SeedWh(ctx, warhammer.WhTypeMutation, NewMockMutations())
 	s.SeedWh(ctx, warhammer.WhTypeSpell, NewMockSpells())
 	s.SeedWh(ctx, warhammer.WhTypeProperty, NewMockProperties())

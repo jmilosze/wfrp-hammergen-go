@@ -6,8 +6,6 @@ import (
 )
 
 type WhService interface {
-	SeedWh(ctx context.Context, t WhType, whs []*Wh)
-
 	Create(ctx context.Context, t WhType, w *Wh, c *domain.Claims) (*Wh, *WhError)
 	Get(ctx context.Context, t WhType, whId string, c *domain.Claims) (*Wh, *WhError)
 	Update(ctx context.Context, t WhType, w *Wh, c *domain.Claims) (*Wh, *WhError)
