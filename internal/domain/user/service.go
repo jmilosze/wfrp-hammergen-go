@@ -6,6 +6,8 @@ import (
 )
 
 type UserService interface {
+	SeedUsers(ctx context.Context, us []*User)
+
 	Get(ctx context.Context, c *domain.Claims, id string) (*User, *UserError)
 	Exists(ctx context.Context, username string) (bool, *UserError)
 	Create(ctx context.Context, u *User) (*User, *UserError)
