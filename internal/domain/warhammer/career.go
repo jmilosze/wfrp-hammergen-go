@@ -58,7 +58,7 @@ type WhCareerLevel struct {
 	Attributes []WhAttribute    `json:"attributes" validate:"dive,att_type_valid"`
 	Skills     []string         `json:"skills" validate:"dive,id_valid"`
 	Talents    []string         `json:"talents" validate:"dive,id_valid"`
-	Items      []string         `json:"items" validate:"dive,id_valid"`
+	Items      string           `json:"items" validate:"desc_valid"`
 }
 
 func (input WhCareerLevel) InitAndCopy() WhCareerLevel {
@@ -69,35 +69,35 @@ func (input WhCareerLevel) InitAndCopy() WhCareerLevel {
 		Attributes: copyIntArray(input.Attributes),
 		Skills:     copyStringArray(input.Skills),
 		Talents:    copyStringArray(input.Talents),
-		Items:      copyStringArray(input.Items),
+		Items:      strings.Clone(input.Items),
 	}
 }
 
 type WhCareerClass int
 
 const (
-	WhCareerClassAcademic   = 0
-	WhCareerClassBurghers   = 1
-	WhCareerStatusCourtier  = 2
-	WhCareerStatusPeasant   = 3
-	WhCareerStatusRanger    = 4
-	WhCareerStatusRiverfolk = 5
-	WhCareerStatusRouge     = 6
-	WhCareerStatusWarrior   = 7
-	WhCareerStatusSeafarer  = 8
+	WhCareerClassAcademic  = 0
+	WhCareerClassBurghers  = 1
+	WhCareerClassCourtier  = 2
+	WhCareerClassPeasant   = 3
+	WhCareerClassRanger    = 4
+	WhCareerClassRiverfolk = 5
+	WhCareerClassRouge     = 6
+	WhCareerClassWarrior   = 7
+	WhCareerClassSeafarer  = 8
 )
 
 func classValues() string {
 	return formatIntegerValues([]WhCareerClass{
 		WhCareerClassAcademic,
 		WhCareerClassBurghers,
-		WhCareerStatusCourtier,
-		WhCareerStatusPeasant,
-		WhCareerStatusRanger,
-		WhCareerStatusRiverfolk,
-		WhCareerStatusRouge,
-		WhCareerStatusWarrior,
-		WhCareerStatusSeafarer,
+		WhCareerClassCourtier,
+		WhCareerClassPeasant,
+		WhCareerClassRanger,
+		WhCareerClassRiverfolk,
+		WhCareerClassRouge,
+		WhCareerClassWarrior,
+		WhCareerClassSeafarer,
 	})
 }
 
@@ -124,7 +124,7 @@ func speciesValues() string {
 		WhCareerSpeciesDwarf,
 		WhCareerSpeciesHighElf,
 		WhCareerSpeciesWoodElf,
-		WhCareerStatusRiverfolk,
+		WhCareerClassRiverfolk,
 		WhCareerSpeciesGnome,
 		WhCareerSpeciesOgre,
 	})
