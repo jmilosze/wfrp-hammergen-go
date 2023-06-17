@@ -25,7 +25,16 @@ const (
 
 type WhType string
 
-var WhTypes = []WhType{WhTypeMutation, WhTypeSpell, WhTypeProperty, WhTypeItem, WhTypeTalent, WhTypeSkill, WhTypeCareer}
+var WhTypes = []WhType{
+	WhTypeMutation,
+	WhTypeSpell,
+	WhTypeProperty,
+	WhTypeItem,
+	WhTypeTalent,
+	WhTypeSkill,
+	WhTypeCareer,
+	WhTypeCharacter,
+}
 
 func NewWh(t WhType) (Wh, error) {
 	var wh Wh

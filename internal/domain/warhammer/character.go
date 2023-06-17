@@ -87,6 +87,9 @@ func characterSpeciesValues() string {
 	})
 }
 func (input WhCharacterSpecies) InitAndCopy() WhCharacterSpecies {
+	if input == "" {
+		return WhCharacterSpeciesHumanDefault
+	}
 	return WhCharacterSpecies(strings.Clone(string(input)))
 }
 
@@ -107,8 +110,8 @@ type WhCharacter struct {
 	EquippedItems     WhIdNumberMap      `json:"equippedItems" validate:"id_number_map_valid"`
 	CarriedItems      WhIdNumberMap      `json:"carriedItems" validate:"id_number_map_valid"`
 	StoredItems       WhIdNumberMap      `json:"storedItems" validate:"id_number_map_valid"`
-	Skills            []string           `json:"skills" validate:"dive,id_valid"`
-	Talents           []string           `json:"talents" validate:"dive,id_valid"`
+	Skills            WhIdNumberMap      `json:"skills" validate:"id_number_map_valid"`
+	Talents           WhIdNumberMap      `json:"talents" validate:"id_number_map_valid"`
 	Species           WhCharacterSpecies `json:"species" validate:"character_species_valid"`
 	BaseAttributes    WhAttributes
 	AttributeAdvances WhAttributes
@@ -144,8 +147,8 @@ func (c WhCharacter) InitAndCopy() WhObject {
 		EquippedItems:     c.EquippedItems.InitAndCopy(),
 		CarriedItems:      c.CarriedItems.InitAndCopy(),
 		StoredItems:       c.StoredItems.InitAndCopy(),
-		Skills:            copyStringArray(c.Skills),
-		Talents:           copyStringArray(c.Talents),
+		Skills:            c.Skills.InitAndCopy(),
+		Talents:           c.Talents.InitAndCopy(),
 		Species:           c.Species.InitAndCopy(),
 		BaseAttributes:    c.BaseAttributes.InitAndCopy(),
 		AttributeAdvances: c.AttributeAdvances.InitAndCopy(),

@@ -27,4 +27,5 @@ func InitWh(ctx context.Context, s CanSeedWh) {
 	s.SeedWh(ctx, warhammer.WhTypeTalent, NewMockTalents())
 	s.SeedWh(ctx, warhammer.WhTypeSkill, NewMockSkills())
 	s.SeedWh(ctx, warhammer.WhTypeCareer, NewMockCareers())
+	s.SeedWh(ctx, warhammer.WhTypeCharacter, NewMockCharacter())
 }
