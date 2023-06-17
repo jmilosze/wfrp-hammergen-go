@@ -13,13 +13,14 @@ type Wh struct {
 }
 
 const (
-	WhTypeMutation = "mutation"
-	WhTypeSpell    = "spell"
-	WhTypeProperty = "property"
-	WhTypeItem     = "item"
-	WhTypeTalent   = "talent"
-	WhTypeSkill    = "skill"
-	WhTypeCareer   = "career"
+	WhTypeMutation  = "mutation"
+	WhTypeSpell     = "spell"
+	WhTypeProperty  = "property"
+	WhTypeItem      = "item"
+	WhTypeTalent    = "talent"
+	WhTypeSkill     = "skill"
+	WhTypeCareer    = "career"
+	WhTypeCharacter = "character"
 )
 
 type WhType string
@@ -44,6 +45,8 @@ func NewWh(t WhType) (Wh, error) {
 		wh.Object = &WhSkill{}
 	case WhTypeCareer:
 		wh.Object = &WhCareer{}
+	case WhTypeCharacter:
+		wh.Object = &WhCharacter{}
 	default:
 		return wh, fmt.Errorf("invalid Wh type %s", t)
 	}
