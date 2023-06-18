@@ -10,7 +10,7 @@ type WhService interface {
 	Get(ctx context.Context, t WhType, whId string, c *domain.Claims) (*Wh, *WhError)
 	Update(ctx context.Context, t WhType, w *Wh, c *domain.Claims) (*Wh, *WhError)
 	Delete(ctx context.Context, t WhType, whId string, c *domain.Claims) *WhError
-	List(ctx context.Context, t WhType, c *domain.Claims) ([]*Wh, *WhError)
+	List(ctx context.Context, t WhType, c *domain.Claims, whIds []string) ([]*Wh, *WhError)
 }
 
 type WhDbService interface {
@@ -18,5 +18,5 @@ type WhDbService interface {
 	Retrieve(ctx context.Context, t WhType, whId string, userIds []string, sharedUserIds []string) (*Wh, *domain.DbError)
 	Update(ctx context.Context, t WhType, wh *Wh, userId string) (*Wh, *domain.DbError)
 	Delete(ctx context.Context, t WhType, whId string, userId string) *domain.DbError
-	RetrieveAll(ctx context.Context, t WhType, userIds []string, sharedUserIds []string) ([]*Wh, *domain.DbError)
+	RetrieveMany(ctx context.Context, t WhType, userIds []string, sharedUserIds []string, whIds []string) ([]*Wh, *domain.DbError)
 }

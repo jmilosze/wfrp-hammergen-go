@@ -128,7 +128,7 @@ func (s *WhDbService) Delete(ctx context.Context, t warhammer.WhType, whId strin
 	return nil
 }
 
-func (s *WhDbService) RetrieveAll(ctx context.Context, t warhammer.WhType, users []string, sharedUsers []string) ([]*warhammer.Wh, *domain.DbError) {
+func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, users []string, sharedUsers []string, whIds []string) ([]*warhammer.Wh, *domain.DbError) {
 	txn := s.Db.Txn(false)
 	it, err := txn.Get(string(t), "id")
 	if err != nil {
@@ -141,8 +141,10 @@ func (s *WhDbService) RetrieveAll(ctx context.Context, t warhammer.WhType, users
 		if !ok {
 			return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate wh from raw %v", obj)}
 		}
-		if slices.Contains(users, wh.OwnerId) || slices.Contains(sharedUsers, wh.OwnerId) && wh.IsShared() {
-			whs = append(whs, wh.InitAndCopy())
+		if slices.Contains(whIds, wh.Id) || len(whIds) == 0 {
+			if slices.Contains(users, wh.OwnerId) || slices.Contains(sharedUsers, wh.OwnerId) && wh.IsShared() {
+				whs = append(whs, wh.InitAndCopy())
+			}
 		}
 	}
 

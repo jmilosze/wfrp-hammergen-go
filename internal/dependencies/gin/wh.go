@@ -167,8 +167,9 @@ func whDeleteHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Contex
 func whListHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context) {
 	return func(c *gin.Context) {
 		claims := getUserClaims(c)
+		ids, _ := c.GetQueryArray("id")
 
-		whs, whErr := s.List(c.Request.Context(), t, claims)
+		whs, whErr := s.List(c.Request.Context(), t, claims, ids)
 
 		if whErr != nil {
 			c.JSON(ServerErrResp(""))

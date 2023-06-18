@@ -66,6 +66,18 @@ func allAllowedOwnersQuery(userIds []string, sharedUserIds []string) bson.M {
 	return bson.M{"$or": owners}
 }
 
+func idsQuery(whIds []string) (bson.M, error) {
+	ids := bson.A{}
+	for _, v := range whIds {
+		id, err := primitive.ObjectIDFromHex(v)
+		if err != nil {
+			return nil, errors.New("invalid id")
+		}
+		ids = append(ids, bson.M{"_id": id})
+	}
+	return bson.M{"$or": ids}, nil
+}
+
 func bsonMToWh(whMap bson.M, t warhammer.WhType) (*warhammer.Wh, error) {
 	id, ok := whMap["_id"].(primitive.ObjectID)
 	if !ok {
@@ -178,8 +190,18 @@ func (s *WhDbService) Delete(ctx context.Context, t warhammer.WhType, whId strin
 	return nil
 }
 
-func (s *WhDbService) RetrieveAll(ctx context.Context, t warhammer.WhType, userIds []string, sharedUserIds []string) ([]*warhammer.Wh, *d.DbError) {
-	filter := allAllowedOwnersQuery(userIds, sharedUserIds)
+func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, userIds []string, sharedUserIds []string, whIds []string) ([]*warhammer.Wh, *d.DbError) {
+	var filter bson.M
+
+	if len(whIds) != 0 {
+		ids, err := idsQuery(whIds)
+		if err != nil {
+			return nil, d.CreateDbError(d.DbInternalError, err)
+		}
+		filter = bson.M{"$and": bson.A{ids, allAllowedOwnersQuery(userIds, sharedUserIds)}}
+	} else {
+		filter = allAllowedOwnersQuery(userIds, sharedUserIds)
+	}
 
 	cur, err := s.Collections[t].Find(ctx, filter)
 	defer cur.Close(ctx)
