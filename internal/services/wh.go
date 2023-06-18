@@ -155,3 +155,17 @@ func (s *WhService) List(ctx context.Context, t warhammer.WhType, c *domain.Clai
 
 	return whs, nil
 }
+
+func (s *WhService) GetGenerationProps(ctx context.Context) (map[string]any, *warhammer.WhError) {
+	generationPropsMap, dbErr := s.WhDbService.RetrieveGenerationProps(ctx)
+	if dbErr != nil {
+		switch dbErr.Type {
+		case domain.DbNotFoundError:
+			return nil, &warhammer.WhError{ErrType: warhammer.WhNotFoundError, Err: dbErr}
+		default:
+			return nil, &warhammer.WhError{ErrType: warhammer.WhInternalError, Err: dbErr}
+		}
+	}
+
+	return generationPropsMap, nil
+}

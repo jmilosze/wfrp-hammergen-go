@@ -18,7 +18,7 @@ type WhDbService struct {
 func NewWhDbService(db *DbService) *WhDbService {
 	collections := map[warhammer.WhType]*mongo.Collection{}
 
-	for _, whType := range warhammer.WhTypes {
+	for _, whType := range warhammer.WhApiTypes {
 		collections[whType] = db.Client.Database(db.DbName).Collection(string(whType))
 	}
 	return &WhDbService{Db: db, Collections: collections}
@@ -89,7 +89,7 @@ func bsonMToWh(whMap bson.M, t warhammer.WhType) (*warhammer.Wh, error) {
 		return nil, errors.New("invalid owner id")
 	}
 
-	wh, err := warhammer.NewWh(t)
+	wh, err := warhammer.NewApiWh(t)
 	if err != nil {
 		return nil, err
 	}

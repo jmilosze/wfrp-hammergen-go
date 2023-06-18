@@ -28,7 +28,7 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 		Tables: map[string]*memdb.TableSchema{},
 	}
 
-	for _, whType := range warhammer.WhTypes {
+	for _, whType := range warhammer.WhApiTypes {
 		schema.Tables[string(whType)] = &memdb.TableSchema{
 			Name: string(whType),
 			Indexes: map[string]*memdb.IndexSchema{
@@ -39,6 +39,23 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 				},
 			},
 		}
+
+	}
+
+	schema.Tables[warhammer.WhTypeOther] = &memdb.TableSchema{
+		Name: warhammer.WhTypeOther,
+		Indexes: map[string]*memdb.IndexSchema{
+			"id": {
+				Name:    "id",
+				Unique:  true,
+				Indexer: &memdb.StringFieldIndex{Field: "Id"},
+			},
+			"name": {
+				Name:    "name",
+				Unique:  true,
+				Indexer: &memdb.StringFieldIndex{Field: "Name"},
+			},
+		},
 	}
 
 	return memdb.NewMemDB(schema)
@@ -149,4 +166,17 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 	}
 
 	return whs, nil
+}
+func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (map[string]any, *domain.DbError) {
+	txn := s.Db.Txn(false)
+	raw, err := txn.First(warhammer.WhTypeOther, "name", "generationProps")
+	if err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+
+	if raw == nil {
+		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("generationProps not found")}
+	}
+
+	return raw, nil
 }

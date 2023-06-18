@@ -1,6 +1,7 @@
 package warhammer
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -21,11 +22,12 @@ const (
 	WhTypeSkill     = "skill"
 	WhTypeCareer    = "career"
 	WhTypeCharacter = "character"
+	WhTypeOther     = "other"
 )
 
 type WhType string
 
-var WhTypes = []WhType{
+var WhApiTypes = []WhType{
 	WhTypeMutation,
 	WhTypeSpell,
 	WhTypeProperty,
@@ -36,7 +38,7 @@ var WhTypes = []WhType{
 	WhTypeCharacter,
 }
 
-func NewWh(t WhType) (Wh, error) {
+func NewApiWh(t WhType) (Wh, error) {
 	var wh Wh
 
 	switch t {
@@ -82,4 +84,34 @@ func (w *Wh) IsShared() bool {
 type WhObject interface {
 	InitAndCopy() WhObject
 	IsShared() bool
+}
+
+func (w *Wh) ToMap() (map[string]any, error) {
+	whMap, err := structToMap(w.Object)
+	if err != nil {
+		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)
+	}
+	whMap["id"] = w.Id
+	whMap["ownerId"] = w.OwnerId
+	whMap["canEdit"] = w.CanEdit
+
+	return whMap, nil
+}
+
+func structToMap(m any) (map[string]any, error) {
+	a, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	var res map[string]any
+	err = json.Unmarshal(a, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	if res == nil {
+		res = map[string]any{}
+	}
+
+	return res, nil
 }
