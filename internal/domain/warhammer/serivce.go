@@ -11,7 +11,7 @@ type WhService interface {
 	Update(ctx context.Context, t WhType, w *Wh, c *domain.Claims) (*Wh, *WhError)
 	Delete(ctx context.Context, t WhType, whId string, c *domain.Claims) *WhError
 	List(ctx context.Context, t WhType, c *domain.Claims, whIds []string) ([]*Wh, *WhError)
-	GetGenerationProps(ctx context.Context) (map[string]any, *WhError)
+	GetGenerationProps(ctx context.Context) (*WhGenerationProp, *WhError)
 }
 
 type WhDbService interface {
@@ -20,5 +20,5 @@ type WhDbService interface {
 	Update(ctx context.Context, t WhType, wh *Wh, userId string) (*Wh, *domain.DbError)
 	Delete(ctx context.Context, t WhType, whId string, userId string) *domain.DbError
 	RetrieveMany(ctx context.Context, t WhType, userIds []string, sharedUserIds []string, whIds []string) ([]*Wh, *domain.DbError)
-	RetrieveGenerationProps(ctx context.Context) (map[string]any, *domain.DbError)
+	RetrieveGenerationProps(ctx context.Context) (*WhGenerationProp, *domain.DbError)
 }

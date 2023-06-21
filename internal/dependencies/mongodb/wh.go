@@ -21,6 +21,8 @@ func NewWhDbService(db *DbService) *WhDbService {
 	for _, whType := range warhammer.WhApiTypes {
 		collections[whType] = db.Client.Database(db.DbName).Collection(string(whType))
 	}
+	collections[warhammer.WhTypeOther] = db.Client.Database(db.DbName).Collection(warhammer.WhTypeOther)
+
 	return &WhDbService{Db: db, Collections: collections}
 }
 
@@ -228,4 +230,20 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 	}
 
 	return whList, nil
+}
+
+func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProp, *d.DbError) {
+	filter := bson.M{"name": "generationProps"}
+	var genProps *warhammer.WhGenerationProp
+
+	err := s.Collections[warhammer.WhTypeOther].FindOne(ctx, filter).Decode(genProps)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, d.CreateDbError(d.DbNotFoundError, err)
+		} else {
+			return nil, d.CreateDbError(d.DbInternalError, err)
+		}
+	}
+
+	return genProps, nil
 }

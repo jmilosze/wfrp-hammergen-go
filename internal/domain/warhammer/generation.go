@@ -59,7 +59,11 @@ type WhGenerationProp struct {
 	SpeciesSkills  map[WhCharacterSpecies]string           `json:"speciesSkills"`
 }
 
-func (input WhGenerationProp) InitAndCopy() WhGenerationProp {
+func (input *WhGenerationProp) InitAndCopy() *WhGenerationProp {
+
+	if input == nil {
+		return nil
+	}
 
 	classItems := make(map[WhCareerClass]WhItems, len(input.ClassItems))
 	for k, v := range input.ClassItems {
@@ -81,7 +85,7 @@ func (input WhGenerationProp) InitAndCopy() WhGenerationProp {
 		speciesSkills[k] = strings.Clone(v)
 	}
 
-	return WhGenerationProp{
+	return &WhGenerationProp{
 		ClassItems:     classItems,
 		RandomTalents:  randomTalents,
 		SpeciesTalents: speciesTalents,
