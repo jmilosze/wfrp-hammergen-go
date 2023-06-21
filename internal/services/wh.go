@@ -156,7 +156,7 @@ func (s *WhService) List(ctx context.Context, t warhammer.WhType, c *domain.Clai
 	return whs, nil
 }
 
-func (s *WhService) GetGenerationProps(ctx context.Context) (map[string]any, *warhammer.WhError) {
+func (s *WhService) GetGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *warhammer.WhError) {
 	generationPropsMap, dbErr := s.WhDbService.RetrieveGenerationProps(ctx)
 	if dbErr != nil {
 		switch dbErr.Type {

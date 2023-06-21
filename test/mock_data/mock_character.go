@@ -12,25 +12,25 @@ var character0 = warhammer.Wh{
 		Name:        "character 0",
 		Description: fmt.Sprintf("owned by %s", user1.Username),
 		Notes:       "some notes",
-		EquippedItems: warhammer.WhIdNumberMap{
-			itemArmour.Id: 1,
-			itemMelee.Id:  2,
+		EquippedItems: []warhammer.WhIdNumber{
+			{Id: itemArmour.Id, Number: 1},
+			{Id: itemMelee.Id, Number: 2},
 		},
-		CarriedItems: warhammer.WhIdNumberMap{
-			itemRanged.Id:     1,
-			itemAmmunition.Id: 200,
+		CarriedItems: []warhammer.WhIdNumber{
+			{Id: itemRanged.Id, Number: 1},
+			{Id: itemAmmunition.Id, Number: 200},
 		},
-		StoredItems: warhammer.WhIdNumberMap{
-			itemGrimoire.Id: 1,
-			itemOther.Id:    100,
+		StoredItems: []warhammer.WhIdNumber{
+			{Id: itemGrimoire.Id, Number: 1},
+			{Id: itemOther.Id, Number: 100},
 		},
-		Skills: warhammer.WhIdNumberMap{
-			skill0.Id: 1,
-			skill1.Id: 10,
+		Skills: []warhammer.WhIdNumber{
+			{Id: skill0.Id, Number: 1},
+			{Id: skill1.Id, Number: 10},
 		},
-		Talents: warhammer.WhIdNumberMap{
-			talent0.Id: 1,
-			talent1.Id: 5,
+		Talents: []warhammer.WhIdNumber{
+			{Id: talent0.Id, Number: 1},
+			{Id: talent1.Id, Number: 5},
 		},
 		Species: warhammer.WhCharacterSpeciesHalflingBrandysnap,
 		BaseAttributes: warhammer.WhAttributes{

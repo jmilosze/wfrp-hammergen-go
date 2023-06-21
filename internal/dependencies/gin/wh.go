@@ -172,6 +172,12 @@ func whGenerationPropsHandler(s warhammer.WhService) func(*gin.Context) {
 			return
 		}
 
-		c.JSON(OkResp(generationPropsMap))
+		returnData, err := generationPropsMap.ToMap()
+		if err != nil {
+			c.JSON(ServerErrResp(""))
+			return
+		}
+
+		c.JSON(OkResp(returnData))
 	}
 }

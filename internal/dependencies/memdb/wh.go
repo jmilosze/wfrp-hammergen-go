@@ -168,7 +168,7 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 	return whs, nil
 }
 
-func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProp, *domain.DbError) {
+func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *domain.DbError) {
 	txn := s.Db.Txn(false)
 	raw, err := txn.First(warhammer.WhTypeOther, "name", "generationProps")
 	if err != nil {
@@ -179,7 +179,7 @@ func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.W
 		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("generationProps not found")}
 	}
 
-	genProp, ok := raw.(*warhammer.WhGenerationProp)
+	genProp, ok := raw.(*warhammer.WhGenerationProps)
 	if !ok {
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate generationProp from raw %v", raw)}
 	}

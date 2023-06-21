@@ -1,6 +1,19 @@
 package warhammer
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+type WhIdNumberMap map[string]int
+
+func (input WhIdNumberMap) InitAndCopy() WhIdNumberMap {
+	output := make(WhIdNumberMap, len(input))
+	for key, value := range input {
+		output[key] = value
+	}
+	return output
+}
 
 type WhItems struct {
 	Equipped WhIdNumberMap `json:"equipped"`
@@ -52,44 +65,57 @@ func (input WhSpeciesTalents) InitAndCopy() WhSpeciesTalents {
 	return WhSpeciesTalents{Single: single, Multiple: multiple}
 }
 
-type WhGenerationProp struct {
+type WhGenerationProps struct {
 	ClassItems     map[WhCareerClass]WhItems               `json:"classItems"`
 	RandomTalents  []WhRandomTalent                        `json:"randomTalents"`
 	SpeciesTalents map[WhCharacterSpecies]WhSpeciesTalents `json:"speciesTalents"`
 	SpeciesSkills  map[WhCharacterSpecies]string           `json:"speciesSkills"`
 }
 
-func (input *WhGenerationProp) InitAndCopy() *WhGenerationProp {
+func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
 
-	if input == nil {
+	if gprops == nil {
 		return nil
 	}
 
-	classItems := make(map[WhCareerClass]WhItems, len(input.ClassItems))
-	for k, v := range input.ClassItems {
+	classItems := make(map[WhCareerClass]WhItems, len(gprops.ClassItems))
+	for k, v := range gprops.ClassItems {
 		classItems[k] = v.InitAndCopy()
 	}
 
-	randomTalents := make([]WhRandomTalent, len(input.RandomTalents))
-	for k, v := range input.RandomTalents {
+	randomTalents := make([]WhRandomTalent, len(gprops.RandomTalents))
+	for k, v := range gprops.RandomTalents {
 		randomTalents[k] = v.InitAndCopy()
 	}
 
-	speciesTalents := make(map[WhCharacterSpecies]WhSpeciesTalents, len(input.SpeciesTalents))
-	for k, v := range input.SpeciesTalents {
+	speciesTalents := make(map[WhCharacterSpecies]WhSpeciesTalents, len(gprops.SpeciesTalents))
+	for k, v := range gprops.SpeciesTalents {
 		speciesTalents[k] = v.InitAndCopy()
 	}
 
-	speciesSkills := make(map[WhCharacterSpecies]string, len(input.SpeciesSkills))
-	for k, v := range input.SpeciesSkills {
+	speciesSkills := make(map[WhCharacterSpecies]string, len(gprops.SpeciesSkills))
+	for k, v := range gprops.SpeciesSkills {
 		speciesSkills[k] = strings.Clone(v)
 	}
 
-	return &WhGenerationProp{
+	return &WhGenerationProps{
 		ClassItems:     classItems,
 		RandomTalents:  randomTalents,
 		SpeciesTalents: speciesTalents,
 		SpeciesSkills:  speciesSkills,
 	}
+}
 
+func (gprops *WhGenerationProps) ToMap() (map[string]any, error) {
+	gMap, err := structToMap(gprops)
+	if err != nil {
+		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)
+	}
+	return gMap, nil
+}
+
+func GetWhGenerationPropsValidationAliases() map[string]string {
+	return map[string]string{
+		"id_number_map_valid": "dive,keys,id_valid,endkeys,gte=1,lte=1000",
+	}
 }

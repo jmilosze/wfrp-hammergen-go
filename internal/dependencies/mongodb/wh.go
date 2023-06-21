@@ -232,9 +232,9 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 	return whList, nil
 }
 
-func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProp, *d.DbError) {
+func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *d.DbError) {
 	filter := bson.M{"name": "generationProps"}
-	var genProps *warhammer.WhGenerationProp
+	var genProps *warhammer.WhGenerationProps
 
 	err := s.Collections[warhammer.WhTypeOther].FindOne(ctx, filter).Decode(genProps)
 	if err != nil {

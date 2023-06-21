@@ -93,12 +93,22 @@ func (input WhCharacterSpecies) InitAndCopy() WhCharacterSpecies {
 	return WhCharacterSpecies(strings.Clone(string(input)))
 }
 
-type WhIdNumberMap map[string]int
+type WhIdNumber struct {
+	Id     string `json:"id" validate:"id_valid"`
+	Number int    `json:"number" validate:"gte=1,lte=1000"`
+}
 
-func (input WhIdNumberMap) InitAndCopy() WhIdNumberMap {
-	output := make(WhIdNumberMap, len(input))
-	for key, value := range input {
-		output[key] = value
+func (input WhIdNumber) InitAndCopy() WhIdNumber {
+	return WhIdNumber{
+		Id:     strings.Clone(input.Id),
+		Number: input.Number,
+	}
+}
+
+func copyArrayIdNumber(input []WhIdNumber) []WhIdNumber {
+	output := make([]WhIdNumber, len(input))
+	for i, v := range input {
+		output[i] = v.InitAndCopy()
 	}
 	return output
 }
@@ -107,11 +117,11 @@ type WhCharacter struct {
 	Name              string             `json:"name" validate:"name_valid"`
 	Description       string             `json:"description" validate:"desc_valid"`
 	Notes             string             `json:"notes" validate:"desc_valid"`
-	EquippedItems     WhIdNumberMap      `json:"equippedItems" validate:"id_number_map_valid"`
-	CarriedItems      WhIdNumberMap      `json:"carriedItems" validate:"id_number_map_valid"`
-	StoredItems       WhIdNumberMap      `json:"storedItems" validate:"id_number_map_valid"`
-	Skills            WhIdNumberMap      `json:"skills" validate:"id_number_map_valid"`
-	Talents           WhIdNumberMap      `json:"talents" validate:"id_number_map_valid"`
+	EquippedItems     []WhIdNumber       `json:"equippedItems" validate:"dive"`
+	CarriedItems      []WhIdNumber       `json:"carriedItems" validate:"dive"`
+	StoredItems       []WhIdNumber       `json:"storedItems" validate:"dive"`
+	Skills            []WhIdNumber       `json:"skills" validate:"dive"`
+	Talents           []WhIdNumber       `json:"talents" validate:"dive"`
 	Species           WhCharacterSpecies `json:"species" validate:"character_species_valid"`
 	BaseAttributes    WhAttributes
 	AttributeAdvances WhAttributes
@@ -144,11 +154,11 @@ func (c WhCharacter) InitAndCopy() WhObject {
 		Name:              strings.Clone(c.Name),
 		Description:       strings.Clone(c.Description),
 		Notes:             strings.Clone(c.Notes),
-		EquippedItems:     c.EquippedItems.InitAndCopy(),
-		CarriedItems:      c.CarriedItems.InitAndCopy(),
-		StoredItems:       c.StoredItems.InitAndCopy(),
-		Skills:            c.Skills.InitAndCopy(),
-		Talents:           c.Talents.InitAndCopy(),
+		EquippedItems:     copyArrayIdNumber(c.EquippedItems),
+		CarriedItems:      copyArrayIdNumber(c.CarriedItems),
+		StoredItems:       copyArrayIdNumber(c.StoredItems),
+		Skills:            copyArrayIdNumber(c.Skills),
+		Talents:           copyArrayIdNumber(c.Talents),
 		Species:           c.Species.InitAndCopy(),
 		BaseAttributes:    c.BaseAttributes.InitAndCopy(),
 		AttributeAdvances: c.AttributeAdvances.InitAndCopy(),
@@ -176,6 +186,5 @@ func (c WhCharacter) InitAndCopy() WhObject {
 func GetWhCharacterValidationAliases() map[string]string {
 	return map[string]string{
 		"character_species_valid": fmt.Sprintf("oneof=%s", characterSpeciesValues()),
-		"id_number_map_valid":     "dive,keys,id_valid,endkeys,gte=1,lte=1000",
 	}
 }
