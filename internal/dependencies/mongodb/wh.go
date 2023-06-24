@@ -247,3 +247,15 @@ func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.W
 
 	return genProps, nil
 }
+
+func (s *WhDbService) CreateGenerationProps(ctx context.Context, gp *warhammer.WhGenerationProps) (*warhammer.WhGenerationProps, *d.DbError) {
+	_, err := s.Collections[warhammer.WhTypeOther].InsertOne(ctx, gp)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return nil, d.CreateDbError(d.DbAlreadyExistsError, err)
+		}
+		return nil, d.CreateDbError(d.DbWriteToDbError, err)
+	}
+
+	return gp, nil
+}

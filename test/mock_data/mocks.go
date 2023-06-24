@@ -34,7 +34,11 @@ func seedWh(ctx context.Context, db warhammer.WhDbService, t warhammer.WhType, w
 }
 
 func seedGenProps(ctx context.Context, db warhammer.WhDbService, genProps *warhammer.WhGenerationProps) {
-
+	if _, dbErr := db.CreateGenerationProps(ctx, genProps); dbErr != nil {
+		if dbErr.Type != domain.DbAlreadyExistsError {
+			log.Fatal(dbErr)
+		}
+	}
 }
 
 func InitWh(ctx context.Context, db warhammer.WhDbService) {
@@ -46,4 +50,6 @@ func InitWh(ctx context.Context, db warhammer.WhDbService) {
 	seedWh(ctx, db, warhammer.WhTypeSkill, NewMockSkills())
 	seedWh(ctx, db, warhammer.WhTypeCareer, NewMockCareers())
 	seedWh(ctx, db, warhammer.WhTypeCharacter, NewMockCharacter())
+
+	seedGenProps(ctx, db, NewMockGenProps())
 }

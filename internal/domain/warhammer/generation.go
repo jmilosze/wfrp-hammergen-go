@@ -69,7 +69,7 @@ type WhGenerationProps struct {
 	ClassItems     map[WhCareerClass]WhItems               `json:"classItems"`
 	RandomTalents  []WhRandomTalent                        `json:"randomTalents"`
 	SpeciesTalents map[WhCharacterSpecies]WhSpeciesTalents `json:"speciesTalents"`
-	SpeciesSkills  map[WhCharacterSpecies]string           `json:"speciesSkills"`
+	SpeciesSkills  map[WhCharacterSpecies][]string         `json:"speciesSkills"`
 }
 
 func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
@@ -93,9 +93,13 @@ func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
 		speciesTalents[k] = v.InitAndCopy()
 	}
 
-	speciesSkills := make(map[WhCharacterSpecies]string, len(gprops.SpeciesSkills))
-	for k, v := range gprops.SpeciesSkills {
-		speciesSkills[k] = strings.Clone(v)
+	speciesSkills := make(map[WhCharacterSpecies][]string, len(gprops.SpeciesSkills))
+	for k1, v1 := range gprops.SpeciesSkills {
+		skills := make([]string, len(v1))
+		for k2, v2 := range v1 {
+			skills[k2] = strings.Clone(v2)
+		}
+		speciesSkills[k1] = skills
 	}
 
 	return &WhGenerationProps{

@@ -21,4 +21,5 @@ type WhDbService interface {
 	Delete(ctx context.Context, t WhType, whId string, userId string) *domain.DbError
 	RetrieveMany(ctx context.Context, t WhType, userIds []string, sharedUserIds []string, whIds []string) ([]*Wh, *domain.DbError)
 	RetrieveGenerationProps(ctx context.Context) (*WhGenerationProps, *domain.DbError)
+	CreateGenerationProps(ctx context.Context, gp *WhGenerationProps) (*WhGenerationProps, *domain.DbError)
 }

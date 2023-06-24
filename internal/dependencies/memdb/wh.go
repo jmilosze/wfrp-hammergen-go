@@ -186,3 +186,14 @@ func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.W
 
 	return genProp.InitAndCopy(), nil
 }
+
+func (s *WhDbService) CreateGenerationProps(ctx context.Context, gp *warhammer.WhGenerationProps) (*warhammer.WhGenerationProps, *domain.DbError) {
+	txn := s.Db.Txn(true)
+	defer txn.Abort()
+	if err := txn.Insert(warhammer.WhTypeOther, gp); err != nil {
+		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
+	}
+	txn.Commit()
+
+	return gp.InitAndCopy(), nil
+}
