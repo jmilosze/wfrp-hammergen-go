@@ -10,7 +10,6 @@ import (
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
 	"github.com/rs/xid"
 	"golang.org/x/exp/slices"
-	"log"
 )
 
 type WhService struct {
@@ -20,16 +19,6 @@ type WhService struct {
 
 func NewWhService(v *validator.Validate, db warhammer.WhDbService) *WhService {
 	return &WhService{Validator: v, WhDbService: db}
-}
-
-func (s *WhService) SeedWh(ctx context.Context, t warhammer.WhType, whs []*warhammer.Wh) {
-	for _, wh := range whs {
-		if _, dbErr := s.WhDbService.Create(ctx, t, wh); dbErr != nil {
-			if dbErr.Type != domain.DbAlreadyExistsError {
-				log.Fatal(dbErr)
-			}
-		}
-	}
 }
 
 func (s *WhService) Create(ctx context.Context, t warhammer.WhType, w *warhammer.Wh, c *domain.Claims) (*warhammer.Wh, *warhammer.WhError) {
