@@ -234,9 +234,9 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 
 func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *d.DbError) {
 	filter := bson.M{"name": "generationProps"}
-	var genProps *warhammer.WhGenerationProps
+	var genProps warhammer.WhGenerationProps
 
-	err := s.Collections[warhammer.WhTypeOther].FindOne(ctx, filter).Decode(genProps)
+	err := s.Collections[warhammer.WhTypeOther].FindOne(ctx, filter).Decode(&genProps)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, d.CreateDbError(d.DbNotFoundError, err)
@@ -245,7 +245,7 @@ func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.W
 		}
 	}
 
-	return genProps, nil
+	return &genProps, nil
 }
 
 func (s *WhDbService) CreateGenerationProps(ctx context.Context, gp *warhammer.WhGenerationProps) (*warhammer.WhGenerationProps, *d.DbError) {

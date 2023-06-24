@@ -17,7 +17,7 @@ func RegisterWhRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtS
 		router.GET(fmt.Sprintf("api/wh/%s", v), RequireJwt(js), whListHandler(ms, v))
 	}
 
-	router.GET("api/wh/generation/:whId", whGenerationPropsHandler(ms))
+	router.GET("api/wh/generation", whGenerationPropsHandler(ms))
 }
 
 func whCreateOrUpdateHandler(isCreate bool, s warhammer.WhService, t warhammer.WhType) func(*gin.Context) {

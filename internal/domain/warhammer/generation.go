@@ -55,10 +55,10 @@ func (input WhSpeciesTalents) InitAndCopy() WhSpeciesTalents {
 	}
 
 	multiple := make([][]string, len(input.Multiple))
-	for outerK, outerV := range input.Multiple {
-		multiple[outerK] = make([]string, len(outerV))
-		for k, v := range outerV {
-			single[k] = strings.Clone(v)
+	for k1, v1 := range input.Multiple {
+		multiple[k1] = make([]string, len(v1))
+		for k2, v2 := range v1 {
+			multiple[k1][k2] = strings.Clone(v2)
 		}
 	}
 
@@ -66,6 +66,7 @@ func (input WhSpeciesTalents) InitAndCopy() WhSpeciesTalents {
 }
 
 type WhGenerationProps struct {
+	Name           string
 	ClassItems     map[WhCareerClass]WhItems               `json:"classItems"`
 	RandomTalents  []WhRandomTalent                        `json:"randomTalents"`
 	SpeciesTalents map[WhCharacterSpecies]WhSpeciesTalents `json:"speciesTalents"`
@@ -103,6 +104,7 @@ func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
 	}
 
 	return &WhGenerationProps{
+		Name:           strings.Clone(gprops.Name),
 		ClassItems:     classItems,
 		RandomTalents:  randomTalents,
 		SpeciesTalents: speciesTalents,

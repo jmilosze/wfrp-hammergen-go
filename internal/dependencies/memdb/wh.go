@@ -48,11 +48,6 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 			"id": {
 				Name:    "id",
 				Unique:  true,
-				Indexer: &memdb.StringFieldIndex{Field: "Id"},
-			},
-			"name": {
-				Name:    "name",
-				Unique:  true,
 				Indexer: &memdb.StringFieldIndex{Field: "Name"},
 			},
 		},
@@ -170,7 +165,7 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 
 func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *domain.DbError) {
 	txn := s.Db.Txn(false)
-	raw, err := txn.First(warhammer.WhTypeOther, "name", "generationProps")
+	raw, err := txn.First(warhammer.WhTypeOther, "id", "generationProps")
 	if err != nil {
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: err}
 	}

@@ -6,10 +6,12 @@ import (
 
 func NewMockGenProps() *warhammer.WhGenerationProps {
 	return &warhammer.WhGenerationProps{
+		Name: "generationProps",
 		ClassItems: map[warhammer.WhCareerClass]warhammer.WhItems{
 			warhammer.WhCareerClassBurghers: {
 				Equipped: warhammer.WhIdNumberMap{itemMelee.Id: 1, itemArmour.Id: 1},
 				Carried:  warhammer.WhIdNumberMap{itemOther.Id: 2},
+				Stored:   warhammer.WhIdNumberMap{itemOther.Id: 2},
 			},
 		},
 		RandomTalents: []warhammer.WhRandomTalent{
@@ -31,7 +33,7 @@ func NewMockGenProps() *warhammer.WhGenerationProps {
 			},
 		},
 		SpeciesSkills: map[warhammer.WhCharacterSpecies][]string{
-			warhammer.WhCharacterSpeciesDwarfNorse: []string{skill1.Id, skill0.Id},
+			warhammer.WhCharacterSpeciesDwarfNorse: {skill1.Id, skill0.Id},
 		},
 	}
 }
