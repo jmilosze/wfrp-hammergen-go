@@ -64,23 +64,6 @@ func canEdit(ownerId string, isAdmin bool, userId string, sharedAccounts []strin
 	return false
 }
 
-func (s *WhService) Get(ctx context.Context, t warhammer.WhType, whId string, c *domain.Claims) (*warhammer.Wh, *warhammer.WhError) {
-	users := []string{"admin", c.Id}
-	wh, dbErr := s.WhDbService.Retrieve(ctx, t, whId, users, c.SharedAccounts)
-
-	if dbErr != nil {
-		switch dbErr.Type {
-		case domain.DbNotFoundError:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhNotFoundError, WhType: t, Err: dbErr}
-		default:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhInternalError, WhType: t, Err: dbErr}
-		}
-	}
-
-	wh.CanEdit = canEdit(wh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
-	return wh, nil
-}
-
 func (s *WhService) Update(ctx context.Context, t warhammer.WhType, w *warhammer.Wh, c *domain.Claims) (*warhammer.Wh, *warhammer.WhError) {
 	if c.Id == "anonymous" {
 		return nil, &warhammer.WhError{WhType: t, ErrType: warhammer.WhUnauthorizedError, Err: errors.New("unauthorized")}

@@ -56,19 +56,6 @@ func createNewWhMemDb() (*memdb.MemDB, error) {
 	return memdb.NewMemDB(schema)
 }
 
-func (s *WhDbService) Retrieve(ctx context.Context, t warhammer.WhType, whId string, userIds []string, sharedUserIds []string) (*warhammer.Wh, *domain.DbError) {
-	wh, dbErr := getOne(s.Db, t, whId)
-	if dbErr != nil {
-		return nil, dbErr
-	}
-
-	if slices.Contains(userIds, wh.OwnerId) || slices.Contains(sharedUserIds, wh.OwnerId) && wh.IsShared() {
-		return wh, nil
-	} else {
-		return nil, &domain.DbError{Type: domain.DbNotFoundError, Err: errors.New("wh not found")}
-	}
-}
-
 func getOne(db *memdb.MemDB, t warhammer.WhType, whId string) (*warhammer.Wh, *domain.DbError) {
 	txn := db.Txn(false)
 	whRaw, err := txn.First(string(t), "id", whId)
@@ -159,6 +146,10 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 				whs = append(whs, wh.PointToCopy())
 			}
 		}
+	}
+
+	if len(whIds) != 0 && len(whs) != len(whIds) {
+		return nil, domain.CreateDbError(domain.DbNotFoundError, errors.New("some of the ids not found"))
 	}
 
 	return whs, nil

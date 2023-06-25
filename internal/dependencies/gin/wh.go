@@ -79,7 +79,7 @@ func whGetHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context) 
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, whErr := s.Get(c.Request.Context(), t, whId, claims)
+		wh, whErr := s.List(c.Request.Context(), t, claims, []string{whId})
 
 		if whErr != nil {
 			switch whErr.ErrType {
@@ -91,7 +91,7 @@ func whGetHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context) 
 			return
 		}
 
-		returnData, err := wh.ToMap()
+		returnData, err := wh[0].ToMap()
 		if err != nil {
 			c.JSON(ServerErrResp(""))
 			return

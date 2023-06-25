@@ -26,32 +26,6 @@ func NewWhDbService(db *DbService) *WhDbService {
 	return &WhDbService{Db: db, Collections: collections}
 }
 
-func (s *WhDbService) Retrieve(ctx context.Context, t warhammer.WhType, whId string, userIds []string, sharedUserIds []string) (*warhammer.Wh, *d.DbError) {
-	id, err := primitive.ObjectIDFromHex(whId)
-	if err != nil {
-		return nil, d.CreateDbError(d.DbInternalError, err)
-	}
-
-	filter := bson.M{"$and": bson.A{bson.M{"_id": id}, allAllowedOwnersQuery(userIds, sharedUserIds)}}
-	var whMap bson.M
-
-	err = s.Collections[t].FindOne(ctx, filter).Decode(&whMap)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, d.CreateDbError(d.DbNotFoundError, err)
-		} else {
-			return nil, d.CreateDbError(d.DbInternalError, err)
-		}
-	}
-
-	wh, err := bsonMToWh(whMap, t)
-	if err != nil {
-		return nil, d.CreateDbError(d.DbInternalError, err)
-	}
-
-	return wh, nil
-}
-
 func allAllowedOwnersQuery(userIds []string, sharedUserIds []string) bson.M {
 	owners := bson.A{}
 	for _, v := range userIds {
@@ -227,6 +201,10 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 		}
 
 		whList = append(whList, wh)
+	}
+
+	if len(whIds) != 0 && len(whList) != len(whIds) {
+		return nil, d.CreateDbError(d.DbNotFoundError, errors.New("some of the ids not found"))
 	}
 
 	return whList, nil
