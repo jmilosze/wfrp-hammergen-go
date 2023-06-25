@@ -73,12 +73,7 @@ type WhGenerationProps struct {
 	SpeciesSkills  map[WhCharacterSpecies][]string         `json:"speciesSkills"`
 }
 
-func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
-
-	if gprops == nil {
-		return nil
-	}
-
+func (gprops WhGenerationProps) InitAndCopy() WhGenerationProps {
 	classItems := make(map[WhCareerClass]WhItems, len(gprops.ClassItems))
 	for k, v := range gprops.ClassItems {
 		classItems[k] = v.InitAndCopy()
@@ -103,7 +98,7 @@ func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
 		speciesSkills[k1] = skills
 	}
 
-	return &WhGenerationProps{
+	return WhGenerationProps{
 		Name:           strings.Clone(gprops.Name),
 		ClassItems:     classItems,
 		RandomTalents:  randomTalents,
@@ -112,7 +107,7 @@ func (gprops *WhGenerationProps) InitAndCopy() *WhGenerationProps {
 	}
 }
 
-func (gprops *WhGenerationProps) ToMap() (map[string]any, error) {
+func (gprops WhGenerationProps) ToMap() (map[string]any, error) {
 	gMap, err := structToMap(gprops)
 	if err != nil {
 		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)

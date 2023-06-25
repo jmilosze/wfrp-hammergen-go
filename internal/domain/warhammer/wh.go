@@ -65,19 +65,15 @@ func NewApiWh(t WhType) (Wh, error) {
 	return wh, nil
 }
 
-func (w *Wh) InitAndCopy() *Wh {
-	if w == nil {
-		return nil
-	}
-
-	return &Wh{
+func (w Wh) InitAndCopy() Wh {
+	return Wh{
 		Id:      strings.Clone(w.Id),
 		OwnerId: strings.Clone(w.OwnerId),
 		Object:  w.Object.InitAndCopy(),
 	}
 }
 
-func (w *Wh) IsShared() bool {
+func (w Wh) IsShared() bool {
 	return w.Object.IsShared()
 }
 
@@ -86,7 +82,7 @@ type WhObject interface {
 	IsShared() bool
 }
 
-func (w *Wh) ToMap() (map[string]any, error) {
+func (w Wh) ToMap() (map[string]any, error) {
 	whMap, err := structToMap(w.Object)
 	if err != nil {
 		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)
