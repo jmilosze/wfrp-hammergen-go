@@ -88,14 +88,10 @@ type WhObject interface {
 }
 
 func (w Wh) ToMap() (map[string]any, error) {
-	whMap, err := structToMap(w.Object)
+	whMap, err := structToMap(w)
 	if err != nil {
 		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)
 	}
-	whMap["id"] = w.Id
-	whMap["ownerId"] = w.OwnerId
-	whMap["canEdit"] = w.CanEdit
-
 	return whMap, nil
 }
 

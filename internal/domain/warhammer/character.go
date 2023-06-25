@@ -123,26 +123,26 @@ type WhCharacter struct {
 	Skills            []WhIdNumber       `json:"skills" validate:"dive"`
 	Talents           []WhIdNumber       `json:"talents" validate:"dive"`
 	Species           WhCharacterSpecies `json:"species" validate:"character_species_valid"`
-	BaseAttributes    WhAttributes
-	AttributeAdvances WhAttributes
-	CareerPath        []string   `json:"careerPath" validate:"dive,id_valid"`
-	Career            string     `json:"career" validate:"id_valid"`
-	Fate              int        `json:"fate" validate:"gte=0,lte=1000"`
-	Fortune           int        `json:"fortune" validate:"gte=0,lte=1000"`
-	Resilience        int        `json:"resilience" validate:"gte=0,lte=1000"`
-	Resolve           int        `json:"resolve" validate:"gte=0,lte=1000"`
-	CurrentExp        int        `json:"currentExp" validate:"gte=0,lte=10000000"`
-	SpentExp          int        `json:"spentExp" validate:"gte=0,lte=10000000"`
-	Status            WhStatus   `json:"status" validate:"status_valid"`
-	Standing          WhStanding `json:"standing" validate:"standing_valid"`
-	Brass             int        `json:"brass" validate:"gte=0,lte=1000000"`
-	Silver            int        `json:"silver" validate:"gte=0,lte=1000000"`
-	Gold              int        `json:"gold" validate:"gte=0,lte=1000000"`
-	Spells            []string   `json:"spells" validate:"dive,id_valid"`
-	Sin               int        `json:"sin" validate:"gte=0,lte=1000"`
-	Corruption        int        `json:"corruption" validate:"gte=0,lte=1000"`
-	Mutations         []string   `json:"mutations" validate:"dive,id_valid"`
-	Shared            bool       `json:"shared" validate:"shared_valid"`
+	BaseAttributes    WhAttributes       `json:"baseAttributes"`
+	AttributeAdvances WhAttributes       `json:"attributeAdvances"`
+	CareerPath        []string           `json:"careerPath" validate:"dive,id_valid"`
+	Career            string             `json:"career" validate:"id_valid"`
+	Fate              int                `json:"fate" validate:"gte=0,lte=1000"`
+	Fortune           int                `json:"fortune" validate:"gte=0,lte=1000"`
+	Resilience        int                `json:"resilience" validate:"gte=0,lte=1000"`
+	Resolve           int                `json:"resolve" validate:"gte=0,lte=1000"`
+	CurrentExp        int                `json:"currentExp" validate:"gte=0,lte=10000000"`
+	SpentExp          int                `json:"spentExp" validate:"gte=0,lte=10000000"`
+	Status            WhStatus           `json:"status" validate:"status_valid"`
+	Standing          WhStanding         `json:"standing" validate:"standing_valid"`
+	Brass             int                `json:"brass" validate:"gte=0,lte=1000000"`
+	Silver            int                `json:"silver" validate:"gte=0,lte=1000000"`
+	Gold              int                `json:"gold" validate:"gte=0,lte=1000000"`
+	Spells            []string           `json:"spells" validate:"dive,id_valid"`
+	Sin               int                `json:"sin" validate:"gte=0,lte=1000"`
+	Corruption        int                `json:"corruption" validate:"gte=0,lte=1000"`
+	Mutations         []string           `json:"mutations" validate:"dive,id_valid"`
+	Shared            bool               `json:"shared" validate:"shared_valid"`
 }
 
 func (c WhCharacter) IsShared() bool {
@@ -219,26 +219,26 @@ type WhCharacterFull struct {
 	Skills            []WhNumber         `json:"skills"`
 	Talents           []WhNumber         `json:"talents"`
 	Species           WhCharacterSpecies `json:"species"`
-	BaseAttributes    WhAttributes
-	AttributeAdvances WhAttributes
-	CareerPath        []Wh       `json:"careerPath"`
-	Career            Wh         `json:"career"`
-	Fate              int        `json:"fate"`
-	Fortune           int        `json:"fortune"`
-	Resilience        int        `json:"resilience"`
-	Resolve           int        `json:"resolve"`
-	CurrentExp        int        `json:"currentExp"`
-	SpentExp          int        `json:"spentExp"`
-	Status            WhStatus   `json:"status"`
-	Standing          WhStanding `json:"standing"`
-	Brass             int        `json:"brass"`
-	Silver            int        `json:"silver"`
-	Gold              int        `json:"gold"`
-	Spells            []Wh       `json:"spells"`
-	Sin               int        `json:"sin"`
-	Corruption        int        `json:"corruption"`
-	Mutations         []Wh       `json:"mutations"`
-	Shared            bool       `json:"shared"`
+	BaseAttributes    WhAttributes       `json:"baseAttributes"`
+	AttributeAdvances WhAttributes       `json:"attributeAdvances"`
+	CareerPath        []Wh               `json:"careerPath"`
+	Career            Wh                 `json:"career"`
+	Fate              int                `json:"fate"`
+	Fortune           int                `json:"fortune"`
+	Resilience        int                `json:"resilience"`
+	Resolve           int                `json:"resolve"`
+	CurrentExp        int                `json:"currentExp"`
+	SpentExp          int                `json:"spentExp"`
+	Status            WhStatus           `json:"status"`
+	Standing          WhStanding         `json:"standing"`
+	Brass             int                `json:"brass"`
+	Silver            int                `json:"silver"`
+	Gold              int                `json:"gold"`
+	Spells            []Wh               `json:"spells"`
+	Sin               int                `json:"sin"`
+	Corruption        int                `json:"corruption"`
+	Mutations         []Wh               `json:"mutations"`
+	Shared            bool               `json:"shared"`
 }
 
 func (f WhCharacterFull) IsShared() bool {
