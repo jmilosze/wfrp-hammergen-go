@@ -391,18 +391,24 @@ func GetWhItemValidationAliases() map[string]string {
 }
 
 type WhItemGrimoireFull struct {
-	Spells []*WhSpell `json:"spells"`
+	Spells []Wh `json:"spells"`
+}
+
+func (input WhItemGrimoireFull) InitAndCopy() WhItemGrimoireFull {
+	return WhItemGrimoireFull{
+		Spells: copyWhArray(input.Spells),
+	}
 }
 
 type WhItemFull struct {
-	Name        string        `json:"name"`
-	Description string        `json:"description" `
-	Price       float64       `json:"price"`
-	Enc         float64       `json:"enc"`
-	Properties  []*WhProperty `json:"properties"`
-	Type        WhItemType    `json:"type"`
-	Shared      bool          `json:"shared"`
-	Source      WhSourceMap   `json:"source"`
+	Name        string      `json:"name"`
+	Description string      `json:"description" `
+	Price       float64     `json:"price"`
+	Enc         float64     `json:"enc"`
+	Properties  []Wh        `json:"properties"`
+	Type        WhItemType  `json:"type"`
+	Shared      bool        `json:"shared"`
+	Source      WhSourceMap `json:"source"`
 
 	Melee      WhItemMelee        `json:"melee"`
 	Ranged     WhItemRanged       `json:"ranged"`
@@ -411,4 +417,29 @@ type WhItemFull struct {
 	Container  WhItemContainer    `json:"container"`
 	Grimoire   WhItemGrimoireFull `json:"grimoire"`
 	Other      WhItemOther        `json:"other"`
+}
+
+func (i WhItemFull) IsShared() bool {
+	return i.Shared
+}
+
+func (i WhItemFull) InitAndCopy() WhObject {
+	return WhItemFull{
+		Name:        strings.Clone(i.Name),
+		Description: strings.Clone(i.Description),
+		Price:       i.Price,
+		Enc:         i.Enc,
+		Properties:  copyWhArray(i.Properties),
+		Type:        i.Type.InitAndCopy(),
+		Shared:      i.Shared,
+		Source:      i.Source.InitAndCopy(),
+
+		Melee:      i.Melee.InitAndCopy(),
+		Ranged:     i.Ranged.InitAndCopy(),
+		Ammunition: i.Ammunition.InitAndCopy(),
+		Armour:     i.Armour.InitAndCopy(),
+		Container:  i.Container.InitAndCopy(),
+		Grimoire:   i.Grimoire.InitAndCopy(),
+		Other:      i.Other.InitAndCopy(),
+	}
 }
