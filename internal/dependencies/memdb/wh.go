@@ -85,8 +85,7 @@ func getOne(db *memdb.MemDB, t warhammer.WhType, whId string) (*warhammer.Wh, *d
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate wh from raw %v", whRaw)}
 	}
 
-	returnCopy := wh.InitAndCopy()
-	return &returnCopy, nil
+	return wh.PointToCopy(), nil
 }
 
 func (s *WhDbService) Create(ctx context.Context, t warhammer.WhType, w *warhammer.Wh) (*warhammer.Wh, *domain.DbError) {
@@ -114,8 +113,7 @@ func upsertWh(db *memdb.MemDB, t warhammer.WhType, w *warhammer.Wh) (*warhammer.
 	}
 	txn.Commit()
 
-	returnCopy := w.InitAndCopy()
-	return &returnCopy, nil
+	return w.PointToCopy(), nil
 }
 
 func (s *WhDbService) Delete(ctx context.Context, t warhammer.WhType, whId string, userId string) *domain.DbError {
@@ -158,8 +156,7 @@ func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, user
 		}
 		if slices.Contains(whIds, wh.Id) || len(whIds) == 0 {
 			if slices.Contains(users, wh.OwnerId) || slices.Contains(sharedUsers, wh.OwnerId) && wh.IsShared() {
-				insertCopy := wh.InitAndCopy()
-				whs = append(whs, &insertCopy)
+				whs = append(whs, wh.PointToCopy())
 			}
 		}
 	}
@@ -183,8 +180,7 @@ func (s *WhDbService) RetrieveGenerationProps(ctx context.Context) (*warhammer.W
 		return nil, &domain.DbError{Type: domain.DbInternalError, Err: fmt.Errorf("could not populate generationProp from raw %v", raw)}
 	}
 
-	returnCopy := genProp.InitAndCopy()
-	return &returnCopy, nil
+	return genProp.PointToCopy(), nil
 }
 
 func (s *WhDbService) CreateGenerationProps(ctx context.Context, gp *warhammer.WhGenerationProps) (*warhammer.WhGenerationProps, *domain.DbError) {
@@ -195,6 +191,5 @@ func (s *WhDbService) CreateGenerationProps(ctx context.Context, gp *warhammer.W
 	}
 	txn.Commit()
 
-	returnCopy := gp.InitAndCopy()
-	return &returnCopy, nil
+	return gp.PointToCopy(), nil
 }

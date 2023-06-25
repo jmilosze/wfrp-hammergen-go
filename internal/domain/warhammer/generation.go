@@ -107,6 +107,11 @@ func (gprops WhGenerationProps) InitAndCopy() WhGenerationProps {
 	}
 }
 
+func (gp WhGenerationProps) PointToCopy() *WhGenerationProps {
+	cpy := gp.InitAndCopy()
+	return &cpy
+}
+
 func (gprops WhGenerationProps) ToMap() (map[string]any, error) {
 	gMap, err := structToMap(gprops)
 	if err != nil {

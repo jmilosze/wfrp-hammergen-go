@@ -73,6 +73,11 @@ func (w Wh) InitAndCopy() Wh {
 	}
 }
 
+func (w Wh) PointToCopy() *Wh {
+	cpy := w.InitAndCopy()
+	return &cpy
+}
+
 func (w Wh) IsShared() bool {
 	return w.Object.IsShared()
 }
