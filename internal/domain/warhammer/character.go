@@ -194,6 +194,21 @@ type WhNumber struct {
 	Number int `json:"number"`
 }
 
+func (input WhNumber) InitAndCopy() WhNumber {
+	return WhNumber{
+		Wh:     input.Wh.InitAndCopy(),
+		Number: input.Number,
+	}
+}
+
+func copyArrayWhNumber(input []WhNumber) []WhNumber {
+	output := make([]WhNumber, len(input))
+	for i, v := range input {
+		output[i] = v.InitAndCopy()
+	}
+	return output
+}
+
 type WhCharacterFull struct {
 	Name              string             `json:"name"`
 	Description       string             `json:"description"`
@@ -206,22 +221,60 @@ type WhCharacterFull struct {
 	Species           WhCharacterSpecies `json:"species"`
 	BaseAttributes    WhAttributes
 	AttributeAdvances WhAttributes
-	CareerPath        []WhCareer   `json:"careerPath"`
-	Career            WhCareer     `json:"career"`
-	Fate              int          `json:"fate"`
-	Fortune           int          `json:"fortune"`
-	Resilience        int          `json:"resilience"`
-	Resolve           int          `json:"resolve"`
-	CurrentExp        int          `json:"currentExp"`
-	SpentExp          int          `json:"spentExp"`
-	Status            WhStatus     `json:"status"`
-	Standing          WhStanding   `json:"standing"`
-	Brass             int          `json:"brass"`
-	Silver            int          `json:"silver"`
-	Gold              int          `json:"gold"`
-	Spells            []WhSpell    `json:"spells"`
-	Sin               int          `json:"sin"`
-	Corruption        int          `json:"corruption"`
-	Mutations         []WhMutation `json:"mutations"`
-	Shared            bool         `json:"shared"`
+	CareerPath        []Wh       `json:"careerPath"`
+	Career            Wh         `json:"career"`
+	Fate              int        `json:"fate"`
+	Fortune           int        `json:"fortune"`
+	Resilience        int        `json:"resilience"`
+	Resolve           int        `json:"resolve"`
+	CurrentExp        int        `json:"currentExp"`
+	SpentExp          int        `json:"spentExp"`
+	Status            WhStatus   `json:"status"`
+	Standing          WhStanding `json:"standing"`
+	Brass             int        `json:"brass"`
+	Silver            int        `json:"silver"`
+	Gold              int        `json:"gold"`
+	Spells            []Wh       `json:"spells"`
+	Sin               int        `json:"sin"`
+	Corruption        int        `json:"corruption"`
+	Mutations         []Wh       `json:"mutations"`
+	Shared            bool       `json:"shared"`
+}
+
+func (f WhCharacterFull) IsShared() bool {
+	return f.Shared
+}
+
+func (f WhCharacterFull) InitAndCopy() WhObject {
+	return WhCharacterFull{
+		Name:              strings.Clone(f.Name),
+		Description:       strings.Clone(f.Description),
+		Notes:             strings.Clone(f.Notes),
+		EquippedItems:     copyArrayWhNumber(f.EquippedItems),
+		CarriedItems:      copyArrayWhNumber(f.CarriedItems),
+		StoredItems:       copyArrayWhNumber(f.StoredItems),
+		Skills:            copyArrayWhNumber(f.Skills),
+		Talents:           copyArrayWhNumber(f.Talents),
+		Species:           f.Species.InitAndCopy(),
+		BaseAttributes:    f.BaseAttributes.InitAndCopy(),
+		AttributeAdvances: f.AttributeAdvances.InitAndCopy(),
+		CareerPath:        copyWhArray(f.CareerPath),
+		Career:            f.Career.InitAndCopy(),
+		Fate:              f.Fate,
+		Fortune:           f.Fortune,
+		Resilience:        f.Resilience,
+		Resolve:           f.Resolve,
+		CurrentExp:        f.CurrentExp,
+		SpentExp:          f.SpentExp,
+		Status:            f.Status.InitAndCopy(),
+		Standing:          f.Standing.InitAndCopy(),
+		Brass:             f.Brass,
+		Silver:            f.Silver,
+		Gold:              f.Gold,
+		Spells:            copyWhArray(f.Spells),
+		Sin:               f.Sin,
+		Corruption:        f.Corruption,
+		Mutations:         copyWhArray(f.Mutations),
+		Shared:            f.Shared,
+	}
 }
