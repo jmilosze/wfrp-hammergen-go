@@ -108,9 +108,9 @@ func (s *WhService) Delete(ctx context.Context, t warhammer.WhType, whId string,
 	return nil
 }
 
-func (s *WhService) List(ctx context.Context, t warhammer.WhType, c *domain.Claims, whIds []string) ([]*warhammer.Wh, *warhammer.WhError) {
+func (s *WhService) Get(ctx context.Context, t warhammer.WhType, c *domain.Claims, whIds []string) ([]*warhammer.Wh, *warhammer.WhError) {
 	users := []string{"admin", c.Id}
-	whs, dbErr := s.WhDbService.RetrieveMany(ctx, t, users, c.SharedAccounts, whIds)
+	whs, dbErr := s.WhDbService.Retrieve(ctx, t, users, c.SharedAccounts, whIds)
 
 	if dbErr != nil {
 		switch dbErr.Type {

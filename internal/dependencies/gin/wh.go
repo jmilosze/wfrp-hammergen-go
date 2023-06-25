@@ -79,7 +79,7 @@ func whGetHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context) 
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, whErr := s.List(c.Request.Context(), t, claims, []string{whId})
+		wh, whErr := s.Get(c.Request.Context(), t, claims, []string{whId})
 
 		if whErr != nil {
 			switch whErr.ErrType {
@@ -141,10 +141,15 @@ func whListHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context)
 		claims := getUserClaims(c)
 		ids, _ := c.GetQueryArray("id")
 
-		whs, whErr := s.List(c.Request.Context(), t, claims, ids)
+		whs, whErr := s.Get(c.Request.Context(), t, claims, ids)
 
 		if whErr != nil {
-			c.JSON(ServerErrResp(""))
+			switch whErr.ErrType {
+			case warhammer.WhNotFoundError:
+				c.JSON(NotFoundErrResp(""))
+			default:
+				c.JSON(ServerErrResp(""))
+			}
 			return
 		}
 

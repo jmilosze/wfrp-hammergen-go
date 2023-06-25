@@ -128,7 +128,7 @@ func (s *WhDbService) Delete(ctx context.Context, t warhammer.WhType, whId strin
 	return nil
 }
 
-func (s *WhDbService) RetrieveMany(ctx context.Context, t warhammer.WhType, users []string, sharedUsers []string, whIds []string) ([]*warhammer.Wh, *domain.DbError) {
+func (s *WhDbService) Retrieve(ctx context.Context, t warhammer.WhType, users []string, sharedUsers []string, whIds []string) ([]*warhammer.Wh, *domain.DbError) {
 	txn := s.Db.Txn(false)
 	it, err := txn.Get(string(t), "id")
 	if err != nil {
