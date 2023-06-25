@@ -188,3 +188,50 @@ func GetWhCharacterValidationAliases() map[string]string {
 		"character_species_valid": fmt.Sprintf("oneof=%s", characterSpeciesValues()),
 	}
 }
+
+type WhItemFullNumber struct {
+	Item   *WhItemFull `json:"item"`
+	Number int         `json:"number"`
+}
+
+type WhSkillNumber struct {
+	Item   *WhSkill `json:"skill"`
+	Number int      `json:"number"`
+}
+
+type WhTalentNumber struct {
+	Item   *WhTalent `json:"talent"`
+	Number int       `json:"number"`
+}
+
+type WhCharacterFull struct {
+	Name              string             `json:"name"`
+	Description       string             `json:"description"`
+	Notes             string             `json:"notes"`
+	EquippedItems     []WhItemFullNumber `json:"equippedItems"`
+	CarriedItems      []WhItemFullNumber `json:"carriedItems"`
+	StoredItems       []WhItemFullNumber `json:"storedItems"`
+	Skills            []WhSkillNumber    `json:"skills"`
+	Talents           []WhTalentNumber   `json:"talents"`
+	Species           WhCharacterSpecies `json:"species"`
+	BaseAttributes    WhAttributes
+	AttributeAdvances WhAttributes
+	CareerPath        []*WhCareer   `json:"careerPath"`
+	Career            *WhCareer     `json:"career"`
+	Fate              int           `json:"fate"`
+	Fortune           int           `json:"fortune"`
+	Resilience        int           `json:"resilience"`
+	Resolve           int           `json:"resolve"`
+	CurrentExp        int           `json:"currentExp"`
+	SpentExp          int           `json:"spentExp"`
+	Status            WhStatus      `json:"status"`
+	Standing          WhStanding    `json:"standing"`
+	Brass             int           `json:"brass"`
+	Silver            int           `json:"silver"`
+	Gold              int           `json:"gold"`
+	Spells            []*WhSpell    `json:"spells"`
+	Sin               int           `json:"sin"`
+	Corruption        int           `json:"corruption"`
+	Mutations         []*WhMutation `json:"mutations"`
+	Shared            bool          `json:"shared"`
+}

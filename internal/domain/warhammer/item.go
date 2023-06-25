@@ -389,3 +389,26 @@ func GetWhItemValidationAliases() map[string]string {
 		"item_carry_type_valid":       fmt.Sprintf("oneof=%s", itemCarryTypeValues()),
 	}
 }
+
+type WhItemGrimoireFull struct {
+	Spells []*WhSpell `json:"spells"`
+}
+
+type WhItemFull struct {
+	Name        string        `json:"name"`
+	Description string        `json:"description" `
+	Price       float64       `json:"price"`
+	Enc         float64       `json:"enc"`
+	Properties  []*WhProperty `json:"properties"`
+	Type        WhItemType    `json:"type"`
+	Shared      bool          `json:"shared"`
+	Source      WhSourceMap   `json:"source"`
+
+	Melee      WhItemMelee        `json:"melee"`
+	Ranged     WhItemRanged       `json:"ranged"`
+	Ammunition WhItemAmmunition   `json:"ammunition"`
+	Armour     WhItemArmour       `json:"armour"`
+	Container  WhItemContainer    `json:"container"`
+	Grimoire   WhItemGrimoireFull `json:"grimoire"`
+	Other      WhItemOther        `json:"other"`
+}
