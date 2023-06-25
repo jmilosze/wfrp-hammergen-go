@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
+	"golang.org/x/exp/slices"
 )
 
 func RegisterWhRoutes(router *gin.Engine, ms warhammer.WhService, js domain.JwtService) {
@@ -79,7 +80,12 @@ func whGetHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context) 
 		whId := c.Param("whId")
 		claims := getUserClaims(c)
 
-		wh, whErr := s.Get(c.Request.Context(), t, claims, []string{whId})
+		var full bool
+		if slices.Contains([]string{"true", "yes"}, c.Query("full")) {
+			full = true
+		}
+
+		wh, whErr := s.Get(c.Request.Context(), t, claims, full, []string{whId})
 
 		if whErr != nil {
 			switch whErr.ErrType {
@@ -141,7 +147,12 @@ func whListHandler(s warhammer.WhService, t warhammer.WhType) func(*gin.Context)
 		claims := getUserClaims(c)
 		ids, _ := c.GetQueryArray("id")
 
-		whs, whErr := s.Get(c.Request.Context(), t, claims, ids)
+		var full bool
+		if slices.Contains([]string{"true", "yes"}, c.Query("full")) {
+			full = true
+		}
+
+		whs, whErr := s.Get(c.Request.Context(), t, claims, full, ids)
 
 		if whErr != nil {
 			switch whErr.ErrType {
