@@ -7,29 +7,29 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain"
 	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/user"
-	"github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
+	wh "github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
 	"github.com/rs/xid"
 	"golang.org/x/exp/slices"
 )
 
 type WhService struct {
 	Validator   *validator.Validate
-	WhDbService warhammer.WhDbService
+	WhDbService wh.WhDbService
 }
 
-func NewWhService(v *validator.Validate, db warhammer.WhDbService) *WhService {
+func NewWhService(v *validator.Validate, db wh.WhDbService) *WhService {
 	return &WhService{Validator: v, WhDbService: db}
 }
 
-func (s *WhService) Create(ctx context.Context, t warhammer.WhType, w *warhammer.Wh, c *domain.Claims) (*warhammer.Wh, *warhammer.WhError) {
+func (s *WhService) Create(ctx context.Context, t wh.WhType, w *wh.Wh, c *domain.Claims) (*wh.Wh, *wh.WhError) {
 	if c.Id == "anonymous" {
-		return nil, &warhammer.WhError{WhType: t, ErrType: warhammer.WhUnauthorizedError, Err: errors.New("unauthorized")}
+		return nil, &wh.WhError{WhType: t, ErrType: wh.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
 	newWh := w.InitAndCopy()
 
 	if err := s.Validator.Struct(newWh); err != nil {
-		return nil, &warhammer.WhError{WhType: t, ErrType: warhammer.WhInvalidArgumentsError, Err: err}
+		return nil, &wh.WhError{WhType: t, ErrType: wh.WhInvalidArgumentsError, Err: err}
 	}
 
 	if c.Admin {
@@ -41,7 +41,7 @@ func (s *WhService) Create(ctx context.Context, t warhammer.WhType, w *warhammer
 
 	createdWh, dbErr := s.WhDbService.Create(ctx, t, &newWh)
 	if dbErr != nil {
-		return nil, &warhammer.WhError{WhType: t, ErrType: user.UserInternalError, Err: dbErr}
+		return nil, &wh.WhError{WhType: t, ErrType: user.UserInternalError, Err: dbErr}
 	}
 
 	createdWh.CanEdit = canEdit(createdWh.OwnerId, c.Admin, c.Id, c.SharedAccounts)
@@ -64,15 +64,15 @@ func canEdit(ownerId string, isAdmin bool, userId string, sharedAccounts []strin
 	return false
 }
 
-func (s *WhService) Update(ctx context.Context, t warhammer.WhType, w *warhammer.Wh, c *domain.Claims) (*warhammer.Wh, *warhammer.WhError) {
+func (s *WhService) Update(ctx context.Context, t wh.WhType, w *wh.Wh, c *domain.Claims) (*wh.Wh, *wh.WhError) {
 	if c.Id == "anonymous" {
-		return nil, &warhammer.WhError{WhType: t, ErrType: warhammer.WhUnauthorizedError, Err: errors.New("unauthorized")}
+		return nil, &wh.WhError{WhType: t, ErrType: wh.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
 	newWh := w.InitAndCopy()
 
 	if err := s.Validator.Struct(newWh); err != nil {
-		return nil, &warhammer.WhError{WhType: t, ErrType: warhammer.WhInvalidArgumentsError, Err: err}
+		return nil, &wh.WhError{WhType: t, ErrType: wh.WhInvalidArgumentsError, Err: err}
 	}
 
 	if c.Admin {
@@ -85,9 +85,9 @@ func (s *WhService) Update(ctx context.Context, t warhammer.WhType, w *warhammer
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhNotFoundError, WhType: t, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhNotFoundError, WhType: t, Err: dbErr}
 		default:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhInternalError, WhType: t, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: t, Err: dbErr}
 		}
 	}
 
@@ -95,36 +95,40 @@ func (s *WhService) Update(ctx context.Context, t warhammer.WhType, w *warhammer
 	return updatedWh, nil
 }
 
-func (s *WhService) Delete(ctx context.Context, t warhammer.WhType, whId string, c *domain.Claims) *warhammer.WhError {
+func (s *WhService) Delete(ctx context.Context, t wh.WhType, whId string, c *domain.Claims) *wh.WhError {
 	if c.Id == "anonymous" {
-		return &warhammer.WhError{WhType: t, ErrType: warhammer.WhUnauthorizedError, Err: errors.New("unauthorized")}
+		return &wh.WhError{WhType: t, ErrType: wh.WhUnauthorizedError, Err: errors.New("unauthorized")}
 	}
 
 	dbErr := s.WhDbService.Delete(ctx, t, whId, c.Id)
 	if dbErr != nil {
-		return &warhammer.WhError{ErrType: warhammer.WhInternalError, WhType: t, Err: dbErr}
+		return &wh.WhError{ErrType: wh.WhInternalError, WhType: t, Err: dbErr}
 	}
 
 	return nil
 }
 
-func (s *WhService) Get(ctx context.Context, t warhammer.WhType, c *domain.Claims, full bool, whIds []string) ([]*warhammer.Wh, *warhammer.WhError) {
+func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full bool, whIds []string) ([]*wh.Wh, *wh.WhError) {
 	users := []string{"admin", c.Id}
 
-	var whs []*warhammer.Wh
-	var dbErr *domain.DbError
-	if full {
-		whs, dbErr = s.WhDbService.Retrieve(ctx, t, users, c.SharedAccounts, whIds)
-	} else {
-		whs, dbErr = s.WhDbService.Retrieve(ctx, t, users, c.SharedAccounts, whIds)
-	}
+	whs, dbErr := s.WhDbService.Retrieve(ctx, t, users, c.SharedAccounts, whIds)
 
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhNotFoundError, WhType: t, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhNotFoundError, WhType: t, Err: dbErr}
 		default:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhInternalError, WhType: t, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: t, Err: dbErr}
+		}
+	}
+
+	if full {
+		var whErr *wh.WhError
+		if t == wh.WhTypeItem {
+			whs, whErr = retrieveFullItem(ctx, s.WhDbService, users, c.SharedAccounts, whs)
+		}
+		if whErr != nil {
+			return nil, whErr
 		}
 	}
 
@@ -135,14 +139,40 @@ func (s *WhService) Get(ctx context.Context, t warhammer.WhType, c *domain.Claim
 	return whs, nil
 }
 
-func (s *WhService) GetGenerationProps(ctx context.Context) (*warhammer.WhGenerationProps, *warhammer.WhError) {
+func retrieveFullItem(ctx context.Context, db wh.WhDbService, users []string, sharedAccounts []string, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
+	allPropertyIds := make([]string, 0)
+	for _, v := range items {
+		item, ok := v.Object.(wh.WhItem)
+		if !ok {
+			return nil, &wh.WhError{WhType: wh.WhTypeItem, ErrType: wh.WhInternalError, Err: errors.New("non-item stored as item")}
+		}
+		allPropertyIds = append(allPropertyIds, item.Properties...)
+	}
+
+	allProperties, dbErr := db.Retrieve(ctx, wh.WhTypeProperty, users, sharedAccounts, allPropertyIds)
+	if dbErr != nil && dbErr.Type != domain.DbNotFoundError {
+		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: dbErr}
+	}
+
+	fullItems := make([]*wh.Wh, len(items))
+	for k, v := range items {
+		item := v.Object.(wh.WhItem)
+		fullItem := v.CopyHeaders()
+		fullItem.Object = item.ToFull(allProperties)
+		fullItems[k] = &fullItem
+	}
+
+	return items, nil
+}
+
+func (s *WhService) GetGenerationProps(ctx context.Context) (*wh.WhGenerationProps, *wh.WhError) {
 	generationPropsMap, dbErr := s.WhDbService.RetrieveGenerationProps(ctx)
 	if dbErr != nil {
 		switch dbErr.Type {
 		case domain.DbNotFoundError:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhNotFoundError, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhNotFoundError, Err: dbErr}
 		default:
-			return nil, &warhammer.WhError{ErrType: warhammer.WhInternalError, Err: dbErr}
+			return nil, &wh.WhError{ErrType: wh.WhInternalError, Err: dbErr}
 		}
 	}
 

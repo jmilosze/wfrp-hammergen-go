@@ -69,7 +69,16 @@ func (w Wh) InitAndCopy() Wh {
 	return Wh{
 		Id:      strings.Clone(w.Id),
 		OwnerId: strings.Clone(w.OwnerId),
+		CanEdit: w.CanEdit,
 		Object:  w.Object.InitAndCopy(),
+	}
+}
+
+func (w Wh) CopyHeaders() Wh {
+	return Wh{
+		Id:      strings.Clone(w.Id),
+		OwnerId: strings.Clone(w.OwnerId),
+		CanEdit: w.CanEdit,
 	}
 }
 

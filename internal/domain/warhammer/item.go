@@ -390,6 +390,31 @@ func GetWhItemValidationAliases() map[string]string {
 	}
 }
 
+func (i WhItem) ToFull(properties []*Wh) WhItemFull {
+	itemProperties := make([]Wh, 0)
+	var grimoire WhItemGrimoireFull
+	grimoire = grimoire.InitAndCopy()
+
+	return WhItemFull{
+		Name:        strings.Clone(i.Name),
+		Description: strings.Clone(i.Description),
+		Price:       i.Price,
+		Enc:         i.Enc,
+		Properties:  itemProperties,
+		Type:        i.Type.InitAndCopy(),
+		Shared:      i.Shared,
+		Source:      i.Source.InitAndCopy(),
+
+		Melee:      i.Melee.InitAndCopy(),
+		Ranged:     i.Ranged.InitAndCopy(),
+		Ammunition: i.Ammunition.InitAndCopy(),
+		Armour:     i.Armour.InitAndCopy(),
+		Container:  i.Container.InitAndCopy(),
+		Grimoire:   grimoire,
+		Other:      i.Other.InitAndCopy(),
+	}
+}
+
 type WhItemGrimoireFull struct {
 	Spells []Wh `json:"spells"`
 }
