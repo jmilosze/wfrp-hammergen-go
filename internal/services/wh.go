@@ -162,7 +162,7 @@ func retrieveFullItem(ctx context.Context, db wh.WhDbService, users []string, sh
 		fullItems[k] = &fullItem
 	}
 
-	return items, nil
+	return fullItems, nil
 }
 
 func (s *WhService) GetGenerationProps(ctx context.Context) (*wh.WhGenerationProps, *wh.WhError) {

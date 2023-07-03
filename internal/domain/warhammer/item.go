@@ -2,6 +2,7 @@ package warhammer
 
 import (
 	"fmt"
+	"golang.org/x/exp/slices"
 	"strings"
 )
 
@@ -392,6 +393,13 @@ func GetWhItemValidationAliases() map[string]string {
 
 func (i WhItem) ToFull(properties []*Wh) WhItemFull {
 	itemProperties := make([]Wh, 0)
+
+	for _, v := range properties {
+		if slices.Contains(i.Properties, v.Id) {
+			itemProperties = append(itemProperties, v.InitAndCopy())
+		}
+	}
+
 	var grimoire WhItemGrimoireFull
 	grimoire = grimoire.InitAndCopy()
 
