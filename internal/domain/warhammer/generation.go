@@ -73,24 +73,24 @@ type WhGenerationProps struct {
 	SpeciesSkills  map[WhCharacterSpecies][]string         `json:"speciesSkills"`
 }
 
-func (gprops WhGenerationProps) InitAndCopy() WhGenerationProps {
-	classItems := make(map[WhCareerClass]WhItems, len(gprops.ClassItems))
-	for k, v := range gprops.ClassItems {
+func (gp WhGenerationProps) InitAndCopy() WhGenerationProps {
+	classItems := make(map[WhCareerClass]WhItems, len(gp.ClassItems))
+	for k, v := range gp.ClassItems {
 		classItems[k] = v.InitAndCopy()
 	}
 
-	randomTalents := make([]WhRandomTalent, len(gprops.RandomTalents))
-	for k, v := range gprops.RandomTalents {
+	randomTalents := make([]WhRandomTalent, len(gp.RandomTalents))
+	for k, v := range gp.RandomTalents {
 		randomTalents[k] = v.InitAndCopy()
 	}
 
-	speciesTalents := make(map[WhCharacterSpecies]WhSpeciesTalents, len(gprops.SpeciesTalents))
-	for k, v := range gprops.SpeciesTalents {
+	speciesTalents := make(map[WhCharacterSpecies]WhSpeciesTalents, len(gp.SpeciesTalents))
+	for k, v := range gp.SpeciesTalents {
 		speciesTalents[k] = v.InitAndCopy()
 	}
 
-	speciesSkills := make(map[WhCharacterSpecies][]string, len(gprops.SpeciesSkills))
-	for k1, v1 := range gprops.SpeciesSkills {
+	speciesSkills := make(map[WhCharacterSpecies][]string, len(gp.SpeciesSkills))
+	for k1, v1 := range gp.SpeciesSkills {
 		skills := make([]string, len(v1))
 		for k2, v2 := range v1 {
 			skills[k2] = strings.Clone(v2)
@@ -99,7 +99,7 @@ func (gprops WhGenerationProps) InitAndCopy() WhGenerationProps {
 	}
 
 	return WhGenerationProps{
-		Name:           strings.Clone(gprops.Name),
+		Name:           strings.Clone(gp.Name),
 		ClassItems:     classItems,
 		RandomTalents:  randomTalents,
 		SpeciesTalents: speciesTalents,
@@ -112,8 +112,8 @@ func (gp WhGenerationProps) PointToCopy() *WhGenerationProps {
 	return &cpy
 }
 
-func (gprops WhGenerationProps) ToMap() (map[string]any, error) {
-	gMap, err := structToMap(gprops)
+func (gp WhGenerationProps) ToMap() (map[string]any, error) {
+	gMap, err := structToMap(gp)
 	if err != nil {
 		return map[string]any{}, fmt.Errorf("error while mapping wh structure %s", err)
 	}
