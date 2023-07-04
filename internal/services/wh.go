@@ -10,6 +10,7 @@ import (
 	wh "github.com/jmilosze/wfrp-hammergen-go/internal/domain/warhammer"
 	"github.com/rs/xid"
 	"golang.org/x/exp/slices"
+	"sync"
 )
 
 type WhService struct {
@@ -141,24 +142,48 @@ func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full
 
 func retrieveFullItem(ctx context.Context, db wh.WhDbService, users []string, sharedAccounts []string, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
 	allPropertyIds := make([]string, 0)
+	allSpellIds := make([]string, 0)
 	for _, v := range items {
 		item, ok := v.Object.(wh.WhItem)
 		if !ok {
 			return nil, &wh.WhError{WhType: wh.WhTypeItem, ErrType: wh.WhInternalError, Err: errors.New("non-item stored as item")}
 		}
 		allPropertyIds = append(allPropertyIds, item.Properties...)
+		allSpellIds = append(allSpellIds, item.Grimoire.Spells...)
 	}
 
-	allProperties, dbErr := db.Retrieve(ctx, wh.WhTypeProperty, users, sharedAccounts, allPropertyIds)
-	if dbErr != nil && dbErr.Type != domain.DbNotFoundError {
-		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: dbErr}
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var allProperties []*wh.Wh
+	var propertyDbErr *domain.DbError
+	go func() {
+		defer wg.Done()
+		allProperties, propertyDbErr = db.Retrieve(ctx, wh.WhTypeProperty, users, sharedAccounts, allPropertyIds)
+	}()
+
+	var allSpells []*wh.Wh
+	var spellDbErr *domain.DbError
+	go func() {
+		defer wg.Done()
+		allSpells, spellDbErr = db.Retrieve(ctx, wh.WhTypeSpell, users, sharedAccounts, allSpellIds)
+	}()
+
+	wg.Wait()
+
+	if propertyDbErr != nil && propertyDbErr.Type != domain.DbNotFoundError {
+		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: propertyDbErr}
+	}
+
+	if spellDbErr != nil && spellDbErr.Type != domain.DbNotFoundError {
+		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: spellDbErr}
 	}
 
 	fullItems := make([]*wh.Wh, len(items))
 	for k, v := range items {
 		item := v.Object.(wh.WhItem)
 		fullItem := v.CopyHeaders()
-		fullItem.Object = item.ToFull(allProperties)
+		fullItem.Object = item.ToFull(allProperties, allSpells)
 		fullItems[k] = &fullItem
 	}
 

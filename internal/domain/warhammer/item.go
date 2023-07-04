@@ -391,9 +391,9 @@ func GetWhItemValidationAliases() map[string]string {
 	}
 }
 
-func (i WhItem) ToFull(properties []*Wh) WhItemFull {
-	itemProperties := make([]Wh, 0)
+func (i WhItem) ToFull(properties []*Wh, spells []*Wh) WhItemFull {
 
+	itemProperties := make([]Wh, 0)
 	for _, v := range properties {
 		if slices.Contains(i.Properties, v.Id) {
 			itemProperties = append(itemProperties, v.InitAndCopy())
@@ -401,7 +401,13 @@ func (i WhItem) ToFull(properties []*Wh) WhItemFull {
 	}
 
 	var grimoire WhItemGrimoireFull
-	grimoire = grimoire.InitAndCopy()
+
+	grimoire.Spells = make([]Wh, 0)
+	for _, v := range spells {
+		if slices.Contains(i.Grimoire.Spells, v.Id) {
+			grimoire.Spells = append(grimoire.Spells, v.InitAndCopy())
+		}
+	}
 
 	return WhItemFull{
 		Name:        strings.Clone(i.Name),
