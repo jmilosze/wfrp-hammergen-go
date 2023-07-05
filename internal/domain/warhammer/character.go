@@ -209,6 +209,10 @@ func copyArrayWhNumber(input []WhNumber) []WhNumber {
 	return output
 }
 
+//func (i WhCharacter) ToFull(items []*Wh, skills []*Wh, talents []*Wh, mutations []*Wh, spells []*Wh) WhCharacterFull {
+//	return WhCharacterFull{}
+//}
+
 type WhCharacterFull struct {
 	Name              string             `json:"name"`
 	Description       string             `json:"description"`

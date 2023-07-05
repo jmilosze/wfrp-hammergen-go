@@ -126,7 +126,7 @@ func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full
 	if full {
 		var whErr *wh.WhError
 		if t == wh.WhTypeItem {
-			whs, whErr = retrieveFullItem(ctx, s.WhDbService, users, c.SharedAccounts, whs)
+			whs, whErr = retrieveFullItem(ctx, s, c, whs)
 		}
 		if whErr != nil {
 			return nil, whErr
@@ -140,7 +140,7 @@ func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full
 	return whs, nil
 }
 
-func retrieveFullItem(ctx context.Context, db wh.WhDbService, users []string, sharedAccounts []string, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
+func retrieveFullItem(ctx context.Context, whService *WhService, claims *domain.Claims, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
 	allPropertyIds := make([]string, 0)
 	allSpellIds := make([]string, 0)
 	for _, v := range items {
@@ -156,27 +156,27 @@ func retrieveFullItem(ctx context.Context, db wh.WhDbService, users []string, sh
 	wg.Add(2)
 
 	var allProperties []*wh.Wh
-	var propertyDbErr *domain.DbError
+	var propertyWhErr *wh.WhError
 	go func() {
 		defer wg.Done()
-		allProperties, propertyDbErr = db.Retrieve(ctx, wh.WhTypeProperty, users, sharedAccounts, allPropertyIds)
+		allProperties, propertyWhErr = whService.Get(ctx, wh.WhTypeProperty, claims, false, allPropertyIds)
 	}()
 
 	var allSpells []*wh.Wh
-	var spellDbErr *domain.DbError
+	var spellWhErr *wh.WhError
 	go func() {
 		defer wg.Done()
-		allSpells, spellDbErr = db.Retrieve(ctx, wh.WhTypeSpell, users, sharedAccounts, allSpellIds)
+		allSpells, spellWhErr = whService.Get(ctx, wh.WhTypeSpell, claims, false, allSpellIds)
 	}()
 
 	wg.Wait()
 
-	if propertyDbErr != nil && propertyDbErr.Type != domain.DbNotFoundError {
-		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: propertyDbErr}
+	if propertyWhErr != nil && propertyWhErr.ErrType != wh.WhNotFoundError {
+		return nil, propertyWhErr
 	}
 
-	if spellDbErr != nil && spellDbErr.Type != domain.DbNotFoundError {
-		return nil, &wh.WhError{ErrType: wh.WhInternalError, WhType: wh.WhTypeItem, Err: spellDbErr}
+	if spellWhErr != nil && spellWhErr.ErrType != wh.WhNotFoundError {
+		return nil, spellWhErr
 	}
 
 	fullItems := make([]*wh.Wh, len(items))
