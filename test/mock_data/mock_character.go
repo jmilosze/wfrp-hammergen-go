@@ -12,23 +12,23 @@ var character0 = warhammer.Wh{
 		Name:        "character 0",
 		Description: fmt.Sprintf("owned by %s", user1.Username),
 		Notes:       "some notes",
-		EquippedItems: []warhammer.WhIdNumber{
+		EquippedItems: []warhammer.IdNumber{
 			{Id: itemArmour.Id, Number: 1},
 			{Id: itemMelee.Id, Number: 2},
 		},
-		CarriedItems: []warhammer.WhIdNumber{
+		CarriedItems: []warhammer.IdNumber{
 			{Id: itemRanged.Id, Number: 1},
 			{Id: itemAmmunition.Id, Number: 200},
 		},
-		StoredItems: []warhammer.WhIdNumber{
+		StoredItems: []warhammer.IdNumber{
 			{Id: itemGrimoire.Id, Number: 1},
 			{Id: itemOther.Id, Number: 100},
 		},
-		Skills: []warhammer.WhIdNumber{
+		Skills: []warhammer.IdNumber{
 			{Id: skill0.Id, Number: 1},
 			{Id: skill1.Id, Number: 10},
 		},
-		Talents: []warhammer.WhIdNumber{
+		Talents: []warhammer.IdNumber{
 			{Id: talent0.Id, Number: 1},
 			{Id: talent1.Id, Number: 5},
 		},

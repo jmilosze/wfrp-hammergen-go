@@ -93,20 +93,20 @@ func (input WhCharacterSpecies) InitAndCopy() WhCharacterSpecies {
 	return WhCharacterSpecies(strings.Clone(string(input)))
 }
 
-type WhIdNumber struct {
+type IdNumber struct {
 	Id     string `json:"id" validate:"id_valid"`
 	Number int    `json:"number" validate:"gte=1,lte=1000"`
 }
 
-func (input WhIdNumber) InitAndCopy() WhIdNumber {
-	return WhIdNumber{
+func (input IdNumber) InitAndCopy() IdNumber {
+	return IdNumber{
 		Id:     strings.Clone(input.Id),
 		Number: input.Number,
 	}
 }
 
-func copyArrayIdNumber(input []WhIdNumber) []WhIdNumber {
-	output := make([]WhIdNumber, len(input))
+func copyArrayIdNumber(input []IdNumber) []IdNumber {
+	output := make([]IdNumber, len(input))
 	for i, v := range input {
 		output[i] = v.InitAndCopy()
 	}
@@ -117,11 +117,11 @@ type WhCharacter struct {
 	Name              string             `json:"name" validate:"name_valid"`
 	Description       string             `json:"description" validate:"desc_valid"`
 	Notes             string             `json:"notes" validate:"desc_valid"`
-	EquippedItems     []WhIdNumber       `json:"equippedItems" validate:"dive"`
-	CarriedItems      []WhIdNumber       `json:"carriedItems" validate:"dive"`
-	StoredItems       []WhIdNumber       `json:"storedItems" validate:"dive"`
-	Skills            []WhIdNumber       `json:"skills" validate:"dive"`
-	Talents           []WhIdNumber       `json:"talents" validate:"dive"`
+	EquippedItems     []IdNumber         `json:"equippedItems" validate:"dive"`
+	CarriedItems      []IdNumber         `json:"carriedItems" validate:"dive"`
+	StoredItems       []IdNumber         `json:"storedItems" validate:"dive"`
+	Skills            []IdNumber         `json:"skills" validate:"dive"`
+	Talents           []IdNumber         `json:"talents" validate:"dive"`
 	Species           WhCharacterSpecies `json:"species" validate:"character_species_valid"`
 	BaseAttributes    WhAttributes       `json:"baseAttributes"`
 	AttributeAdvances WhAttributes       `json:"attributeAdvances"`
@@ -209,9 +209,74 @@ func copyArrayWhNumber(input []WhNumber) []WhNumber {
 	return output
 }
 
-//func (i WhCharacter) ToFull(items []*Wh, skills []*Wh, talents []*Wh, mutations []*Wh, spells []*Wh) WhCharacterFull {
-//	return WhCharacterFull{}
-//}
+func (c WhCharacter) ToFull(allItems []*Wh, allSkills []*Wh, allTalents []*Wh, allMutations []*Wh, allSpells []*Wh, allCareers []*Wh) WhCharacterFull {
+	equippedItems := idNumberListToFull(c.EquippedItems, allItems)
+	carriedItems := idNumberListToFull(c.CarriedItems, allItems)
+	storedItems := idNumberListToFull(c.StoredItems, allItems)
+
+	skills := idNumberListToFull(c.Skills, allSkills)
+	talents := idNumberListToFull(c.Talents, allTalents)
+	careerPath := idListToFull(c.CareerPath, allCareers)
+	spells := idListToFull(c.Spells, allSpells)
+	mutations := idListToFull(c.Mutations, allMutations)
+	career := idToFull(c.Career, allCareers)
+
+	return WhCharacterFull{
+		Name:              strings.Clone(c.Name),
+		Description:       strings.Clone(c.Description),
+		Notes:             strings.Clone(c.Notes),
+		EquippedItems:     equippedItems,
+		CarriedItems:      carriedItems,
+		StoredItems:       storedItems,
+		Skills:            skills,
+		Talents:           talents,
+		Species:           c.Species.InitAndCopy(),
+		BaseAttributes:    c.BaseAttributes.InitAndCopy(),
+		AttributeAdvances: c.AttributeAdvances.InitAndCopy(),
+		CareerPath:        careerPath,
+		Career:            career,
+		Fate:              c.Fate,
+		Fortune:           c.Fortune,
+		Resilience:        c.Resilience,
+		Resolve:           c.Resolve,
+		CurrentExp:        c.CurrentExp,
+		SpentExp:          c.SpentExp,
+		Status:            c.Status.InitAndCopy(),
+		Standing:          c.Standing.InitAndCopy(),
+		Brass:             c.Brass,
+		Silver:            c.Silver,
+		Gold:              c.Gold,
+		Spells:            spells,
+		Sin:               c.Sin,
+		Corruption:        c.Corruption,
+		Mutations:         mutations,
+		Shared:            c.Shared,
+	}
+}
+
+func idNumberListToFull(idNumberList []IdNumber, allWh []*Wh) []WhNumber {
+	whNumberList := make([]WhNumber, 0)
+	for _, v1 := range allWh {
+		for _, v2 := range idNumberList {
+			if v1.Id == v2.Id {
+				whNumberList = append(whNumberList, WhNumber{
+					Wh:     v1.InitAndCopy(),
+					Number: v2.Number,
+				})
+			}
+		}
+	}
+	return whNumberList
+}
+
+func idToFull(id string, allWh []*Wh) Wh {
+	for _, v := range allWh {
+		if id == v.Id {
+			return v.InitAndCopy()
+		}
+	}
+	return Wh{}
+}
 
 type WhCharacterFull struct {
 	Name              string             `json:"name"`
