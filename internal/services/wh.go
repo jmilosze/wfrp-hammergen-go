@@ -126,7 +126,9 @@ func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full
 	if full {
 		var whErr *wh.WhError
 		if t == wh.WhTypeItem {
-			whs, whErr = retrieveFullItem(ctx, s, c, whs)
+			whs, whErr = retrieveFullItems(ctx, s, c, whs)
+		} else if t == wh.WhTypeCharacter {
+			whs, whErr = retrieveFullCharacters(ctx, s, c, whs)
 		}
 		if whErr != nil {
 			return nil, whErr
@@ -140,7 +142,7 @@ func (s *WhService) Get(ctx context.Context, t wh.WhType, c *domain.Claims, full
 	return whs, nil
 }
 
-func retrieveFullItem(ctx context.Context, whService *WhService, claims *domain.Claims, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
+func retrieveFullItems(ctx context.Context, whService *WhService, claims *domain.Claims, items []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
 	allPropertyIds := make([]string, 0)
 	allSpellIds := make([]string, 0)
 	for _, v := range items {
@@ -148,8 +150,8 @@ func retrieveFullItem(ctx context.Context, whService *WhService, claims *domain.
 		if !ok {
 			return nil, &wh.WhError{WhType: wh.WhTypeItem, ErrType: wh.WhInternalError, Err: errors.New("non-item stored as item")}
 		}
-		allPropertyIds = append(allPropertyIds, item.Properties...)
-		allSpellIds = append(allSpellIds, item.Grimoire.Spells...)
+		allPropertyIds = mergeStrAndRemoveDuplicates(allPropertyIds, item.Properties)
+		allSpellIds = mergeStrAndRemoveDuplicates(allSpellIds, item.Grimoire.Spells)
 	}
 
 	var wg sync.WaitGroup
@@ -188,6 +190,123 @@ func retrieveFullItem(ctx context.Context, whService *WhService, claims *domain.
 	}
 
 	return fullItems, nil
+}
+
+func mergeStrAndRemoveDuplicates(slice1 []string, slice2 []string) []string {
+	merged := append(slice1, slice2...)
+
+	// Create a map to keep track of unique elements
+	uniqueMap := make(map[string]bool)
+	for _, num := range merged {
+		uniqueMap[num] = true
+	}
+
+	// Create a new slice to store the unique elements
+	mergedUnique := []string{}
+	for num := range uniqueMap {
+		mergedUnique = append(mergedUnique, num)
+	}
+
+	return mergedUnique
+}
+
+func retrieveFullCharacters(ctx context.Context, whService *WhService, claims *domain.Claims, characters []*wh.Wh) ([]*wh.Wh, *wh.WhError) {
+	allItemIds := make([]string, 0)
+	allSkillIds := make([]string, 0)
+	allTalentIds := make([]string, 0)
+	allCareerIds := make([]string, 0)
+	allMutationIds := make([]string, 0)
+	allSpellIds := make([]string, 0)
+	for _, v := range characters {
+		character, ok := v.Object.(wh.WhCharacter)
+		if !ok {
+			return nil, &wh.WhError{WhType: wh.WhTypeCharacter, ErrType: wh.WhInternalError, Err: errors.New("non-character stored as character")}
+		}
+		allItemIds = mergeStrAndIdNumberAndRemoveDuplicates(allItemIds, character.EquippedItems)
+		allItemIds = mergeStrAndIdNumberAndRemoveDuplicates(allItemIds, character.CarriedItems)
+		allItemIds = mergeStrAndIdNumberAndRemoveDuplicates(allItemIds, character.StoredItems)
+
+		allSkillIds = mergeStrAndIdNumberAndRemoveDuplicates(allSkillIds, character.Skills)
+		allTalentIds = mergeStrAndIdNumberAndRemoveDuplicates(allTalentIds, character.Talents)
+
+		allCareerIds = mergeStrAndRemoveDuplicates(allCareerIds, character.CareerPath)
+		allCareerIds = mergeStrAndRemoveDuplicates(allCareerIds, []string{character.Career})
+
+		allMutationIds = mergeStrAndRemoveDuplicates(allMutationIds, character.Mutations)
+		allSpellIds = mergeStrAndRemoveDuplicates(allSpellIds, character.Spells)
+	}
+
+	//var wg sync.WaitGroup
+	//wg.Add(6)
+
+	components := map[wh.WhType]*struct {
+		err  *wh.WhError
+		full bool
+		wh   []*wh.Wh
+		ids  []string
+	}{
+		wh.WhTypeItem:     {err: nil, full: true, wh: nil, ids: allItemIds},
+		wh.WhTypeSkill:    {err: nil, full: false, wh: nil, ids: allSkillIds},
+		wh.WhTypeTalent:   {err: nil, full: false, wh: nil, ids: allTalentIds},
+		wh.WhTypeCareer:   {err: nil, full: false, wh: nil, ids: allCareerIds},
+		wh.WhTypeMutation: {err: nil, full: false, wh: nil, ids: allMutationIds},
+		wh.WhTypeSpell:    {err: nil, full: false, wh: nil, ids: allSpellIds},
+	}
+
+	for k, v := range components {
+		v.wh, v.err = whService.Get(ctx, k, claims, v.full, v.ids)
+		//go func() {
+		//	defer wg.Done()
+		//	v.wh, v.err = whService.Get(ctx, k, claims, v.full, v.ids)
+		//}()
+	}
+
+	//wg.Wait()
+
+	for _, v := range components {
+		if v.err != nil && v.err.ErrType != wh.WhNotFoundError {
+			return nil, v.err
+		}
+	}
+
+	fullCharacters := make([]*wh.Wh, len(characters))
+	for k, v := range characters {
+		character := v.Object.(wh.WhCharacter)
+		fullCharacter := v.CopyHeaders()
+		fullCharacter.Object = character.ToFull(
+			components[wh.WhTypeItem].wh,
+			components[wh.WhTypeSkill].wh,
+			components[wh.WhTypeTalent].wh,
+			components[wh.WhTypeMutation].wh,
+			components[wh.WhTypeSpell].wh,
+			components[wh.WhTypeCareer].wh)
+		fullCharacters[k] = &fullCharacter
+	}
+
+	return fullCharacters, nil
+}
+
+func mergeStrAndIdNumberAndRemoveDuplicates(strings []string, structs []wh.IdNumber) []string {
+	// Create a map to store unique strings
+	uniqueStrings := make(map[string]bool)
+
+	// Add all strings from the first argument to the map
+	for _, str := range strings {
+		uniqueStrings[str] = true
+	}
+
+	// Add all strings from the second argument to the map
+	for _, s := range structs {
+		uniqueStrings[s.Id] = true
+	}
+
+	// Create a new slice to store the unique strings
+	result := []string{}
+	for str := range uniqueStrings {
+		result = append(result, str)
+	}
+
+	return result
 }
 
 func (s *WhService) GetGenerationProps(ctx context.Context) (*wh.WhGenerationProps, *wh.WhError) {

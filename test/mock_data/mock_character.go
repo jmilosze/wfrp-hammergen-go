@@ -18,6 +18,7 @@ var character0 = warhammer.Wh{
 		},
 		CarriedItems: []warhammer.IdNumber{
 			{Id: itemRanged.Id, Number: 1},
+			{Id: itemArmour.Id, Number: 1},
 			{Id: itemAmmunition.Id, Number: 200},
 		},
 		StoredItems: []warhammer.IdNumber{
@@ -73,7 +74,7 @@ var character0 = warhammer.Wh{
 		Spells:     []string{spell0.Id, spell1.Id},
 		Sin:        0,
 		Corruption: 0,
-		Mutations:  []string{},
+		Mutations:  []string{mutation0.Id, mutation1.Id},
 		Shared:     false,
 	},
 }
